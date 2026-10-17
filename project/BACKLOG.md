@@ -20,8 +20,12 @@ Ideas parked, not scheduled. Pull into project/TODO.md when picked up.
       (reuse the forked status/github crates?)
 
 ## Ecosystem
-- [ ] `reconcile` — third tool: auto-fix confirmed violations
-      (rewrite claims to match reality, or vice versa when the doc
-      is right and the code is wrong — flag-only for the latter)
+- [x] `mimus fix` — auto-fix confirmed violations (landed;
+      dead-path rewrites today). Widen: rule fixes, claim deletion
+      for deleted targets, `kuda sync` for drifted cards
 - [ ] Dogfood: run against the handl-lang AGENTS.md corpus —
       ~70 repos of accumulated prose claims
+
+## Release
+- [ ] crates.io release — `scripts/release.sh` publishes the
+      crate graph in dep order; needs a dry-run pass + tags
