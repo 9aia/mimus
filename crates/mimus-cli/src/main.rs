@@ -57,10 +57,7 @@ fn main() {
         Cmd::Init => init(&cli),
         Cmd::Check { all, no_cmd } => check(&cli, *all, *no_cmd),
         Cmd::Report => report(&cli),
-        Cmd::Audit => {
-            eprintln!("mimus audit: not yet implemented — see project/TODO.md");
-            2
-        }
+        Cmd::Audit => audit(&cli),
         Cmd::Doctor => doctor(&cli),
     };
     std::process::exit(code);
@@ -156,6 +153,63 @@ fn check(cli: &Cli, _all: bool, _no_cmd: bool) -> i32 {
 
 fn report(cli: &Cli) -> i32 {
     check(cli, true, false)
+}
+
+/// Trust-score `.kuda/` cards: verify files exist + provenance
+/// hashes match current content. Advisory — reports, never gates.
+fn audit(cli: &Cli) -> i32 {
+    let root = root(cli);
+    let cards = mimus_rules::matching_files(&root, ".kuda/modules/*.yaml");
+    if cards.is_empty() {
+        println!("no .kuda cards — run `kuda sync` first");
+        return 0;
+    }
+    let (mut fresh, mut drifted, mut contradicted) = (0, 0, 0);
+    for p in cards {
+        let Ok(v) = serde_yaml::from_str::<serde_yaml::Value>(
+            &std::fs::read_to_string(&p).unwrap_or_default(),
+        ) else {
+            continue;
+        };
+        let name = v["name"].as_str().unwrap_or("?").to_owned();
+        let files: Vec<String> = v["provenance"]["files"]
+            .as_sequence()
+            .map(|s| s.iter().filter_map(|f| f.as_str().map(str::to_owned)).collect())
+            .unwrap_or_default();
+        let hashes: Vec<String> = v["provenance"]["hashes"]
+            .as_sequence()
+            .map(|s| s.iter().filter_map(|f| f.as_str().map(str::to_owned)).collect())
+            .unwrap_or_default();
+        let mut score = "fresh";
+        for (f, h) in files.iter().zip(&hashes) {
+            let fp = root.join(f);
+            if !fp.exists() {
+                score = "contradicted";
+                break;
+            }
+            let cur = std::process::Command::new("git")
+                .arg("-C")
+                .arg(&root)
+                .args(["hash-object"])
+                .arg(f)
+                .output()
+                .ok()
+                .filter(|o| o.status.success())
+                .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_owned())
+                .unwrap_or_default();
+            if cur != *h {
+                score = "drifted";
+            }
+        }
+        match score {
+            "contradicted" => contradicted += 1,
+            "drifted" => drifted += 1,
+            _ => fresh += 1,
+        }
+        println!("{score:<12} {name}");
+    }
+    println!("{fresh} fresh, {drifted} drifted, {contradicted} contradicted");
+    0
 }
 
 fn emit(violations: &[Violation], format: &str) {

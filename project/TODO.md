@@ -18,7 +18,7 @@
       backtick paths & commands, numbers, symbol names, behavior
       prose (semantic tier, deferred to llm impl)
 - [ ] `mimus check` — mechanical tier, CI-gateable output
-- [ ] `mimus audit` — trust-score `.kuda/` cards vs source
+- [x] `mimus audit` — trust-score `.kuda/` cards vs source
 - [ ] `mimus report` — violations with claim+evidence+fix
 
 ## Scaffold debt (forked from bupha — rewrite crate-by-crate)
