@@ -43,6 +43,12 @@ enum Cmd {
         #[arg(long)]
         no_cmd: bool,
     },
+    /// Apply mechanical rewrites for confirmed violations.
+    Fix {
+        /// Show the plan, write nothing.
+        #[arg(long)]
+        dry: bool,
+    },
     /// Trust-score .kuda/ cards vs source.
     Audit,
     /// Full violations list with evidence.
@@ -59,6 +65,7 @@ fn main() {
     let code = match &cli.cmd {
         Cmd::Init => init(&cli),
         Cmd::Check { all, no_cmd } => check(&cli, *all, *no_cmd),
+        Cmd::Fix { dry } => fix(&cli, *dry),
         Cmd::Report => report(&cli),
         Cmd::Audit => audit(&cli),
         Cmd::Doctor => doctor(&cli),
@@ -106,13 +113,14 @@ fn load(cli: &Cli) -> Result<Config, String> {
     .load()
 }
 
-/// Extract claims from configured doc sources and run checkers.
-fn check(cli: &Cli, _all: bool, _no_cmd: bool) -> i32 {
+/// Extract claims from configured doc sources and run checkers
+/// + rules — the shared verification pipeline.
+fn collect(cli: &Cli) -> Option<(PathBuf, Vec<Violation>)> {
     let cfg = match load(cli) {
         Ok(c) => c,
         Err(e) => {
             eprintln!("{e}");
-            return 2;
+            return None;
         }
     };
     let root = root(cli);
@@ -150,6 +158,13 @@ fn check(cli: &Cli, _all: bool, _no_cmd: bool) -> i32 {
             }
         }
     }
+    Some((root, violations))
+}
+
+fn check(cli: &Cli, _all: bool, _no_cmd: bool) -> i32 {
+    let Some((_root, violations)) = collect(cli) else {
+        return 2;
+    };
     emit(&violations, &cli.format);
     if violations.iter().any(|v| v.severity == Severity::Error) {
         1
@@ -160,6 +175,129 @@ fn check(cli: &Cli, _all: bool, _no_cmd: bool) -> i32 {
 
 fn report(cli: &Cli) -> i32 {
     check(cli, true, false)
+}
+
+/// Apply mechanical rewrites for confirmed violations.
+/// v1 scope: dead `path` claims where exactly one same-basename
+/// file exists in the repo (a moved file) — everything else is
+/// flagged for a human, never silently "fixed".
+fn fix(cli: &Cli, dry: bool) -> i32 {
+    let Some((root, violations)) = collect(cli) else {
+        return 2;
+    };
+    let files = repo_files(&root);
+    let (mut applied, mut flagged) = (0usize, 0usize);
+    for v in &violations {
+        let rewrite = match v.claim.kind {
+            mimus_core::ClaimKind::Path => dead_path_candidate(&root, &files, &v.claim.text),
+            _ => None,
+        };
+        match rewrite {
+            Some(new) => {
+                println!(
+                    "{}:{} `{}` -> `{}`",
+                    v.claim.source.display(),
+                    v.claim.line,
+                    v.claim.text,
+                    new
+                );
+                if !dry {
+                    rewrite_claim(&v.claim, &new);
+                }
+                applied += 1;
+            }
+            None => {
+                flagged += 1;
+                if dry {
+                    println!(
+                        "flagged {}:{} `{}` — {}",
+                        v.claim.source.display(),
+                        v.claim.line,
+                        v.claim.text,
+                        v.evidence
+                    );
+                }
+            }
+        }
+    }
+    println!("{applied} fixable{}, {flagged} flagged for human", if dry { " (dry)" } else { " applied" });
+    0
+}
+
+/// All regular files under root (skips noise dirs).
+fn repo_files(root: &Path) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    let mut stack = vec![root.to_path_buf()];
+    while let Some(d) = stack.pop() {
+        let Ok(rd) = std::fs::read_dir(&d) else { continue };
+        for e in rd.flatten() {
+            let p = e.path();
+            if p.is_dir() {
+                if !matches!(
+                    e.file_name().to_str(),
+                    Some(".git" | "target" | "node_modules" | ".kuda")
+                ) {
+                    stack.push(p);
+                }
+            } else {
+                out.push(p);
+            }
+        }
+    }
+    out
+}
+
+/// Dead path claim -> unique same-basename candidate, preferring a
+/// matching parent dir name. Returns repo-relative path.
+fn dead_path_candidate(root: &Path, files: &[PathBuf], claim: &str) -> Option<String> {
+    let claim_p = Path::new(claim.trim_start_matches("./"));
+    let base = claim_p.file_name()?;
+    let parent = claim_p.parent()?.file_name().map(|f| f.to_string_lossy());
+    let mut hits: Vec<&PathBuf> = files
+        .iter()
+        .filter(|f| f.file_name() == Some(base))
+        .collect();
+    // prefer the candidate whose parent dir name matches the claim's
+    if hits.len() > 1 {
+        if let Some(par) = &parent {
+            let narrowed: Vec<_> = hits
+                .iter()
+                .filter(|f| {
+                    f.parent()
+                        .and_then(|p| p.file_name())
+                        .map(|n| n.to_string_lossy() == *par)
+                        .unwrap_or(false)
+                })
+                .copied()
+                .collect();
+            if narrowed.len() == 1 {
+                hits = narrowed;
+            }
+        }
+    }
+    if hits.len() != 1 {
+        return None; // zero or ambiguous — human decides
+    }
+    hits[0]
+        .strip_prefix(root)
+        .ok()
+        .map(|p| p.to_string_lossy().into_owned())
+}
+
+/// Rewrite one claim occurrence inside its source line.
+fn rewrite_claim(claim: &mimus_core::Claim, new: &str) {
+    let path = &claim.source;
+    let Ok(text) = std::fs::read_to_string(path) else {
+        return;
+    };
+    let mut lines: Vec<String> = text.lines().map(str::to_owned).collect();
+    let idx = (claim.line as usize).saturating_sub(1);
+    if let Some(line) = lines.get_mut(idx) {
+        if line.contains(&claim.text) {
+            *line = line.replacen(&claim.text, new, 1);
+            let _ = std::fs::write(path, lines.join("\n") + "\n");
+        }
+    }
 }
 
 /// Trust-score `.kuda/` cards: verify files exist + provenance
