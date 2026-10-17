@@ -2,7 +2,7 @@
 layout: home
 
 hero:
-  name: malurus
+  name: mimus
   text: spots the cuckoo eggs in your repo
   tagline: claim verification — docs-as-tests, memory audit
   actions:
@@ -21,12 +21,12 @@ features:
     linkText: architecture
   - icon: 🧪
     title: Docs-as-tests
-    details: paths, commands, symbols, counts in your docs verified mechanically — malurus check in CI means docs can't silently rot
+    details: paths, commands, symbols, counts in your docs verified mechanically — mimus check in CI means docs can't silently rot
     link: /tutorials/first-run
     linkText: first check
   - icon: 🧠
     title: Memory audit
-    details: trust-scores .kuda/ cards against source — kuda remembers, malurus doubts
+    details: trust-scores .kuda/ cards against source — kuda remembers, mimus doubts
     link: /how-to/kuda-audit
     linkText: auditing cards
   - icon: 📐

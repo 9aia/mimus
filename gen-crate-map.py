@@ -8,13 +8,13 @@ ROOT = pathlib.Path(__file__).parent / ".."
 WST = (ROOT / "Cargo.toml").read_text()
 
 LAYER = {
-    "malurus": "binary",
-    "malurus-core": "domain",
-    "malurus-runner": "port", "malurus-tunnel": "port",
-    "malurus-trigger": "port", "malurus-status": "port",
-    "malurus-vcs": "port", "malurus-queue": "port",
-    "malurus-service": "port", "malurus-secret": "port",
-    "malurus-config": "port", "malurus-cache": "port",
+    "mimus": "binary",
+    "mimus-core": "domain",
+    "mimus-runner": "port", "mimus-tunnel": "port",
+    "mimus-trigger": "port", "mimus-status": "port",
+    "mimus-vcs": "port", "mimus-queue": "port",
+    "mimus-service": "port", "mimus-secret": "port",
+    "mimus-config": "port", "mimus-cache": "port",
 }
 
 # workspace members — match `"crates/…"` paths only (not dep paths)
@@ -24,9 +24,9 @@ for m in members:
     if m not in seen:
         seen.add(m)
         order_dedup.append(m)
-# include the binary crate (path crates/malurus-cli, package name malurus)
-if "crates/malurus-cli" not in order_dedup:
-    order_dedup.append("crates/malurus-cli")
+# include the binary crate (path crates/mimus-cli, package name mimus)
+if "crates/mimus-cli" not in order_dedup:
+    order_dedup.append("crates/mimus-cli")
 
 rows = []
 for rel in order_dedup:
@@ -56,6 +56,6 @@ out = ["# Crate API", "",
        "documented at source (doc comments).", ""]
 for n, l, _ in rows:
     und = n.replace("-", "_")
-    out.append(f"- [{n}](/malurus/api/{und}/index.html) — {l}")
+    out.append(f"- [{n}](/mimus/api/{und}/index.html) — {l}")
 pathlib.Path("reference/crate-api.md").write_text("\n".join(out) + "\n")
 print("crate-api regenerated")

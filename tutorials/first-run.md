@@ -6,16 +6,16 @@ Goal: verify a repo's documented claims in minutes.
 
 ```sh
 cd your-repo
-malurus init
+mimus init
 ```
 
 Detects claim sources (README, docs/, AGENTS.md, code comments,
-`.kuda/` cards) and writes `malurus.toml` + a `rules/` dir.
+`.kuda/` cards) and writes `mimus.toml` + a `rules/` dir.
 
 ## 2. Check the mechanical tier
 
 ```sh
-malurus check
+mimus check
 ```
 
 Extracts claims and verifies what can be proven:
@@ -32,14 +32,14 @@ evidence + fix.
 ## 3. Report
 
 ```sh
-malurus report          # everything found, grouped by source
-malurus check --all     # + semantic tier (advisory, never gates)
+mimus report          # everything found, grouped by source
+mimus check --all     # + semantic tier (advisory, never gates)
 ```
 
 ## 4. Wire into CI
 
 ```sh
-malurus check --format json   # machine-readable for gates
+mimus check --format json   # machine-readable for gates
 ```
 
 Docs become tested artifacts — a claim that breaks fails the

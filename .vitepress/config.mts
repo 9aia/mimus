@@ -5,9 +5,9 @@ export default defineConfig({
   vite: {
     plugins: [llmstxt()],
   },
-  title: "malurus",
+  title: "mimus",
   description: "the repo critic — claim verification, docs-as-tests",
-  base: "/malurus/",
+  base: "/mimus/",
   ignoreDeadLinks: [/\/api\//],
   themeConfig: {
     nav: [
@@ -19,8 +19,8 @@ export default defineConfig({
       {
         text: "LLMs",
         items: [
-          { text: "llms.txt", link: "https://9aia.com/malurus/llms.txt", target: "_blank" },
-          { text: "llms-full.txt", link: "https://9aia.com/malurus/llms-full.txt", target: "_blank" },
+          { text: "llms.txt", link: "https://9aia.com/mimus/llms.txt", target: "_blank" },
+          { text: "llms-full.txt", link: "https://9aia.com/mimus/llms-full.txt", target: "_blank" },
         ],
       },
     ],
@@ -54,6 +54,6 @@ export default defineConfig({
         ],
       },
     ],
-    socialLinks: [{ icon: "github", link: "https://github.com/9aia/malurus" }],
+    socialLinks: [{ icon: "github", link: "https://github.com/9aia/mimus" }],
   },
 });

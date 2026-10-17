@@ -1,16 +1,16 @@
 # Reference: CLI
 
-Generated from `malurus --help` by `bun run docs:cli` — seed listing:
+Generated from `mimus --help` by `bun run docs:cli` — seed listing:
 
 ```
-malurus init            detect sources -> malurus.toml + rules/
-malurus check           mechanical claims — CI-gateable
-malurus check --all     + semantic tier (advisory only)
-malurus audit           trust-score .kuda/ cards vs source
-malurus report          full violations: claim + evidence + fix
-malurus doctor          checker/kuda-index health
+mimus init            detect sources -> mimus.toml + rules/
+mimus check           mechanical claims — CI-gateable
+mimus check --all     + semantic tier (advisory only)
+mimus audit           trust-score .kuda/ cards vs source
+mimus report          full violations: claim + evidence + fix
+mimus doctor          checker/kuda-index health
 ```
 
-Flags: `--config <path>` (else `$MALURUS_CONFIG`, `./malurus.toml`,
-`~/.config/malurus/malurus.toml`), `--format human|json`,
+Flags: `--config <path>` (else `$MIMUS_CONFIG`, `./mimus.toml`,
+`~/.config/mimus/mimus.toml`), `--format human|json`,
 `--no-cmd` (never execute documented commands — untrusted repos).

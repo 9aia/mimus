@@ -15,14 +15,14 @@ Pick by what you need to do.
 Install:
 
 ```sh
-cargo install --git https://github.com/9aia/malurus malurus
+cargo install --git https://github.com/9aia/mimus mimus
 ```
 
 First check:
 
 ```sh
 cd your-repo
-malurus init    # detect claim sources -> malurus.toml + rules/
-malurus check   # mechanical tier: paths, commands, symbols
-malurus report  # violations with claim + evidence + fix
+mimus init    # detect claim sources -> mimus.toml + rules/
+mimus check   # mechanical tier: paths, commands, symbols
+mimus report  # violations with claim + evidence + fix
 ```

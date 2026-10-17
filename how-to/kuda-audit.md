@@ -1,12 +1,12 @@
 # How-to: audit the memory layer
 
-`malurus audit` applies the same claim machinery to `.kuda/`
+`mimus audit` applies the same claim machinery to `.kuda/`
 cards — agent memory gets a trust score, not a free pass.
 
 ## Run
 
 ```sh
-malurus audit
+mimus audit
 ```
 
 Per card it verifies:

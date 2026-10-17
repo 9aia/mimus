@@ -4,7 +4,7 @@
 
 Docs and memory cards make *claims*: this path exists, this
 command works, this symbol lives here, this number is current.
-malurus extracts claims into a taxonomy — each type routes to the
+mimus extracts claims into a taxonomy — each type routes to the
 checker that can actually prove or refute it:
 
 | claim      | checker                | tier       |
@@ -32,7 +32,7 @@ cards), sinks (cli, commit-status). Rules are data
 
 ## Position in the ecosystem
 
-- `kuda` builds the index; `malurus` doubts it — `audit`
+- `kuda` builds the index; `mimus` doubts it — `audit`
   trust-scores cards against source via the `symbol` checker.
-- `reconcile` (planned third tool) auto-fixes what malurus
+- `reconcile` (planned third tool) auto-fixes what mimus
   confirms: claims rewritten to match reality.

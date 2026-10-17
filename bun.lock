@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "malurus-docs",
+      "name": "mimus-docs",
       "devDependencies": {
         "gh-pages": "^6.3.0",
         "vite-plus": "^1.3.0",

@@ -1,7 +1,7 @@
 # Reference: config
 
-`malurus.toml` — one per checked repo. Secrets resolve via env
-var -> OS keyring -> `~/.config/malurus/env`; never this file.
+`mimus.toml` — one per checked repo. Secrets resolve via env
+var -> OS keyring -> `~/.config/mimus/env`; never this file.
 
 ```toml
 [sources]
@@ -23,4 +23,4 @@ format = "human"                 # human | json
 # min_confidence = "high"
 ```
 
-Full annotated example: `examples/malurus.toml.example`.
+Full annotated example: `examples/mimus.toml.example`.

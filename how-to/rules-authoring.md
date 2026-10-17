@@ -24,7 +24,7 @@ Rule kinds:
 
 ## Semantics
 
-- `severity = "error"` fails `malurus check`; `"warn"` only
+- `severity = "error"` fails `mimus check`; `"warn"` only
   appears in `report`.
 - Keep rules mechanically checkable — if a rule can't carry
   evidence, it doesn't belong here (see ADR-0001).
