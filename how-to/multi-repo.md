@@ -21,6 +21,6 @@ dir = "/srv/checkouts/web" # default latest-wins
 #   cmd = "./release.sh"
 ```
 
-Run `bupha deploy webhook` once — it registers the hook on every
+Run `malurus deploy webhook` once — it registers the hook on every
 watched repo. `status_repo` on an entry redirects statuses (e.g.
 mirror repos); it defaults to `name`.

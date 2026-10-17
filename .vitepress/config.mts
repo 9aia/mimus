@@ -5,9 +5,9 @@ export default defineConfig({
   vite: {
     plugins: [llmstxt()],
   },
-  title: "bupha",
-  description: "headless CI — the oxpecker on your repo",
-  base: "/bupha/",
+  title: "malurus",
+  description: "the repo critic — claim verification, docs-as-tests",
+  base: "/malurus/",
   ignoreDeadLinks: [/\/api\//],
   themeConfig: {
     nav: [
@@ -19,8 +19,8 @@ export default defineConfig({
       {
         text: "LLMs",
         items: [
-          { text: "llms.txt", link: "https://9aia.com/bupha/llms.txt", target: "_blank" },
-          { text: "llms-full.txt", link: "https://9aia.com/bupha/llms-full.txt", target: "_blank" },
+          { text: "llms.txt", link: "https://9aia.com/malurus/llms.txt", target: "_blank" },
+          { text: "llms-full.txt", link: "https://9aia.com/malurus/llms-full.txt", target: "_blank" },
         ],
       },
     ],
@@ -33,8 +33,8 @@ export default defineConfig({
         text: "How-to",
         items: [
           { text: "Multi-repo", link: "/how-to/multi-repo" },
-          { text: "Shell runner", link: "/how-to/shell-runner" },
-          { text: "sccache backend", link: "/how-to/sccache-backend" },
+          { text: "Memory audit", link: "/how-to/kuda-audit" },
+          { text: "Authoring rules", link: "/how-to/rules-authoring" },
         ],
       },
       {
@@ -50,10 +50,10 @@ export default defineConfig({
         items: [
           { text: "Architecture", link: "/explanation/architecture" },
           { text: "Release model", link: "/explanation/release-model" },
-          { text: "vs hosted CI", link: "/comparison" },
+          { text: "vs linters / LLM review", link: "/comparison" },
         ],
       },
     ],
-    socialLinks: [{ icon: "github", link: "https://github.com/9aia/bupha" }],
+    socialLinks: [{ icon: "github", link: "https://github.com/9aia/malurus" }],
   },
 });

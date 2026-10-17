@@ -2,9 +2,9 @@
 layout: home
 
 hero:
-  name: bupha
-  text: the oxpecker on your repo's back
-  tagline: headless CI — push in, status out, on a Linux box with Git
+  name: malurus
+  text: spots the cuckoo eggs in your repo
+  tagline: claim verification — docs-as-tests, memory audit
   actions:
     - theme: brand
       text: Getting Started
@@ -14,32 +14,32 @@ hero:
       link: /tutorials/first-run
 
 features:
-  - icon: ⚡
-    title: Push → status in seconds
-    details: HMAC-verified webhooks, delivery dedup, honest pending/success/cancelled statuses — no YAML, no queue wait
-    link: /tutorials/first-run
-    linkText: first run
-  - icon: 🏠
-    title: Your box, your cache
-    details: no runner minutes; build caches on your own disk or your S3/R2/minio via sccache
-    link: /how-to/sccache-backend
-    linkText: cache backends
-  - icon: 🔀
-    title: Two queue modes
-    details: latest-wins for CI gates, bounded FIFO for releases — per repo; superseded shas never silently drop
-    link: /explanation/architecture
-    linkText: queue semantics
-  - icon: 🌳
-    title: Detached worktrees
-    details: every run is an isolated git worktree of the pushed sha — never a shared, dirty checkout
-  - icon: 🧩
-    title: Ports, not frameworks
-    details: runner (dagger | script), tunnel (cloudflared | direct | none), trigger + status — swap via config or a new impl crate
+  - icon: 🪺
+    title: Evidence or silence
+    details: every violation carries claim + proof + fix — a checker that can't cite both emits nothing
     link: /explanation/architecture
     linkText: architecture
-  - icon: 🔐
-    title: Secrets stay secret
-    details: env var → OS keyring → 0600 env file; config holds names, never values; tokens never reach argv
-    link: /getting-started
-    linkText: setup
+  - icon: 🧪
+    title: Docs-as-tests
+    details: paths, commands, symbols, counts in your docs verified mechanically — malurus check in CI means docs can't silently rot
+    link: /tutorials/first-run
+    linkText: first check
+  - icon: 🧠
+    title: Memory audit
+    details: trust-scores .kuda/ cards against source — kuda remembers, malurus doubts
+    link: /how-to/kuda-audit
+    linkText: auditing cards
+  - icon: 📐
+    title: Rules as data
+    details: conventions live in rules/*.toml — "dispatch via roles, never kind ==" is a file, not a code path
+    link: /how-to/rules-authoring
+    linkText: authoring rules
+  - icon: 🧩
+    title: Ports, not frameworks
+    details: checkers (fs | cmd | symbol | llm), claim sources, sinks — swap via config or a new impl crate
+    link: /explanation/architecture
+    linkText: architecture
+  - icon: 🤖
+    title: Built for agents
+    details: mid-plan "is this claim still true" becomes a tool call, not a gamble
 ---

@@ -1,33 +1,33 @@
-# bupha vs hosted CI
+# malurus vs the alternatives
 
-bupha runs push-triggered CI on self-controlled hardware —
-not a GHA replacement at fleet scale.
+## vs linters
 
-## vs GitHub Actions
+|                     | linters              | malurus                       |
+| ------------------- | -------------------- | ----------------------------- |
+| checks              | code shape           | claims about reality          |
+| docs                | mostly ignored       | first-class source            |
+| output              | style/correctness    | claim + evidence + fix        |
+| rules               | per-language config  | `rules/*.toml`, evidence-bound|
 
-|              | bupha                                           | GitHub Actions                    |
-| ------------ | ----------------------------------------------- | --------------------------------- |
-| compute      | your box                                        | managed fleet                     |
-| queue        | latest-wins + bounded `all`, no cold start      | unlimited parallelism, queue wait |
-| secrets      | never leave the machine                         | hosted on GitHub                  |
-| cache        | your backend — local disk or your S3/R2/minio   | hosted cache                      |
-| pipeline def | your runner — `ci.sh` or dagger module          | YAML DSL + marketplace actions    |
-| local == CI  | `bupha run` is literally the same path          | `act` approximates                |
-| batching     | supersede built-in, honest "cancelled" statuses | `concurrency` groups              |
-| scale        | one worker, serialized runs                     | matrix/fleet                      |
-| cost         | your box only                                   | minutes billing                   |
+They complement each other — a linter says the code is shaped
+right; malurus says the docs tell the truth.
 
-**When GHA is better:** you need parallelism, matrices across OSes,
-hosted macOS/Windows builds, or marketplace actions. **When bupha
-fits:** instant feedback on self-owned hardware, secrets that
-never leave the machine, warm caches on self-owned storage, no
-YAML.
+## vs LLM doc review
 
-## vs others
+|                     | "review the docs" prompt | malurus                    |
+| ------------------- | ------------------------ | -------------------------- |
+| coverage            | broad, vague             | only what's checkable      |
+| false positives     | high                     | evidence-or-silence        |
+| CI gate             | unsafe                   | mechanical tier is safe    |
+| cost                | per-run                  | mechanical tier is free    |
 
-- **Jenkins/Buildkite** — bupha is a single binary with a TOML file,
-  not a server product to operate.
-- **Woodpecker/Forgejo CI** — bupha is forge-webhook driven and much
-  smaller; those are full pipeline platforms.
-- **self-hosted GHA runner** — bupha is lighter (no runner service,
-  no org config) but has no matrix or marketplace.
+The LLM still has a role — as the `check-llm` impl for the
+semantic tier, where findings are advisory by design.
+
+## vs doctest-style tools
+
+|                     | doctests/link-checkers | malurus                       |
+| ------------------- | ---------------------- | ----------------------------- |
+| scope               | code blocks only       | all factual prose             |
+| claim types         | one or two             | path/cmd/symbol/count/link    |
+| memory audit        | n/a                    | `.kuda/` card trust scores    |
