@@ -1,0 +1,34 @@
+# mimus
+
+> spots the cuckoo eggs in your repo
+
+claim verification — docs-as-tests, memory audit
+
+## Table of Contents
+
+### Tutorials
+
+- [Tutorial: your first check](/mimus/tutorials/first-run.md)
+
+### How-to
+
+- [How-to: watch multiple repos](/mimus/how-to/multi-repo.md)
+- [How-to: audit the memory layer](/mimus/how-to/kuda-audit.md)
+- [How-to: author convention rules](/mimus/how-to/rules-authoring.md)
+
+### Reference
+
+- [Command-Line Help for `mimus`](/mimus/reference/cli.md)
+- [Config — `mimus.toml`](/mimus/reference/config.md)
+- [Crate API](/mimus/reference/crate-api.md)
+
+### Explanation
+
+- [Explanation: architecture](/mimus/explanation/architecture.md)
+- [The release model](/mimus/explanation/release-model.md)
+- [mimus vs the alternatives](/mimus/comparison.md)
+
+### Other
+
+- [Getting started](/mimus/getting-started.md)
+- [Untitled](/mimus/public/api/static.files/SourceSerif4-LICENSE-a2cfd9d5.md)

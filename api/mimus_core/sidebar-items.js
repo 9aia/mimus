@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ClaimKind","Severity","TrustScore"],"struct":["CheckCfg","Claim","Config","ReportCfg","RulesCfg","SourcesCfg","Violation"]};

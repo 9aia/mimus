@@ -1,0 +1,2 @@
+window.ALL_CRATES = ["mimus","mimus_check","mimus_check_cmd","mimus_check_fs","mimus_check_symbol","mimus_claims","mimus_config","mimus_config_toml","mimus_core","mimus_dotenv","mimus_git","mimus_keyring","mimus_rules","mimus_secret","mimus_vcs"];
+//{"start":21,"fragment_lengths":[7,14,18,17,21,15,15,20,13,15,12,16,14,15,12]}

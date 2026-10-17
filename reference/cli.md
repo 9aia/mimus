@@ -1,0 +1,74 @@
+---
+url: /mimus/reference/cli.md
+---
+# Command-Line Help for `mimus`
+
+This document contains the help content for the `mimus` command-line program.
+
+**Command Overview:**
+
+* [`mimus`↴](#mimus)
+* [`mimus init`↴](#mimus-init)
+* [`mimus check`↴](#mimus-check)
+* [`mimus audit`↴](#mimus-audit)
+* [`mimus report`↴](#mimus-report)
+* [`mimus doctor`↴](#mimus-doctor)
+
+## `mimus`
+
+Spots the cuckoo eggs in your repo — claim verification: docs-as-tests, memory audit
+
+**Usage:** `mimus [OPTIONS] <COMMAND>`
+
+###### **Subcommands:**
+
+* `init` — Detect sources -> mimus.toml + rules/ scaffold
+* `check` — Verify claims. Mechanical tier by default
+* `audit` — Trust-score .kuda/ cards vs source
+* `report` — Full violations list with evidence
+* `doctor` — Checker/config/kuda-index health
+
+###### **Options:**
+
+* `--config <CONFIG>` — Config path (else $MIMUS_CONFIG, ./mimus.toml, ~/.config/mimus/mimus.toml)
+* `--format <FORMAT>` — Output format: human | json
+
+  Default value: `human`
+
+## `mimus init`
+
+Detect sources -> mimus.toml + rules/ scaffold
+
+**Usage:** `mimus init`
+
+## `mimus check`
+
+Verify claims. Mechanical tier by default
+
+**Usage:** `mimus check [OPTIONS]`
+
+###### **Options:**
+
+* `--all` — Include the semantic tier (advisory only, never gates)
+* `--no-cmd` — Never execute documented commands
+
+## `mimus audit`
+
+Trust-score .kuda/ cards vs source
+
+**Usage:** `mimus audit`
+
+## `mimus report`
+
+Full violations list with evidence
+
+**Usage:** `mimus report`
+
+## `mimus doctor`
+
+Checker/config/kuda-index health
+
+**Usage:** `mimus doctor`
+
+&#xA;This document was generated automatically by
+clap-markdown.&#xA;

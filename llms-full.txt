@@ -1,0 +1,589 @@
+---
+url: /mimus/tutorials/first-run.md
+---
+# Tutorial: your first check
+
+Goal: verify a repo's documented claims in minutes.
+
+## 1. Init
+
+```sh
+cd your-repo
+mimus init
+```
+
+Detects claim sources (README, docs/, AGENTS.md, code comments,
+`.kuda/` cards) and writes `mimus.toml` + a `rules/` dir.
+
+## 2. Check the mechanical tier
+
+```sh
+mimus check
+```
+
+Extracts claims and verifies what can be proven:
+
+* `path` — referenced files/dirs exist
+* `command` — documented commands parse and exit clean
+* `symbol` — names resolve (via the kuda index when present)
+* `count` — asserted numbers recompute ("357 suites…")
+* `link` — URLs resolve
+
+Output is CI-gateable: violations only, each with claim +
+evidence + fix.
+
+## 3. Report
+
+```sh
+mimus report          # everything found, grouped by source
+mimus check --all     # + semantic tier (advisory, never gates)
+```
+
+## 4. Wire into CI
+
+```sh
+mimus check --format json   # machine-readable for gates
+```
+
+Docs become tested artifacts — a claim that breaks fails the
+build like a failing test.
+
+---
+
+---
+url: /mimus/how-to/multi-repo.md
+---
+# How-to: watch multiple repos
+
+Add one `[[repo]]` entry per repository; `name` must equal the
+payload's `repository.full_name`. Each repo gets its own pending
+slot; a single global worker serializes runs (deliberate — safe on
+one box). Same-repo pushes may cancel their own in-flight run
+(`cancel_running`); a push never cancels another repo's run.
+
+```toml
+[[repo]]
+name = "org/api"
+dir = "/srv/checkouts/api"
+queue = "all" # every push runs (releases)
+
+[[repo]]
+name = "org/web"
+dir = "/srv/checkouts/web" # default latest-wins
+
+# [repo.runner]                # per-repo override; replaces global
+#   kind = "shell"
+#   cmd = "./release.sh"
+```
+
+Run `mimus deploy webhook` once — it registers the hook on every
+watched repo. `status_repo` on an entry redirects statuses (e.g.
+mirror repos); it defaults to `name`.
+
+---
+
+---
+url: /mimus/how-to/kuda-audit.md
+---
+# How-to: audit the memory layer
+
+`mimus audit` applies the same claim machinery to `.kuda/`
+cards — agent memory gets a trust score, not a free pass.
+
+## Run
+
+```sh
+mimus audit
+```
+
+Per card it verifies:
+
+* every `verify:` file still exists
+* card `provenance.files` hashes match current content
+* symbols claimed in `api:` resolve in the index
+* `deps:` edges match the real dep graph
+
+## Reading the score
+
+Each card reports `trust`: fresh | drifted | contradicted.
+Drifted cards should be regenerated (`kuda sync`); contradicted
+cards need attention — either the code moved without a sync, or
+the summarizer invented something (a bug worth reporting).
+
+## Why it matters
+
+Memory without falsification decays into confident confabulation.
+The audit is what makes a kuda index *trustworthy* rather than
+merely *present*.
+
+---
+
+---
+url: /mimus/how-to/rules-authoring.md
+---
+# How-to: author convention rules
+
+Conventions live as data in `rules/*.toml` — never in engine
+code. A new rule is a file, not a release.
+
+## A rule
+
+```toml
+# rules/no-kind-dispatch.toml
+name = "no-kind-dispatch"
+message = "dispatch via lang.child_role_index — kind == is a regression"
+severity = "error"
+match = { kind = "source-pattern", pattern = 'kind == "(assign|block|paren)"' }
+files = "crates/**/src/*.rs"
+```
+
+Rule kinds:
+
+* `source-pattern` — regex over source files
+* `doc-claim` — a prose claim that must verify (e.g. "README's
+  build command exits clean")
+* `structure` — graph assertions ("engine crates never depend
+  on cli")
+
+## Semantics
+
+* `severity = "error"` fails `mimus check`; `"warn"` only
+  appears in `report`.
+* Keep rules mechanically checkable — if a rule can't carry
+  evidence, it doesn't belong here (see ADR-0001).
+* Rules are per-repo — convention packs for ecosystems are a
+  backlog item.
+
+---
+
+---
+url: /mimus/reference/cli.md
+---
+# Command-Line Help for `mimus`
+
+This document contains the help content for the `mimus` command-line program.
+
+**Command Overview:**
+
+* [`mimus`↴](#mimus)
+* [`mimus init`↴](#mimus-init)
+* [`mimus check`↴](#mimus-check)
+* [`mimus audit`↴](#mimus-audit)
+* [`mimus report`↴](#mimus-report)
+* [`mimus doctor`↴](#mimus-doctor)
+
+## `mimus`
+
+Spots the cuckoo eggs in your repo — claim verification: docs-as-tests, memory audit
+
+**Usage:** `mimus [OPTIONS] <COMMAND>`
+
+###### **Subcommands:**
+
+* `init` — Detect sources -> mimus.toml + rules/ scaffold
+* `check` — Verify claims. Mechanical tier by default
+* `audit` — Trust-score .kuda/ cards vs source
+* `report` — Full violations list with evidence
+* `doctor` — Checker/config/kuda-index health
+
+###### **Options:**
+
+* `--config <CONFIG>` — Config path (else $MIMUS_CONFIG, ./mimus.toml, ~/.config/mimus/mimus.toml)
+* `--format <FORMAT>` — Output format: human | json
+
+  Default value: `human`
+
+## `mimus init`
+
+Detect sources -> mimus.toml + rules/ scaffold
+
+**Usage:** `mimus init`
+
+## `mimus check`
+
+Verify claims. Mechanical tier by default
+
+**Usage:** `mimus check [OPTIONS]`
+
+###### **Options:**
+
+* `--all` — Include the semantic tier (advisory only, never gates)
+* `--no-cmd` — Never execute documented commands
+
+## `mimus audit`
+
+Trust-score .kuda/ cards vs source
+
+**Usage:** `mimus audit`
+
+## `mimus report`
+
+Full violations list with evidence
+
+**Usage:** `mimus report`
+
+## `mimus doctor`
+
+Checker/config/kuda-index health
+
+**Usage:** `mimus doctor`
+
+&#xA;This document was generated automatically by
+clap-markdown.&#xA;
+
+---
+
+---
+url: /mimus/reference/config.md
+---
+# Config — `mimus.toml`
+
+## Top level
+
+| field | type | required | notes |
+|---|---|---|---|
+| `sources` | `SourcesCfg` | optional | — |
+| `check` | `CheckCfg` | optional | — |
+| `rules` | `RulesCfg` | optional | — |
+| `report` | `ReportCfg` | optional | — |
+
+## `[sources]`
+
+| field | type | required | notes |
+|---|---|---|---|
+| `docs` | `list` | optional | Doc glob patterns mined for claims. |
+| `comments` | `bool` | optional | Extract claims from code comments too. |
+| `cards` | `string` | optional | Glob for memory cards to audit (empty = skip). |
+
+## `[check]`
+
+| field | type | required | notes |
+|---|---|---|---|
+| `mechanical` | `bool` | optional | Mechanical tier — deterministic, CI-gateable. |
+| `semantic` | `bool` | optional | Semantic tier — advisory only, can never gate. |
+| `kuda_index` | `path` | optional | kuda index path for the symbol checker. |
+
+## `[rules]`
+
+| field | type | required | notes |
+|---|---|---|---|
+| `dir` | `path` | optional | Dir of \*.toml rule files. |
+| `strict` | `bool` | optional | Rule violations also fail `check` (not just report). |
+
+## `[report]`
+
+| field | type | required | notes |
+|---|---|---|---|
+| `format` | `string` | optional | "human" | "json". |
+| `min_confidence` | `string` | optional | Suppress low-evidence findings ("high" | "all"). |
+
+## Constraints
+
+* `queue = "all"` rejects `cancel_running = true` at load —
+  killing a run would silently drop a promised commit.
+* `runner.kind` and `trigger.kind`/`status.kind` resolve to impl
+  crates; unknown kinds fail at `mimus doctor`/startup.
+* `deny_unknown_fields`: typos in field names fail the load.
+
+---
+
+---
+url: /mimus/reference/crate-api.md
+---
+# Crate API
+
+Rustdoc for every workspace crate — public APIs are
+documented at source (doc comments).
+
+* [mimus-core](/mimus/api/mimus_core/index.html) — domain
+* [mimus-config](/mimus/api/mimus_config/index.html) — port
+* [mimus-secret](/mimus/api/mimus_secret/index.html) — port
+* [mimus-vcs](/mimus/api/mimus_vcs/index.html) — port
+* [mimus-check](/mimus/api/mimus_check/index.html) — impl
+* [mimus-check-cmd](/mimus/api/mimus_check_cmd/index.html) — impl
+* [mimus-check-fs](/mimus/api/mimus_check_fs/index.html) — impl
+* [mimus-check-symbol](/mimus/api/mimus_check_symbol/index.html) — impl
+* [mimus-claims](/mimus/api/mimus_claims/index.html) — impl
+* [mimus-config-toml](/mimus/api/mimus_config_toml/index.html) — impl
+* [mimus-dotenv](/mimus/api/mimus_dotenv/index.html) — impl
+* [mimus-git](/mimus/api/mimus_git/index.html) — impl
+* [mimus-keyring](/mimus/api/mimus_keyring/index.html) — impl
+* [mimus-rules](/mimus/api/mimus_rules/index.html) — impl
+* [mimus](/mimus/api/mimus/index.html) — binary
+
+---
+
+---
+url: /mimus/explanation/architecture.md
+---
+# Explanation: architecture
+
+## Claims, not opinions
+
+Docs and memory cards make *claims*: this path exists, this
+command works, this symbol lives here, this number is current.
+mimus extracts claims into a taxonomy — each type routes to the
+checker that can actually prove or refute it:
+
+| claim      | checker                | tier       |
+| ---------- | ---------------------- | ---------- |
+| `path`     | `check-fs`             | mechanical |
+| `command`  | `check-cmd`            | mechanical |
+| `symbol`   | `check-symbol` (kuda)  | mechanical |
+| `count`    | `check-cmd`/`check-fs` | mechanical |
+| `link`     | `check-link` (planned) | mechanical |
+| `behavior` | `check-llm` (planned)  | semantic   |
+
+## The evidence bar
+
+A violation is claim + evidence + suggested fix. No evidence, no
+finding — false positives kill a critic faster than false
+negatives. The semantic tier can never gate CI: it reports, a
+human adjudicates. Style opinions are never emitted at all.
+
+## Ports and adapters
+
+Every concern is a trait crate + adapter crates: checkers
+(`fs` | `cmd` | `symbol` | `llm`), claim sources (md, comments,
+cards), sinks (cli, commit-status). Rules are data
+(`rules/*.toml`) — conventions as files, not code.
+
+## Position in the ecosystem
+
+* `kuda` builds the index; `mimus` doubts it — `audit`
+  trust-scores cards against source via the `symbol` checker.
+* `reconcile` (planned third tool) auto-fixes what mimus
+  confirms: claims rewritten to match reality.
+
+---
+
+---
+url: /mimus/explanation/release-model.md
+---
+# The release model
+
+mimus releases itself — there is no hosted CI and no release tool
+in the loop. Two deliberate phases:
+
+## Phase 1 — the explicit seed
+
+`mimus deploy release` runs once, by hand: it reads cargo metadata,
+topologically orders the workspace's path-dependency graph,
+`cargo publish`es every member, tags `{repo}-v{version}`, and pushes
+the tag.
+
+Why explicit? Publishing is the **only irreversible step** in the
+whole system. Queues, runs, and statuses are all idempotent and
+local; a crate version on crates.io is forever. Everything else in
+mimus fires on push — the seed doesn't. (`--dry-run` prints the
+order and tag without touching anything.)
+
+## Phase 2 — push-driven forever after
+
+From then on a release is *just another mimus job*: a push to `main`
+hits the webhook, queues latest-wins, and runs `scripts/release.sh`
+in a detached worktree under the shell runner.
+
+The script:
+
+1. diffs crate paths since the last `mimus-v*` tag
+2. `cargo set-version --bump patch` on touched crates only (the cli
+   republishes on any change — it's the install artifact)
+3. `cargo publish`es them in dep order
+4. tags `mimus-vX.Y.Z`, builds host-arch binaries with `cargo dist`,
+   uploads to a GitHub Release via `gh`
+
+The 5-minute sleep at the top isn't a hack — it's the debounce
+window. Combined with `queue = "latest"` + `cancel_running`, rapid
+push bursts collapse to one release of the newest sha; killed runs
+get an honest "cancelled" status.
+
+## Why this shape
+
+* **No release-plz / GHA**: the point of the project is that CI is a
+  local loop — depending on hosted CI to ship it would be
+  self-defeating. `release.sh` is deliberately boring bash so it can
+  run as a plain `cmd` under `runner.kind = "shell"`.
+* **Latest-wins, not `all`**: a release that misses an intermediate
+  push loses nothing — the tag lands on HEAD, which contains
+  everything. `queue = "all"` is for pipelines where each sha's run
+  is individually meaningful.
+* **Explicit over automatic**: a wrong tag or half-published
+  workspace is far worse than a delayed release; the boundary sits
+  exactly at irreversibility.
+
+Host prerequisites: `cargo-edit`, `cargo-dist`, `gh`, and
+`CARGO_REGISTRY_TOKEN` (env → keyring → env file). Multi-arch
+binaries arrive when the remote-runner pair lands — see TODO.
+
+---
+
+---
+url: /mimus/comparison.md
+---
+# mimus vs the alternatives
+
+## vs linters
+
+|                     | linters              | mimus                       |
+| ------------------- | -------------------- | ----------------------------- |
+| checks              | code shape           | claims about reality          |
+| docs                | mostly ignored       | first-class source            |
+| output              | style/correctness    | claim + evidence + fix        |
+| rules               | per-language config  | `rules/*.toml`, evidence-bound|
+
+They complement each other — a linter says the code is shaped
+right; mimus says the docs tell the truth.
+
+## vs LLM doc review
+
+|                     | "review the docs" prompt | mimus                    |
+| ------------------- | ------------------------ | -------------------------- |
+| coverage            | broad, vague             | only what's checkable      |
+| false positives     | high                     | evidence-or-silence        |
+| CI gate             | unsafe                   | mechanical tier is safe    |
+| cost                | per-run                  | mechanical tier is free    |
+
+The LLM still has a role — as the `check-llm` adapter for the
+semantic tier, where findings are advisory by design.
+
+## vs doctest-style tools
+
+|                     | doctests/link-checkers | mimus                       |
+| ------------------- | ---------------------- | ----------------------------- |
+| scope               | code blocks only       | all factual prose             |
+| claim types         | one or two             | path/cmd/symbol/count/link    |
+| memory audit        | n/a                    | `.kuda/` card trust scores    |
+
+---
+
+---
+url: /mimus/getting-started.md
+---
+# Getting started
+
+Pick by what you need to do.
+
+* **Tutorials** (learn): [first-run](tutorials/first-run.md)
+* **How-to** (tasks): [memory audit](how-to/kuda-audit.md) ·
+  [rules authoring](how-to/rules-authoring.md)
+* **Reference** (lookup): [cli](reference/cli.md) ·
+  [config](reference/config.md) ·
+  [crate api](reference/crate-api.md)
+* **Explanation** (why): [architecture](explanation/architecture.md) ·
+  [release model](explanation/release-model.md) ·
+  [comparison](comparison.md) — vs linters / LLM review
+
+Install:
+
+```sh
+cargo install --git https://github.com/9aia/mimus mimus
+```
+
+First check:
+
+```sh
+cd your-repo
+mimus init    # detect claim sources -> mimus.toml + rules/
+mimus check   # mechanical tier: paths, commands, symbols
+mimus report  # violations with claim + evidence + fix
+```
+
+---
+
+---
+url: /mimus/public/api/static.files/SourceSerif4-LICENSE-a2cfd9d5.md
+---
+Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'. All Rights Reserved. Source is a trademark of Adobe in the United States and/or other countries.
+Copyright 2014 - 2023 Adobe (http://www.adobe.com/), with Reserved Font Name ‘Source’. All Rights Reserved. Source is a trademark of Adobe in the United States and/or other countries.
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+
+This license is copied below, and is also available with a FAQ at: http://scripts.sil.org/OFL
+
+***
+
+## SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+
+PREAMBLE
+The goals of the Open Font License (OFL) are to stimulate worldwide
+development of collaborative font projects, to support the font creation
+efforts of academic and linguistic communities, and to provide a free and
+open framework in which fonts may be shared and improved in partnership
+with others.
+
+The OFL allows the licensed fonts to be used, studied, modified and
+redistributed freely as long as they are not sold by themselves. The
+fonts, including any derivative works, can be bundled, embedded,
+redistributed and/or sold with any software provided that any reserved
+names are not used by derivative works. The fonts and derivatives,
+however, cannot be released under any other type of license. The
+requirement for fonts to remain under this license does not apply
+to any document created using the fonts or their derivatives.
+
+DEFINITIONS
+"Font Software" refers to the set of files released by the Copyright
+Holder(s) under this license and clearly marked as such. This may
+include source files, build scripts and documentation.
+
+"Reserved Font Name" refers to any names specified as such after the
+copyright statement(s).
+
+"Original Version" refers to the collection of Font Software components as
+distributed by the Copyright Holder(s).
+
+"Modified Version" refers to any derivative made by adding to, deleting,
+or substituting -- in part or in whole -- any of the components of the
+Original Version, by changing formats or by porting the Font Software to a
+new environment.
+
+"Author" refers to any designer, engineer, programmer, technical
+writer or other person who contributed to the Font Software.
+
+PERMISSION & CONDITIONS
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of the Font Software, to use, study, copy, merge, embed, modify,
+redistribute, and sell modified and unmodified copies of the Font
+Software, subject to the following conditions:
+
+1. Neither the Font Software nor any of its individual components,
+   in Original or Modified Versions, may be sold by itself.
+
+2. Original or Modified Versions of the Font Software may be bundled,
+   redistributed and/or sold with any software, provided that each copy
+   contains the above copyright notice and this license. These can be
+   included either as stand-alone text files, human-readable headers or
+   in the appropriate machine-readable metadata fields within text or
+   binary files as long as those fields can be easily viewed by the user.
+
+3. No Modified Version of the Font Software may use the Reserved Font
+   Name(s) unless explicit written permission is granted by the corresponding
+   Copyright Holder. This restriction only applies to the primary font name as
+   presented to the users.
+
+4. The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+   Software shall not be used to promote, endorse or advertise any
+   Modified Version, except to acknowledge the contribution(s) of the
+   Copyright Holder(s) and the Author(s) or with their explicit written
+   permission.
+
+5. The Font Software, modified or unmodified, in part or in whole,
+   must be distributed entirely under this license, and must not be
+   distributed under any other license. The requirement for fonts to
+   remain under this license does not apply to any document created
+   using the Font Software.
+
+TERMINATION
+This license becomes null and void if any of the above conditions are
+not met.
+
+DISCLAIMER
+THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
+DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
+OTHER DEALINGS IN THE FONT SOFTWARE.

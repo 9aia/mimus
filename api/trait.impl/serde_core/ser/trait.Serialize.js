@@ -1,0 +1,9 @@
+(function() {
+    const implementors = Object.fromEntries([["mimus_core",[["impl <a class=\"trait\" href=\"https://docs.rs/serde_core/1.0.229/serde_core/ser/trait.Serialize.html\" title=\"trait serde_core::ser::Serialize\">Serialize</a> for <a class=\"struct\" href=\"mimus_core/struct.Claim.html\" title=\"struct mimus_core::Claim\">Claim</a>",0],["impl <a class=\"trait\" href=\"https://docs.rs/serde_core/1.0.229/serde_core/ser/trait.Serialize.html\" title=\"trait serde_core::ser::Serialize\">Serialize</a> for <a class=\"enum\" href=\"mimus_core/enum.ClaimKind.html\" title=\"enum mimus_core::ClaimKind\">ClaimKind</a>",0],["impl <a class=\"trait\" href=\"https://docs.rs/serde_core/1.0.229/serde_core/ser/trait.Serialize.html\" title=\"trait serde_core::ser::Serialize\">Serialize</a> for <a class=\"enum\" href=\"mimus_core/enum.Severity.html\" title=\"enum mimus_core::Severity\">Severity</a>",0],["impl <a class=\"trait\" href=\"https://docs.rs/serde_core/1.0.229/serde_core/ser/trait.Serialize.html\" title=\"trait serde_core::ser::Serialize\">Serialize</a> for <a class=\"enum\" href=\"mimus_core/enum.TrustScore.html\" title=\"enum mimus_core::TrustScore\">TrustScore</a>",0],["impl <a class=\"trait\" href=\"https://docs.rs/serde_core/1.0.229/serde_core/ser/trait.Serialize.html\" title=\"trait serde_core::ser::Serialize\">Serialize</a> for <a class=\"struct\" href=\"mimus_core/struct.Violation.html\" title=\"struct mimus_core::Violation\">Violation</a>",0]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":59,"fragment_lengths":[1416]}

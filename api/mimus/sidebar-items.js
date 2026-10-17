@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["EXAMPLE_TOML"],"enum":["Cmd"],"fn":["audit","check","doctor","emit","init","load","main","report","root"],"struct":["Cli"]};
