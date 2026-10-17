@@ -1,35 +1,68 @@
 ---
 url: /mimus/how-to/rules-authoring.md
 ---
-# How-to: author convention rules
+# How-to: author rules
 
-Conventions live as data in `rules/*.toml` — never in engine
-code. A new rule is a file, not a release.
+Conventions live in `rules/*.toml` — data, not code. A new rule
+is a new file; the engine vocabulary stays fixed. Rules run in
+`mimus check` alongside the claim checkers.
 
-## A rule
+## The format
 
 ```toml
-# rules/no-kind-dispatch.toml
-name = "no-kind-dispatch"
-message = "dispatch via lang.child_role_index — kind == is a regression"
-severity = "error"
-match = { kind = "source-pattern", pattern = 'kind == "(assign|block|paren)"' }
-files = "crates/**/src/*.rs"
+name = "no-positional-dispatch"
+message = "dispatch via lang.eval roles — never kind == shape checks"
+severity = "error"          # error (gates check) | warn (report only)
+files = "crates/plugin-engine-*/src/**/*.rs"
+
+[match]
+kind = "source-pattern"
+pattern = 'kind\s*==\s*"(assign|block|paren|return)"'
 ```
 
-Rule kinds:
-
-* `source-pattern` — regex over source files
-* `doc-claim` — a prose claim that must verify (e.g. "README's
-  build command exits clean")
-* `structure` — graph assertions ("engine crates never depend
-  on cli")
+| field      | meaning                                            |
+| ---------- | -------------------------------------------------- |
+| `name`     | identifier — shown in output + rules listing       |
+| `message`  | the *evidence* attached to each finding            |
+| `severity` | `error` fails `mimus check`; `warn` reports        |
+| `files`    | glob under the repo root                           |
+| `[match]`  | `kind = "source-pattern"` + a regex                |
 
 ## Semantics
 
-* `severity = "error"` fails `mimus check`; `"warn"` only
-  appears in `report`.
-* Keep rules mechanically checkable — if a rule can't carry
-  evidence, it doesn't belong here (see ADR-0001).
-* Rules are per-repo — convention packs for ecosystems are a
-  backlog item.
+Every line matching `pattern` in every file matching `files`
+becomes a `Behavior` violation carrying `message` as evidence.
+Lines are matched individually — craft patterns for what a single
+line can express.
+
+## The evidence bar applies to rules too
+
+A rule that cannot cite a specific line emits nothing — there is
+no "file smells wrong" rule kind. And an invalid regex is not a
+finding either: it is silence plus a `mimus doctor` complaint.
+If your rule keeps flagging real code, the rule is wrong —
+narrow the `files` glob or the pattern.
+
+## Examples
+
+Ban a deprecated API in a bound region:
+
+```toml
+[match]
+kind = "source-pattern"
+pattern = '\bold_api::'
+```
+
+`files = "crates/**/src/**/*.rs"` — one file, one convention,
+reviewable in PRs like code.
+
+Require README badges? That is a *presence* check — not what
+`source-pattern` does; absence-of-pattern rules are a planned
+`kind`, deliberately out until the evidence story is right.
+
+## Verify
+
+```sh
+mimus check            # runs rules + claim checkers
+mimus report --format json | jq '.[] | select(.claim.kind=="behavior")'
+```

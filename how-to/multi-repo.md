@@ -1,29 +1,43 @@
 ---
 url: /mimus/how-to/multi-repo.md
 ---
-# How-to: watch multiple repos
+# How-to: multi-repo checking
 
-Add one `[[repo]]` entry per repository; `name` must equal the
-payload's `repository.full_name`. Each repo gets its own pending
-slot; a single global worker serializes runs (deliberate — safe on
-one box). Same-repo pushes may cancel their own in-flight run
-(`cancel_running`); a push never cancels another repo's run.
+Docs in one repo make claims about sibling repos — moved crates,
+"see `../cli`", cross-repo commands. mimus verifies those claims
+where it can reach reality.
 
-```toml
-[[repo]]
-name = "org/api"
-dir = "/srv/checkouts/api"
-queue = "all" # every push runs (releases)
+## Per-repo config
 
-[[repo]]
-name = "org/web"
-dir = "/srv/checkouts/web" # default latest-wins
+Each repo keeps its own `mimus.toml` and `rules/` — conventions
+are repo-scoped (a rule that is right for `platform` is noise in
+`lsp`). Run `mimus check` per repo, or script the sweep:
 
-# [repo.runner]                # per-repo override; replaces global
-#   kind = "shell"
-#   cmd = "./release.sh"
+```sh
+for r in ~/GitHub/handl-lang/*/; do
+  [ -f "$r/mimus.toml" ] && (cd "$r" && mimus check)
+done
 ```
 
-Run `mimus deploy webhook` once — it registers the hook on every
-watched repo. `status_repo` on an entry redirects statuses (e.g.
-mirror repos); it defaults to `name`.
+## Cross-repo claims today
+
+* **Paths** are resolved relative to the repo root —
+  `../cli/crates/x` claims in docs verify if the sibling exists.
+* **Commands** check PATH, which is host-global — a doc telling
+  users to run `hnl` is verified wherever `hnl` is installed.
+* **Symbols** need a kuda index per repo; the `symbol` checker
+  reads `.kuda/index.sqlite` of the *current* root. Cross-repo
+  symbol resolution rides on kuda workspace mode.
+
+## Rules at scale
+
+Keep org-wide conventions in one place and symlink or vendor
+them per repo — a shared `rules/org/` directory fetched in CI
+works today; first-class rule inheritance is a backlog item.
+
+## Where it goes next
+
+`kuda sync --workspace` produces per-root indexes across the
+sibling set; the `symbol` checker then resolves claims like
+`` `hnl` lives in the cli repo`` against the merged stores —
+the "which repo owns this" question becomes verifiable.

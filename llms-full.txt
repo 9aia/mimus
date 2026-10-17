@@ -1,9 +1,10 @@
 ---
 url: /mimus/tutorials/first-run.md
 ---
-# Tutorial: your first check
+# Tutorial: your first audit
 
-Goal: verify a repo's documented claims in minutes.
+Goal: point mimus at a repo's docs and see which claims are still
+true — docs-as-tests, in minutes.
 
 ## 1. Init
 
@@ -12,147 +13,334 @@ cd your-repo
 mimus init
 ```
 
-Detects claim sources (README, docs/, AGENTS.md, code comments,
-`.kuda/` cards) and writes `mimus.toml` + a `rules/` dir.
+Writes a commented `mimus.toml` and a `rules/` dir. Defaults:
 
-## 2. Check the mechanical tier
+```toml
+[sources]
+docs = ["README.md", "docs/**/*.md", "AGENTS.md", "project/**/*.md"]
+comments = true
+cards = ".kuda/modules/*.yaml"
+
+[check]
+mechanical = true
+semantic = false
+```
+
+## 2. Check
 
 ```sh
 mimus check
 ```
 
-Extracts claims and verifies what can be proven:
+Claim extraction scans every configured doc: backticked paths,
+shell commands, symbol names, counts, links. Each claim is
+verified against reality — the filesystem, PATH, the kuda index:
 
-* `path` — referenced files/dirs exist
-* `command` — documented commands parse and exit clean
-* `symbol` — names resolve (via the kuda index when present)
-* `count` — asserted numbers recompute ("357 suites…")
-* `link` — URLs resolve
-
-Output is CI-gateable: violations only, each with claim +
-evidence + fix.
-
-## 3. Report
-
-```sh
-mimus report          # everything found, grouped by source
-mimus check --all     # + semantic tier (advisory, never gates)
+```
+README.md:42 [error] `src/old_api.rs` — ./src/old_api.rs does not exist
+docs/guide.md:17 [warn] `cargo bench` — binary `cargo-bench` not found in PATH
+2 violation(s)
 ```
 
-## 4. Wire into CI
+Exit code is `1` on any `error`-severity violation — docs drift
+becomes a gateable signal.
 
-```sh
-mimus check --format json   # machine-readable for gates
+## 3. Make a claim and watch it get caught
+
+Add a line to your README referencing a file that does not exist:
+
+```md
+See `nonexistent/dead.rs` for the implementation.
 ```
 
-Docs become tested artifacts — a claim that breaks fails the
-build like a failing test.
+```sh
+mimus check
+```
+
+```
+README.md:N [error] `nonexistent/dead.rs` — ./nonexistent/dead.rs does not exist
+```
+
+Every violation is claim + evidence + (when mechanical) a fix —
+the evidence bar is the design rule, see
+[architecture](../explanation/architecture.md).
+
+## 4. Author a convention
+
+`rules/` is data. Add `rules/no-todos.toml`:
+
+```toml
+name = "no-todos"
+message = "TODO left in committed source"
+severity = "warn"
+files = "src/**/*.rs"
+
+[match]
+kind = "source-pattern"
+pattern = "TODO|FIXME"
+```
+
+`mimus check` now flags every TODO — a convention encoded as a
+file, not a code change. See [authoring rules](../how-to/rules-authoring.md).
+
+## 5. Audit the memory layer
+
+If the repo is kuda-indexed:
+
+```sh
+kuda sync && mimus audit
+```
+
+```
+fresh        kuda-store
+drifted      kuda-core
+20 fresh, 1 drifted, 0 contradicted
+```
+
+Cards whose `verify:` files changed since sync report `drifted`;
+missing files report `contradicted`.
+
+## You have built
+
+A falsification layer: every factual claim in your docs is now a
+test that fails loudly when reality moves.
+
+Next: [gate CI on it](../how-to/ci-gate.md),
+[write rules](../how-to/rules-authoring.md).
 
 ---
 
 ---
 url: /mimus/how-to/multi-repo.md
 ---
-# How-to: watch multiple repos
+# How-to: multi-repo checking
 
-Add one `[[repo]]` entry per repository; `name` must equal the
-payload's `repository.full_name`. Each repo gets its own pending
-slot; a single global worker serializes runs (deliberate — safe on
-one box). Same-repo pushes may cancel their own in-flight run
-(`cancel_running`); a push never cancels another repo's run.
+Docs in one repo make claims about sibling repos — moved crates,
+"see `../cli`", cross-repo commands. mimus verifies those claims
+where it can reach reality.
 
-```toml
-[[repo]]
-name = "org/api"
-dir = "/srv/checkouts/api"
-queue = "all" # every push runs (releases)
+## Per-repo config
 
-[[repo]]
-name = "org/web"
-dir = "/srv/checkouts/web" # default latest-wins
+Each repo keeps its own `mimus.toml` and `rules/` — conventions
+are repo-scoped (a rule that is right for `platform` is noise in
+`lsp`). Run `mimus check` per repo, or script the sweep:
 
-# [repo.runner]                # per-repo override; replaces global
-#   kind = "shell"
-#   cmd = "./release.sh"
+```sh
+for r in ~/GitHub/handl-lang/*/; do
+  [ -f "$r/mimus.toml" ] && (cd "$r" && mimus check)
+done
 ```
 
-Run `mimus deploy webhook` once — it registers the hook on every
-watched repo. `status_repo` on an entry redirects statuses (e.g.
-mirror repos); it defaults to `name`.
+## Cross-repo claims today
+
+* **Paths** are resolved relative to the repo root —
+  `../cli/crates/x` claims in docs verify if the sibling exists.
+* **Commands** check PATH, which is host-global — a doc telling
+  users to run `hnl` is verified wherever `hnl` is installed.
+* **Symbols** need a kuda index per repo; the `symbol` checker
+  reads `.kuda/index.sqlite` of the *current* root. Cross-repo
+  symbol resolution rides on kuda workspace mode.
+
+## Rules at scale
+
+Keep org-wide conventions in one place and symlink or vendor
+them per repo — a shared `rules/org/` directory fetched in CI
+works today; first-class rule inheritance is a backlog item.
+
+## Where it goes next
+
+`kuda sync --workspace` produces per-root indexes across the
+sibling set; the `symbol` checker then resolves claims like
+`` `hnl` lives in the cli repo`` against the merged stores —
+the "which repo owns this" question becomes verifiable.
 
 ---
 
 ---
 url: /mimus/how-to/kuda-audit.md
 ---
-# How-to: audit the memory layer
+# How-to: audit kuda memory
 
-`mimus audit` applies the same claim machinery to `.kuda/`
-cards — agent memory gets a trust score, not a free pass.
+`mimus audit` is the falsifier for the memory layer: it verifies
+every `.kuda/modules/*.yaml` card against source — memory
+audited, not just generated.
 
 ## Run
 
 ```sh
+kuda sync        # (re)generate the index first
 mimus audit
 ```
 
-Per card it verifies:
+```
+fresh        kuda-store
+fresh        kuda-core
+drifted      kuda-cli
+20 fresh, 1 drifted, 0 contradicted
+```
 
-* every `verify:` file still exists
-* card `provenance.files` hashes match current content
-* symbols claimed in `api:` resolve in the index
-* `deps:` edges match the real dep graph
+## Scores
 
-## Reading the score
+| score          | meaning                                              |
+| -------------- | ---------------------------------------------------- |
+| `fresh`        | every `provenance.files` hash still matches          |
+| `drifted`      | a verify file's content changed since sync           |
+| `contradicted` | a provenance file no longer exists                   |
 
-Each card reports `trust`: fresh | drifted | contradicted.
-Drifted cards should be regenerated (`kuda sync`); contradicted
-cards need attention — either the code moved without a sync, or
-the summarizer invented something (a bug worth reporting).
+Audit recomputes git `hash-object` per `provenance.files` entry
+and compares with what the card recorded at sync time — the same
+provenance model `kuda status` uses, checked from the outside.
 
-## Why it matters
+## Exit semantics
 
-Memory without falsification decays into confident confabulation.
-The audit is what makes a kuda index *trustworthy* rather than
-merely *present*.
+Audit is report-tier: exit `0` even with contradictions. It is
+diagnosis, not a gate — pair it with `mimus check` if you want
+drift to fail CI, or keep it in a scheduled report job. The fix
+is upstream anyway: `kuda sync`, not a hand-edit.
+
+## What it does not check (yet)
+
+Audit verifies *freshness* (provenance hashes), not *accuracy*
+of the card's prose fields — `api`/`deps` drift beyond their
+recorded inputs, or a hand-written `notes:` that has gone stale,
+is the semantic tier's job when it lands.
 
 ---
 
 ---
 url: /mimus/how-to/rules-authoring.md
 ---
-# How-to: author convention rules
+# How-to: author rules
 
-Conventions live as data in `rules/*.toml` — never in engine
-code. A new rule is a file, not a release.
+Conventions live in `rules/*.toml` — data, not code. A new rule
+is a new file; the engine vocabulary stays fixed. Rules run in
+`mimus check` alongside the claim checkers.
 
-## A rule
+## The format
 
 ```toml
-# rules/no-kind-dispatch.toml
-name = "no-kind-dispatch"
-message = "dispatch via lang.child_role_index — kind == is a regression"
-severity = "error"
-match = { kind = "source-pattern", pattern = 'kind == "(assign|block|paren)"' }
-files = "crates/**/src/*.rs"
+name = "no-positional-dispatch"
+message = "dispatch via lang.eval roles — never kind == shape checks"
+severity = "error"          # error (gates check) | warn (report only)
+files = "crates/plugin-engine-*/src/**/*.rs"
+
+[match]
+kind = "source-pattern"
+pattern = 'kind\s*==\s*"(assign|block|paren|return)"'
 ```
 
-Rule kinds:
-
-* `source-pattern` — regex over source files
-* `doc-claim` — a prose claim that must verify (e.g. "README's
-  build command exits clean")
-* `structure` — graph assertions ("engine crates never depend
-  on cli")
+| field      | meaning                                            |
+| ---------- | -------------------------------------------------- |
+| `name`     | identifier — shown in output + rules listing       |
+| `message`  | the *evidence* attached to each finding            |
+| `severity` | `error` fails `mimus check`; `warn` reports        |
+| `files`    | glob under the repo root                           |
+| `[match]`  | `kind = "source-pattern"` + a regex                |
 
 ## Semantics
 
-* `severity = "error"` fails `mimus check`; `"warn"` only
-  appears in `report`.
-* Keep rules mechanically checkable — if a rule can't carry
-  evidence, it doesn't belong here (see ADR-0001).
-* Rules are per-repo — convention packs for ecosystems are a
-  backlog item.
+Every line matching `pattern` in every file matching `files`
+becomes a `Behavior` violation carrying `message` as evidence.
+Lines are matched individually — craft patterns for what a single
+line can express.
+
+## The evidence bar applies to rules too
+
+A rule that cannot cite a specific line emits nothing — there is
+no "file smells wrong" rule kind. And an invalid regex is not a
+finding either: it is silence plus a `mimus doctor` complaint.
+If your rule keeps flagging real code, the rule is wrong —
+narrow the `files` glob or the pattern.
+
+## Examples
+
+Ban a deprecated API in a bound region:
+
+```toml
+[match]
+kind = "source-pattern"
+pattern = '\bold_api::'
+```
+
+`files = "crates/**/src/**/*.rs"` — one file, one convention,
+reviewable in PRs like code.
+
+Require README badges? That is a *presence* check — not what
+`source-pattern` does; absence-of-pattern rules are a planned
+`kind`, deliberately out until the evidence story is right.
+
+## Verify
+
+```sh
+mimus check            # runs rules + claim checkers
+mimus report --format json | jq '.[] | select(.claim.kind=="behavior")'
+```
+
+---
+
+---
+url: /mimus/how-to/ci-gate.md
+---
+# How-to: gate CI on docs
+
+`mimus check` is the mechanical tier — deterministic, offline,
+safe to gate. Exit `1` when any `error`-severity violation
+exists.
+
+## The gate
+
+```sh
+mimus check
+```
+
+Wire it like a test: run in CI on every PR. Doc paths, commands,
+symbols and your `rules/*.toml` conventions all gate the same
+way.
+
+## `--no-cmd` — never execute anything
+
+The `cmd` checker verifies documented commands exist on PATH —
+it does **not** run them. But if you want to be explicit that a
+job runs nothing executable:
+
+```sh
+mimus check --no-cmd
+```
+
+`--no-cmd` skips the command checker entirely; path/symbol/rules
+checks still run.
+
+## Severity is the gate boundary
+
+* `error` — mechanical, reproducible: dead paths, missing
+  binaries, rule violations marked `severity = "error"`.
+* `warn` — env-dependent or heuristic: shown in output and
+  `--format json`, never fails the run.
+
+Tune per rule in `rules/*.toml` (`severity = "warn"`).
+
+## Report for humans
+
+```sh
+mimus report                    # always exits 0 — full list
+mimus check --format json       # machine-readable for tooling
+```
+
+`report` is the audit-view command: same violations, never a
+gate. `reconcile`-style tooling consumes the JSON.
+
+## Recommended setup
+
+```yaml
+# whatever your CI is
+- run: mimus check --no-cmd
+```
+
+Docs that can drift silently are docs that will. One line keeps
+them honest.
+
+See [claims & tiers](../explanation/claims.md) for why the
+semantic tier can never be this gate.
 
 ---
 
@@ -288,6 +476,69 @@ url: /mimus/reference/config.md
 ---
 
 ---
+url: /mimus/reference/violations.md
+---
+# Reference: violation format
+
+`mimus check --format json` (and `mimus report --format json`)
+emit a JSON array of violations — the contract anything
+consuming mimus output (reconcile, CI annotations, dashboards)
+should code against.
+
+## Shape
+
+```json
+[
+  {
+    "claim": {
+      "kind": "path",
+      "text": "crates/old-crate/src/lib.rs",
+      "source": "docs/guide.md",
+      "line": 17
+    },
+    "evidence": "./crates/old-crate/src/lib.rs does not exist",
+    "fix": "remove the reference, or restore the file",
+    "severity": "error"
+  }
+]
+```
+
+## Fields
+
+| field             | meaning                                            |
+| ----------------- | -------------------------------------------------- |
+| `claim.kind`      | `path` `command` `symbol` `count` `link` `behavior` |
+| `claim.text`      | the claim as written in the source                  |
+| `claim.source`    | file the claim was extracted from                   |
+| `claim.line`      | 1-based line number                                 |
+| `evidence`        | what reality says instead — the proof               |
+| `fix`             | suggested correction, or `null`                     |
+| `severity`        | `error` (gates `check`) | `warn` (report only)     |
+
+## Human format
+
+Default output is one line per violation:
+
+```
+docs/guide.md:17 [error] `crates/old-crate/src/lib.rs` — ./crates/old-crate/src/lib.rs does not exist
+N violation(s)
+```
+
+`source:line [severity] `claim` — evidence` — stable enough to
+grep, intended for terminals not parsers.
+
+## Exit codes
+
+| code | meaning                                         |
+| ---- | ----------------------------------------------- |
+| 0    | clean — or `report`, which never gates          |
+| 1    | `error`-severity violation(s), or usage failure |
+
+`audit` always exits 0 — its scores are report-tier.
+
+---
+
+---
 url: /mimus/reference/crate-api.md
 ---
 # Crate API
@@ -318,42 +569,124 @@ url: /mimus/explanation/architecture.md
 ---
 # Explanation: architecture
 
-## Claims, not opinions
+mimus is the falsification half of the ecosystem: *"every claim
+in your docs, comments, and memory — still true?"* It exists
+because memory without doubt decays into confident confabulation.
 
-Docs and memory cards make *claims*: this path exists, this
-command works, this symbol lives here, this number is current.
-mimus extracts claims into a taxonomy — each type routes to the
-checker that can actually prove or refute it:
+## The pipeline
 
-| claim      | checker                | tier       |
-| ---------- | ---------------------- | ---------- |
-| `path`     | `check-fs`             | mechanical |
-| `command`  | `check-cmd`            | mechanical |
-| `symbol`   | `check-symbol` (kuda)  | mechanical |
-| `count`    | `check-cmd`/`check-fs` | mechanical |
-| `link`     | `check-link` (planned) | mechanical |
-| `behavior` | `check-llm` (planned)  | semantic   |
+```
+sources ──► extract ──► classify ──► verify ──► emit
+   │          │           │           │          │
+ docs/*.md  claims     kinds:     checkers:   human |
+ comments   +lines     path…      fs cmd      json
+ .kuda/                 behavior  symbol      exit 1
+ cards                            rules
+```
 
-## The evidence bar
+**Extract** pulls claim candidates (backticked spans, code
+blocks, prose patterns) with source+line.
 
-A violation is claim + evidence + suggested fix. No evidence, no
-finding — false positives kill a critic faster than false
-negatives. The semantic tier can never gate CI: it reports, a
-human adjudicates. Style opinions are never emitted at all.
+**Classify** sorts them into the taxonomy — conservatively: a
+span that might be a command but isn't in the binary allowlist
+is *not* a command claim.
+
+**Verify** runs the mechanical checkers plus `rules/*.toml`.
+
+**Emit** reports violations — or exits 1 to gate CI.
 
 ## Ports and adapters
 
-Every concern is a trait crate + adapter crates: checkers
-(`fs` | `cmd` | `symbol` | `llm`), claim sources (md, comments,
-cards), sinks (cli, commit-status). Rules are data
-(`rules/*.toml`) — conventions as files, not code.
+`mimus-core` holds domain types only (`Claim`, `Violation`,
+`TrustScore`, config). Every concern is a trait crate + adapter
+crates:
+
+* `mimus-check` (the checker port) → `mimus-check-fs`,
+  `mimus-check-cmd`, `mimus-check-symbol` (against kuda's index)
+* claim sources: markdown today, comments/cards wired in config
+* `mimus-rules` — conventions as `rules/*.toml` data
+* `mimus-vcs`→`mimus-git`, `mimus-config`→`mimus-config-toml`,
+  `mimus-secret`→`mimus-keyring`/`mimus-dotenv`
+
+A new checker = new adapter crate; a new convention = a new
+rule file.
+
+## The evidence bar
+
+A violation is claim + evidence + suggested fix. No evidence,
+no finding — false positives kill a critic faster than false
+negatives. The semantic tier can never gate CI: it reports, a
+human adjudicates. Style opinions are never emitted at all.
 
 ## Position in the ecosystem
 
 * `kuda` builds the index; `mimus` doubts it — `audit`
-  trust-scores cards against source via the `symbol` checker.
+  trust-scores cards against source via provenance hashes.
 * `reconcile` (planned third tool) auto-fixes what mimus
-  confirms: claims rewritten to match reality.
+  confirms: claims rewritten to match reality — it consumes the
+  JSON violation contract, not the checkers.
+
+See [claims & tiers](claims.md) for the taxonomy and why the
+two tiers can never merge.
+
+---
+
+---
+url: /mimus/explanation/claims.md
+---
+# Explanation: claims, tiers, and the evidence bar
+
+mimus is built on one observation: documentation is full of
+*claims* — statements that are either still true or quietly
+false. A critic's job is to enumerate them and prove each one,
+or stay silent.
+
+## Claim taxonomy
+
+Extraction classifies backticked spans, code blocks and prose
+patterns into:
+
+| kind      | example claim                        | verified by                |
+| --------- | ------------------------------------ | -------------------------- |
+| `path`    | `` `src/lib.rs` ``                   | filesystem                 |
+| `command` | `` `cargo test -p foo` ``            | binary on PATH (no exec)   |
+| `symbol`  | `` `IndexStore` ``                   | kuda index (symbol checker)|
+| `count`   | "357 suites / 4,298 tests"           | recomputation              |
+| `link`    | `[docs](https://…)`                  | link checker               |
+| `behavior`| prose asserting code does X          | rules + semantic tier      |
+
+Command claims are conservative by design: only spans whose
+first token is a known binary (`cargo`, `git`, `npm`, `dagger`,
+`kuda`, `mimus`, …) classify as commands — otherwise `pub fn`
+and `data Eq` get read as shell.
+
+## Verification tiers
+
+* **Mechanical** — deterministic and offline: paths, commands,
+  rules. This is the `mimus check` gate; if it flags something,
+  the evidence is reproducible by anyone.
+* **Semantic** — advisory: prose-vs-behavior ("retries 3 times"
+  vs the code's 5), comment-vs-adjacent-code, ADR-vs-reality.
+  Reports with evidence; a human adjudicates. **Can never gate**
+  — that is load-bearing, not a limitation.
+
+Style opinions are never emitted at all.
+
+## The evidence bar
+
+Every violation is `claim + evidence + fix(optional)`. If a
+checker cannot cite its proof, it emits nothing — false
+positives kill a critic faster than false negatives ever could.
+This is why `command` has an allowlist, why a bad rule regex is
+silence + a doctor complaint, and why the semantic tier exists
+separately from the gate.
+
+## Sources
+
+`[sources]` in `mimus.toml`: `docs` (glob list), `comments`
+(code comments — TODOs, claims in `///`), and `cards` — the
+kuda artifacts get audited as claims too, closing the loop:
+kuda remembers, mimus doubts, even about the memory itself.
 
 ---
 

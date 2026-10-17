@@ -8,23 +8,26 @@ claim verification — docs-as-tests, memory audit
 
 ### Tutorials
 
-- [Tutorial: your first check](/mimus/tutorials/first-run.md)
+- [Tutorial: your first audit](/mimus/tutorials/first-run.md)
 
 ### How-to
 
-- [How-to: watch multiple repos](/mimus/how-to/multi-repo.md)
-- [How-to: audit the memory layer](/mimus/how-to/kuda-audit.md)
-- [How-to: author convention rules](/mimus/how-to/rules-authoring.md)
+- [How-to: multi-repo checking](/mimus/how-to/multi-repo.md)
+- [How-to: audit kuda memory](/mimus/how-to/kuda-audit.md)
+- [How-to: author rules](/mimus/how-to/rules-authoring.md)
+- [How-to: gate CI on docs](/mimus/how-to/ci-gate.md)
 
 ### Reference
 
 - [Command-Line Help for `mimus`](/mimus/reference/cli.md)
 - [Config — `mimus.toml`](/mimus/reference/config.md)
+- [Reference: violation format](/mimus/reference/violations.md)
 - [Crate API](/mimus/reference/crate-api.md)
 
 ### Explanation
 
 - [Explanation: architecture](/mimus/explanation/architecture.md)
+- [Explanation: claims, tiers, and the evidence bar](/mimus/explanation/claims.md)
 - [The release model](/mimus/explanation/release-model.md)
 - [mimus vs the alternatives](/mimus/comparison.md)
 
