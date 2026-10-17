@@ -1,16 +1,88 @@
-# Reference: CLI
+# Command-Line Help for `mimus`
 
-Generated from `mimus --help` by `bun run docs:cli` — seed listing:
+This document contains the help content for the `mimus` command-line program.
 
-```
-mimus init            detect sources -> mimus.toml + rules/
-mimus check           mechanical claims — CI-gateable
-mimus check --all     + semantic tier (advisory only)
-mimus audit           trust-score .kuda/ cards vs source
-mimus report          full violations: claim + evidence + fix
-mimus doctor          checker/kuda-index health
-```
+**Command Overview:**
 
-Flags: `--config <path>` (else `$MIMUS_CONFIG`, `./mimus.toml`,
-`~/.config/mimus/mimus.toml`), `--format human|json`,
-`--no-cmd` (never execute documented commands — untrusted repos).
+* [`mimus`↴](#mimus)
+* [`mimus init`↴](#mimus-init)
+* [`mimus check`↴](#mimus-check)
+* [`mimus audit`↴](#mimus-audit)
+* [`mimus report`↴](#mimus-report)
+* [`mimus doctor`↴](#mimus-doctor)
+
+## `mimus`
+
+Spots the cuckoo eggs in your repo — claim verification: docs-as-tests, memory audit
+
+**Usage:** `mimus [OPTIONS] <COMMAND>`
+
+###### **Subcommands:**
+
+* `init` — Detect sources -> mimus.toml + rules/ scaffold
+* `check` — Verify claims. Mechanical tier by default
+* `audit` — Trust-score .kuda/ cards vs source
+* `report` — Full violations list with evidence
+* `doctor` — Checker/config/kuda-index health
+
+###### **Options:**
+
+* `--config <CONFIG>` — Config path (else $MIMUS_CONFIG, ./mimus.toml, ~/.config/mimus/mimus.toml)
+* `--format <FORMAT>` — Output format: human | json
+
+  Default value: `human`
+
+
+
+## `mimus init`
+
+Detect sources -> mimus.toml + rules/ scaffold
+
+**Usage:** `mimus init`
+
+
+
+## `mimus check`
+
+Verify claims. Mechanical tier by default
+
+**Usage:** `mimus check [OPTIONS]`
+
+###### **Options:**
+
+* `--all` — Include the semantic tier (advisory only, never gates)
+* `--no-cmd` — Never execute documented commands
+
+
+
+## `mimus audit`
+
+Trust-score .kuda/ cards vs source
+
+**Usage:** `mimus audit`
+
+
+
+## `mimus report`
+
+Full violations list with evidence
+
+**Usage:** `mimus report`
+
+
+
+## `mimus doctor`
+
+Checker/config/kuda-index health
+
+**Usage:** `mimus doctor`
+
+
+
+<hr/>
+
+<small><i>
+    This document was generated automatically by
+    <a href="https://crates.io/crates/clap-markdown"><code>clap-markdown</code></a>.
+</i></small>
+

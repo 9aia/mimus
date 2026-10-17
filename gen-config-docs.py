@@ -9,14 +9,10 @@ OUT  = pathlib.Path(__file__).parent / "reference" / "config.md"
 # file → {struct: section title}; order preserved
 SRCS = {
     "crates/mimus-core/src/lib.rs": {
-        "Config": "Top level", "RepoEntry": "`[[repo]]`",
-        "TriggerCfg": "`[trigger]`", "RunnerCfg": "`[runner]`",
-        "StatusCfg": "`[status]`", "TunnelCfg": "`[tunnel]`",
-        "CacheCfg": "`[cache]`", "WorktreeCfg": "`[worktree]`",
+        "Config": "Top level", "SourcesCfg": "`[sources]`",
+        "CheckCfg": "`[check]`", "RulesCfg": "`[rules]`",
+        "ReportCfg": "`[report]`",
     },
-    "crates/mimus-dagger/src/lib.rs": {"DaggerCfg": "`[runner]` — kind `dagger`"},
-    "crates/mimus-shell/src/lib.rs":  {"ShellCfg": "`[runner]` — kind `shell`"},
-    "crates/mimus-ssh/src/lib.rs":    {"SshCfg": "`[runner]` — kind `ssh`"},
 }
 SRC = {n: (ROOT / f).read_text()
        for f, names in SRCS.items() for n in names}
