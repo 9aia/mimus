@@ -49,6 +49,9 @@ enum Cmd {
     Report,
     /// Checker/config/kuda-index health.
     Doctor,
+    /// Emit CLI reference markdown (docs pipeline).
+    #[command(hide = true, name = "gen-cli-docs")]
+    GenCliDocs,
 }
 
 fn main() {
@@ -59,6 +62,10 @@ fn main() {
         Cmd::Report => report(&cli),
         Cmd::Audit => audit(&cli),
         Cmd::Doctor => doctor(&cli),
+        Cmd::GenCliDocs => {
+            println!("{}", clap_markdown::help_markdown::<Cli>());
+            0
+        }
     };
     std::process::exit(code);
 }
