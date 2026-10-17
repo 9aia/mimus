@@ -1,4 +1,4 @@
-//! Keyring impl of `Secrets` — shells out to `secret-tool`
+//! Keyring adapter of `Secrets` — shells out to `secret-tool`
 //! (libsecret). Headless boxes without dbus simply miss every
 //! lookup and the caller falls through to the file store.
 

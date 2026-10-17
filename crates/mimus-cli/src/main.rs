@@ -1,5 +1,5 @@
 //! mimus — spots the cuckoo eggs in your repo. Composition root:
-//! parses mimus.toml, wires checker impls, runs subcommands.
+//! parses mimus.toml, wires checker adapters, runs subcommands.
 
 use clap::{Parser, Subcommand};
 use mimus_check::Checker;
@@ -249,6 +249,6 @@ fn doctor(cli: &Cli) -> i32 {
         ),
         Err(e) => println!("  config   --  {e}"),
     }
-    println!("  impls    fs, cmd (symbol/llm pending kuda schema + provider)");
+    println!("  adapters    fs, cmd (symbol/llm pending kuda schema + provider)");
     0
 }

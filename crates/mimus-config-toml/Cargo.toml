@@ -1,6 +1,6 @@
 [package]
 name = "mimus-config-toml"
-description = "Config impl: mimus.toml file (explicit path, env, ./, ~/.config)"
+description = "Config adapter: mimus.toml file (explicit path, env, ./, ~/.config)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

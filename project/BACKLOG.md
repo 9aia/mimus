@@ -3,7 +3,7 @@
 Ideas parked, not scheduled. Pull into project/TODO.md when picked up.
 
 ## Checkers
-- [ ] `mimus-check-llm` impl — semantic tier: prose claims vs code
+- [ ] `mimus-check-llm` adapter — semantic tier: prose claims vs code
       behavior ("retries 3 times" — code says 5); human-in-loop
       report, never a gate
 - [ ] `mimus-check-link` — dead URLs, moved repos, stale badges

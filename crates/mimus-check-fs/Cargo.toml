@@ -1,6 +1,6 @@
 [package]
 name = "mimus-check-fs"
-description = "Check impl: path claims -> filesystem"
+description = "Check adapter: path claims -> filesystem"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

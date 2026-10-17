@@ -1,4 +1,4 @@
-//! Symbol impl — `symbol` claims resolve against a `kuda` index.
+//! Symbol adapter — `symbol` claims resolve against a `kuda` index.
 //! Consumes the index *file format* (`.kuda/index.sqlite`), not the
 //! kuda crates — the schema is the contract. v1 is a stub: it
 //! verifies index presence and defers lookups until the kuda

@@ -10,7 +10,7 @@ cards = ".kuda/modules/*.yaml"   # audit the memory layer itself
 [check]
 mechanical = true                # paths, commands, symbols, counts
 semantic = false                 # prose-vs-behavior; report tier
-# kuda_index = ".kuda/index.sqlite"  # impl: mimus-check-symbol
+# kuda_index = ".kuda/index.sqlite"  # adapter: mimus-check-symbol
 
 [rules]
 dir = "rules"                    # data-driven convention rules

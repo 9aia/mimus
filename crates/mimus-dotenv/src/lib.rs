@@ -1,4 +1,4 @@
-//! Dotenv impl of `Secrets` — a `KEY=VAL` file, written 0600.
+//! Dotenv adapter of `Secrets` — a `KEY=VAL` file, written 0600.
 //! Last store in the chain: headless boxes without a desktop
 //! keyring land here.
 

@@ -1,4 +1,4 @@
-//! Cmd impl — `command` claims resolve their binary on PATH.
+//! Cmd adapter — `command` claims resolve their binary on PATH.
 //! v1 verifies *existence* of the invoked binary, not exit status —
 //! executing documented commands belongs behind an explicit flag.
 

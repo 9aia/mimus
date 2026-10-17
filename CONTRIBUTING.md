@@ -7,7 +7,7 @@ dogfoods its own CI. Fork freely under MIT.
 
 `crates/` — rust workspace. `mimus-core` is pure domain (claims,
 violations, evidence); ports are crates: `mimus-check`,
-`mimus-claims`, `mimus-rules`, `mimus-vcs`; impls:
+`mimus-claims`, `mimus-rules`, `mimus-vcs`; adapters:
 `mimus-check-fs`/`mimus-check-cmd`/`mimus-check-symbol`/
 `mimus-check-llm` (checkers), `mimus-kuda` (kuda index glue),
 `mimus-git` (vcs); `mimus` (cli) is the composition root.
@@ -15,7 +15,7 @@ violations, evidence); ports are crates: `mimus-check`,
 
 ## Rules of thumb
 
-- New checker/claim-source = a new impl crate, not a core change.
+- New checker/claim-source = a new adapter crate, not a core change.
   New convention = a `rules/*.toml` file, not an engine edit.
 - Evidence or silence: a checker that can't cite claim + proof
   emits nothing.

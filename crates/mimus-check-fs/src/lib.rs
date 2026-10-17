@@ -1,4 +1,4 @@
-//! Fs impl — `path` claims resolve against the repo root.
+//! Fs adapter — `path` claims resolve against the repo root.
 //! The simplest checker and the safest: existence is provable.
 
 use mimus_check::Checker;

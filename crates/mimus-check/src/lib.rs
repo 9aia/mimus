@@ -2,7 +2,7 @@
 //! Impls: `mimus-check-fs` (paths), `mimus-check-cmd`
 //! (commands), `mimus-check-symbol` (kuda index), `check-llm`
 //! (behavior prose — semantic tier, advisory). New checker =
-//! new impl crate.
+//! new adapter crate.
 
 use mimus_core::{Claim, ClaimKind, Violation};
 

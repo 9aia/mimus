@@ -1,4 +1,4 @@
-//! Git impl of the `Vcs` port — shells out to the `git` binary.
+//! Git adapter of the `Vcs` port — shells out to the `git` binary.
 
 use mimus_vcs::Vcs;
 use std::path::Path;

@@ -1,6 +1,6 @@
 [package]
 name = "mimus-check-symbol"
-description = "Check impl: symbol claims -> kuda index (stub)"
+description = "Check adapter: symbol claims -> kuda index (stub)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

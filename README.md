@@ -26,7 +26,7 @@ claims ──► extract ──► classify ──► verify ──► report
 - memory audit — verifies `kuda` cards against source and scores
   card trust; stale claims get demoted, not just refreshed
 - every concern behind a port: checkers (`fs` | `cmd` | `symbol` |
-  `llm`), claim sources, sinks — ports/impls are separate crates
+  `llm`), claim sources, sinks — ports/adapters are separate crates
 - rules are data (`rules/*.toml`), not code — a convention like
   "dispatch via `lang.eval`, never `kind ==`" is a rule file
 - docs-as-tests: `mimus check` in CI means docs can't silently rot

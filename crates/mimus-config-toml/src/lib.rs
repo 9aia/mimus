@@ -1,4 +1,4 @@
-//! TOML impl of `ConfigSource` — explicit path → $MIMUS_CONFIG →
+//! TOML adapter of `ConfigSource` — explicit path → $MIMUS_CONFIG →
 //! ./mimus.toml → ~/.config/mimus/mimus.toml.
 
 use mimus_config::ConfigSource;

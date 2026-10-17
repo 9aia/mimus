@@ -1,6 +1,6 @@
 [package]
 name = "mimus-git"
-description = "Vcs impl: git via the git CLI"
+description = "Vcs adapter: git via the git CLI"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

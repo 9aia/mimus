@@ -19,7 +19,7 @@ big to keep in context. Rejected.
 **B. Embedding/RAG store** — language-agnostic and good at fuzzy
 lookup, but weak on structure (dep graphs, provenance, exact
 symbol resolution) and opaque about staleness. Deferred — viable
-later as a `mimus-store` impl.
+later as a `mimus-store` adapter.
 
 **C. Tiered index + query (recommended)** — L0 repo card
 (always-load), L1 module cards (on-demand), L2 symbol/dep graph
@@ -28,7 +28,7 @@ code, not a copy.
 
 ## Proposal
 
-- Every concern is a port + impl crates (bupha topology):
+- Every concern is a port + adapter crates (bupha topology):
   extract (`manifest` | `treesitter` | `lsp`), summarize
   (`template` | `llm`), store (`sqlite` first), vcs (`git`),
   serve (`cli` | `mcp`).
@@ -36,7 +36,7 @@ code, not a copy.
   symbol queries, manifest kinds), never extractor code.
   New language = data change, not release.
 - `template` summarizer (zero-model, deterministic) is the
-  default; LLM prose is an impl behind the port.
+  default; LLM prose is an adapter behind the port.
 - Committed artifacts: `.mimus/index.yaml`, `.mimus/modules/*.yaml`.
   Gitignored: `.mimus/index.sqlite` (rebuildable).
 - Provenance per card `{files, content_hash, commit_sha}` →

@@ -1,6 +1,6 @@
 [package]
 name = "mimus-dotenv"
-description = "Secret impl: KEY=VAL env file (chmod 600)"
+description = "Secret adapter: KEY=VAL env file (chmod 600)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
