@@ -36,7 +36,7 @@ features:
     linkText: authoring rules
   - icon: 🧩
     title: Ports, not frameworks
-    details: checkers (fs | cmd | symbol | llm), claim sources, sinks — swap via config or a new impl crate
+    details: checkers (fs | cmd | symbol | llm), claim sources, sinks — swap via config or a new adapter crate
     link: /explanation/architecture
     linkText: architecture
   - icon: 🤖

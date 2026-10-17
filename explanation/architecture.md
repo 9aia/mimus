@@ -23,9 +23,9 @@ finding — false positives kill a critic faster than false
 negatives. The semantic tier can never gate CI: it reports, a
 human adjudicates. Style opinions are never emitted at all.
 
-## Ports and impls
+## Ports and adapters
 
-Every concern is a trait crate + impl crates: checkers
+Every concern is a trait crate + adapter crates: checkers
 (`fs` | `cmd` | `symbol` | `llm`), claim sources (md, comments,
 cards), sinks (cli, commit-status). Rules are data
 (`rules/*.toml`) — conventions as files, not code.

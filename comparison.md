@@ -21,7 +21,7 @@ right; mimus says the docs tell the truth.
 | CI gate             | unsafe                   | mechanical tier is safe    |
 | cost                | per-run                  | mechanical tier is free    |
 
-The LLM still has a role — as the `check-llm` impl for the
+The LLM still has a role — as the `check-llm` adapter for the
 semantic tier, where findings are advisory by design.
 
 ## vs doctest-style tools

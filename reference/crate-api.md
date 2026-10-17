@@ -10,13 +10,13 @@ Crate map (target topology — see `project/TODO.md` for status):
 | `mimus-core`         | domain: claims, violations, evidence       |
 | `mimus-claims`       | claim extraction (md/comments/cards)       |
 | `mimus-check`        | port: `Checker`                            |
-| `mimus-check-fs`     | impl: paths exist                          |
-| `mimus-check-cmd`    | impl: commands parse/run clean             |
-| `mimus-check-symbol` | impl: symbols via kuda index               |
-| `mimus-check-llm`    | impl: semantic tier (planned, advisory)    |
+| `mimus-check-fs`     | adapter: paths exist                          |
+| `mimus-check-cmd`    | adapter: commands parse/run clean             |
+| `mimus-check-symbol` | adapter: symbols via kuda index               |
+| `mimus-check-llm`    | adapter: semantic tier (planned, advisory)    |
 | `mimus-rules`        | data-driven convention rules               |
 | `mimus-kuda`         | glue: consume a kuda index                 |
-| `mimus-vcs`/`-git`   | port/impl: sha, diff                       |
-| `mimus-config*`      | config port + toml impl                    |
-| `mimus-secret*`      | secrets port + keyring/dotenv impls        |
+| `mimus-vcs`/`-git`   | port/adapter: sha, diff                       |
+| `mimus-config*`      | config port + toml adapter                    |
+| `mimus-secret*`      | secrets port + keyring/dotenv adapters        |
 | `mimus` (cli)        | composition root                           |
