@@ -1,0 +1,12 @@
+[package]
+name = "malurus-git"
+description = "Vcs impl: git via the git CLI"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["ci", "malurus"]
+categories = ["development-tools"]
+
+[dependencies]
+malurus-vcs.workspace = true

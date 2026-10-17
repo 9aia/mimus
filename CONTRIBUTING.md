@@ -5,28 +5,31 @@ dogfoods its own CI. Fork freely under MIT.
 
 ## Layout
 
-`crates/` — rust workspace. `bupha-core` is pure domain (queue,
-config); ports are crates: `bupha-runner`, `bupha-tunnel`,
-`bupha-trigger`, `bupha-status`; impls: `bupha-github` (trigger +
-sink), `bupha-shell`/`bupha-dagger`/`bupha-ssh` (runners), `bupha-cloudflared`
-(tunnel), `bupha-systemd` (install helpers — `Service` port pending);
-`bupha` (cli) is the composition root. `modules/dagger/` is the
-shared pipeline module (Python SDK).
+`crates/` — rust workspace. `malurus-core` is pure domain (claims,
+violations, evidence); ports are crates: `malurus-check`,
+`malurus-claims`, `malurus-rules`, `malurus-vcs`; impls:
+`malurus-check-fs`/`malurus-check-cmd`/`malurus-check-symbol`/
+`malurus-check-llm` (checkers), `malurus-kuda` (kuda index glue),
+`malurus-git` (vcs); `malurus` (cli) is the composition root.
+`modules/dagger/` is the shared pipeline module (Python SDK).
 
 ## Rules of thumb
 
-- New runner/tunnel/trigger = a new impl crate, not a core change.
+- New checker/claim-source = a new impl crate, not a core change.
+  New convention = a `rules/*.toml` file, not an engine edit.
+- Evidence or silence: a checker that can't cite claim + proof
+  emits nothing.
 - `cargo build --workspace` and `cargo test --workspace` must stay green
-  (unit tests + the e2e in `crates/bupha-cli/tests/` — no docker needed).
+  (unit tests + the e2e in `crates/malurus-cli/tests/` — no docker needed).
 - Keep the binary dependency-light and sync; no async runtime.
 - Commits: conventional prefixes (`feat:`/`fix:`/`refactor:`/`docs:`/`chore:`).
-- Never commit secrets — `bupha.toml` takes names of env vars, not values.
+- Never commit secrets — `malurus.toml` takes names of env vars, not values.
 
 ## Releasing
 
-Seed once with `bupha deploy release` (publishes workspace crates,
+Seed once with `malurus deploy release` (publishes workspace crates,
 tags `{repo}-v{ver}`). Afterwards `scripts/release.sh` runs on each
-`main` push via bupha's own dogfood loop — bump, publish, tag, dist
+`main` push via malurus's own dogfood loop — bump, publish, tag, dist
 binaries. See `docs/explanation/release-model.md`.
 
 ## Docs

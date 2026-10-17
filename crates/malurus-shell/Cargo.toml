@@ -1,0 +1,16 @@
+[package]
+name = "malurus-shell"
+description = "Runner impl: bash -c <cmd> per job — no containers"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["ci", "malurus"]
+categories = ["development-tools"]
+
+[dependencies]
+malurus-runner.workspace = true
+malurus-core.workspace = true
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+

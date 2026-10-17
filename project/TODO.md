@@ -1,16 +1,28 @@
-# TODO — next version (post-0.1.0)
+# TODO — 0.1.0
 
-## Post-publish
-- [ ] `MODULE_SHA` — bump pinned dagger install to the release tag.
-- [ ] `CHANGELOG.md` — 0.1.0 entry (manual now, generated later).
-- [ ] README badges — crates.io + license (resolve green once live).
+## Core model
+- [ ] `malurus-core` — Claim / Violation / Evidence / TrustScore;
+      claim taxonomy (path | command | symbol | count | link |
+      behavior) decides which checker verifies it (ADR-0001).
 
-## Queue / jobs
-- [ ] `[[repo.jobs]]` — multiple pipelines per repo, each with own
-      queue policy + runner (e.g. `ci` gate + debounced `release`).
-- [ ] Distributed runners — `bupha-ssh` lands first; remote trigger
-      impl (`bupha-http`?) for cross-box fan-out; unblocks multi-arch
-      + release.sh's "other arches" dist step.
+## Checkers (ports + first impls)
+- [ ] `malurus-check` port + `malurus-check-fs` impl (paths exist)
+- [ ] `malurus-check-cmd` impl (commands parse / exit clean)
+- [ ] `malurus-check-symbol` impl — resolve symbols via a `kuda`
+      index (first real cross-tool dep; `malurus-kuda` glue crate)
+- [ ] `malurus-rules` — data-driven convention rules (`rules/*.toml`,
+      e.g. "no `kind ==` after role dispatch exists")
 
-## Tests
-- [ ] e2e for cancel/supersede path (second signed push in flight).
+## Claims + reporting
+- [ ] `malurus-claims` — extract claims from md/comments/cards:
+      backtick paths & commands, numbers, symbol names, behavior
+      prose (semantic tier, deferred to llm impl)
+- [ ] `malurus check` — mechanical tier, CI-gateable output
+- [ ] `malurus audit` — trust-score `.kuda/` cards vs source
+- [ ] `malurus report` — violations with claim+evidence+fix
+
+## Scaffold debt (forked from bupha — rewrite crate-by-crate)
+- [ ] Crates still implement bupha's CI domain (see kuda TODO —
+      same repurpose/drop list applies; `malurus-secret*`/`malurus-vcs`/
+      `malurus-git`/`malurus-cli` keep, the runner/trigger/tunnel
+      set drops).

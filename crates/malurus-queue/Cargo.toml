@@ -1,0 +1,13 @@
+[package]
+name = "malurus-queue"
+description = "QueueStore port: queue persistence"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["ci", "malurus"]
+categories = ["development-tools"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+

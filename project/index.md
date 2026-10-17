@@ -1,9 +1,9 @@
 # Project index
 
-Planning and design docs for bupha's next iterations.
+Planning and design docs for malurus's next iterations.
 
-- [TODO](TODO.md) — next version (post-0.1.0): post-publish,
-  jobs, tests, nits
+- [TODO](TODO.md) — 0.1.0: claim model, mechanical checkers, check
 - [BACKLOG](BACKLOG.md) — unscheduled ideas + remaining seams (0.2+)
 - [adrs/](adrs/) — design decisions
-  ([0001](adrs/0001-gha-compat.md): GHA migration compat)
+  ([0001](adrs/0001-evidence-or-silence.md): claim taxonomy +
+  the evidence bar)

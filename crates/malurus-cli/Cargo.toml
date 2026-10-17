@@ -1,0 +1,52 @@
+[package]
+name = "malurus"
+description = "malurus — the oxpecker on your repo's back: headless CI CLI"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["ci", "malurus"]
+categories = ["development-tools"]
+
+[[bin]]
+name = "malurus"
+path = "src/main.rs"
+
+[dependencies]
+malurus-core.workspace = true
+malurus-vcs.workspace = true
+malurus-git.workspace = true
+malurus-queue.workspace = true
+malurus-queue-redb.workspace = true
+malurus-secret.workspace = true
+malurus-keyring.workspace = true
+malurus-dotenv.workspace = true
+malurus-service.workspace = true
+malurus-config.workspace = true
+malurus-cache.workspace = true
+malurus-cache-sccache.workspace = true
+malurus-config-toml.workspace = true
+malurus-trigger.workspace = true
+malurus-status.workspace = true
+malurus-runner.workspace = true
+malurus-dagger.workspace = true
+malurus-shell.workspace = true
+malurus-ssh.workspace = true
+malurus-tunnel.workspace = true
+malurus-cloudflared.workspace = true
+malurus-github.workspace = true
+tiny_http = "0.12"
+clap = { version = "4", features = ["derive"] }
+malurus-systemd.workspace = true
+serde_json = "1"
+ureq = { version = "3" }
+clap-markdown = "0.1.5"
+dirs = "7.0.0"
+toml = "0.8"
+
+[dev-dependencies]
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"
+ureq = { version = "3" }
+

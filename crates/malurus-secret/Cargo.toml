@@ -1,0 +1,11 @@
+[package]
+name = "malurus-secret"
+description = "Secret port: resolve named secrets from storage"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["ci", "malurus"]
+categories = ["development-tools"]
+
+[dependencies]

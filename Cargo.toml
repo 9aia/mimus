@@ -1,38 +1,38 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/bupha-cli",
-    "crates/bupha-systemd",
-    "crates/bupha-core",
-    "crates/bupha-trigger",
-    "crates/bupha-vcs",
-    "crates/bupha-git",
-    "crates/bupha-queue",
-    "crates/bupha-queue-redb",
-    "crates/bupha-service",
-    "crates/bupha-secret",
-    "crates/bupha-keyring",
-    "crates/bupha-dotenv",
-    "crates/bupha-config",
-    "crates/bupha-config-toml",
-    "crates/bupha-cache",
-    "crates/bupha-cache-sccache",
-    "crates/bupha-ssh",
-    "crates/bupha-status",
-    "crates/bupha-github",
-    "crates/bupha-runner",
-    "crates/bupha-dagger",
-    "crates/bupha-shell",
-    "crates/bupha-tunnel",
-    "crates/bupha-cloudflared",
+    "crates/malurus-cli",
+    "crates/malurus-systemd",
+    "crates/malurus-core",
+    "crates/malurus-trigger",
+    "crates/malurus-vcs",
+    "crates/malurus-git",
+    "crates/malurus-queue",
+    "crates/malurus-queue-redb",
+    "crates/malurus-service",
+    "crates/malurus-secret",
+    "crates/malurus-keyring",
+    "crates/malurus-dotenv",
+    "crates/malurus-config",
+    "crates/malurus-config-toml",
+    "crates/malurus-cache",
+    "crates/malurus-cache-sccache",
+    "crates/malurus-ssh",
+    "crates/malurus-status",
+    "crates/malurus-github",
+    "crates/malurus-runner",
+    "crates/malurus-dagger",
+    "crates/malurus-shell",
+    "crates/malurus-tunnel",
+    "crates/malurus-cloudflared",
 ]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-repository = "https://github.com/9aia/bupha"
-description = "The oxpecker on your repo's back — headless CI: watch, queue, run, report"
+repository = "https://github.com/9aia/malurus"
+description = "Spots the cuckoo eggs in your repo — claim extraction + verification: docs-as-tests, memory audit"
 
 # The profile that 'dist' will build with
 [profile.dist]
@@ -40,27 +40,27 @@ inherits = "release"
 lto = "thin"
 
 [workspace.dependencies]
-bupha-core = { path = "crates/bupha-core", version = "0.1.0" }
-bupha-trigger = { path = "crates/bupha-trigger", version = "0.1.0" }
-bupha-vcs = { path = "crates/bupha-vcs", version = "0.1.0" }
-bupha-git = { path = "crates/bupha-git", version = "0.1.0" }
-bupha-queue = { path = "crates/bupha-queue", version = "0.1.0" }
-bupha-queue-redb = { path = "crates/bupha-queue-redb", version = "0.1.0" }
-bupha-service = { path = "crates/bupha-service", version = "0.1.0" }
-bupha-secret = { path = "crates/bupha-secret", version = "0.1.0" }
-bupha-keyring = { path = "crates/bupha-keyring", version = "0.1.0" }
-bupha-dotenv = { path = "crates/bupha-dotenv", version = "0.1.0" }
-bupha-config = { path = "crates/bupha-config", version = "0.1.0" }
-bupha-config-toml = { path = "crates/bupha-config-toml", version = "0.1.0" }
-bupha-cache = { path = "crates/bupha-cache", version = "0.1.0" }
-bupha-cache-sccache = { path = "crates/bupha-cache-sccache", version = "0.1.0" }
-bupha-ssh = { path = "crates/bupha-ssh", version = "0.1.0" }
+malurus-core = { path = "crates/malurus-core", version = "0.1.0" }
+malurus-trigger = { path = "crates/malurus-trigger", version = "0.1.0" }
+malurus-vcs = { path = "crates/malurus-vcs", version = "0.1.0" }
+malurus-git = { path = "crates/malurus-git", version = "0.1.0" }
+malurus-queue = { path = "crates/malurus-queue", version = "0.1.0" }
+malurus-queue-redb = { path = "crates/malurus-queue-redb", version = "0.1.0" }
+malurus-service = { path = "crates/malurus-service", version = "0.1.0" }
+malurus-secret = { path = "crates/malurus-secret", version = "0.1.0" }
+malurus-keyring = { path = "crates/malurus-keyring", version = "0.1.0" }
+malurus-dotenv = { path = "crates/malurus-dotenv", version = "0.1.0" }
+malurus-config = { path = "crates/malurus-config", version = "0.1.0" }
+malurus-config-toml = { path = "crates/malurus-config-toml", version = "0.1.0" }
+malurus-cache = { path = "crates/malurus-cache", version = "0.1.0" }
+malurus-cache-sccache = { path = "crates/malurus-cache-sccache", version = "0.1.0" }
+malurus-ssh = { path = "crates/malurus-ssh", version = "0.1.0" }
 serde_json = "1"
-bupha-status = { path = "crates/bupha-status", version = "0.1.0" }
-bupha-runner = { path = "crates/bupha-runner", version = "0.1.0" }
-bupha-tunnel = { path = "crates/bupha-tunnel", version = "0.1.0" }
-bupha-dagger = { path = "crates/bupha-dagger", version = "0.1.0" }
-bupha-shell = { path = "crates/bupha-shell", version = "0.1.0" }
-bupha-github = { path = "crates/bupha-github", version = "0.1.0" }
-bupha-cloudflared = { path = "crates/bupha-cloudflared", version = "0.1.0" }
-bupha-systemd = { path = "crates/bupha-systemd", version = "0.1.0" }
+malurus-status = { path = "crates/malurus-status", version = "0.1.0" }
+malurus-runner = { path = "crates/malurus-runner", version = "0.1.0" }
+malurus-tunnel = { path = "crates/malurus-tunnel", version = "0.1.0" }
+malurus-dagger = { path = "crates/malurus-dagger", version = "0.1.0" }
+malurus-shell = { path = "crates/malurus-shell", version = "0.1.0" }
+malurus-github = { path = "crates/malurus-github", version = "0.1.0" }
+malurus-cloudflared = { path = "crates/malurus-cloudflared", version = "0.1.0" }
+malurus-systemd = { path = "crates/malurus-systemd", version = "0.1.0" }
