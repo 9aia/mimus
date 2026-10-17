@@ -35,6 +35,7 @@ export default defineConfig({
           { text: "Multi-repo", link: "/how-to/multi-repo" },
           { text: "Memory audit", link: "/how-to/kuda-audit" },
           { text: "Authoring rules", link: "/how-to/rules-authoring" },
+          { text: "CI gate", link: "/how-to/ci-gate" },
         ],
       },
       {
@@ -42,6 +43,7 @@ export default defineConfig({
         items: [
           { text: "CLI", link: "/reference/cli" },
           { text: "Config", link: "/reference/config" },
+          { text: "Violations", link: "/reference/violations" },
           { text: "Crate API", link: "/reference/crate-api" },
         ],
       },
@@ -49,6 +51,7 @@ export default defineConfig({
         text: "Explanation",
         items: [
           { text: "Architecture", link: "/explanation/architecture" },
+          { text: "Claims & tiers", link: "/explanation/claims" },
           { text: "Release model", link: "/explanation/release-model" },
           { text: "vs linters / LLM review", link: "/comparison" },
         ],
