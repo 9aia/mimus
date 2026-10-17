@@ -3,10 +3,10 @@
 Ideas parked, not scheduled. Pull into project/TODO.md when picked up.
 
 ## Checkers
-- [ ] `malurus-check-llm` impl — semantic tier: prose claims vs code
+- [ ] `mimus-check-llm` impl — semantic tier: prose claims vs code
       behavior ("retries 3 times" — code says 5); human-in-loop
       report, never a gate
-- [ ] `malurus-check-link` — dead URLs, moved repos, stale badges
+- [ ] `mimus-check-link` — dead URLs, moved repos, stale badges
 - [ ] ADR-drift checker — decisions vs current code state
 
 ## Rules
@@ -14,8 +14,8 @@ Ideas parked, not scheduled. Pull into project/TODO.md when picked up.
 - [ ] Import rules from existing linters' config (read-only reuse)
 
 ## Surfaces
-- [ ] `malurus-mcp` — agents ask "is this claim still true" mid-plan
-- [ ] `malurus watch` — re-verify claims on file events
+- [ ] `mimus-mcp` — agents ask "is this claim still true" mid-plan
+- [ ] `mimus watch` — re-verify claims on file events
 - [ ] PR/commit-status sink — post violations as review comments
       (reuse the forked status/github crates?)
 

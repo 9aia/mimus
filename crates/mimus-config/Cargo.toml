@@ -1,0 +1,12 @@
+[package]
+name = "mimus-config"
+description = "Config port: where mimus.toml-shaped config comes from"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["verification", "mimus"]
+categories = ["development-tools"]
+
+[dependencies]
+mimus-core.workspace = true

@@ -5,12 +5,12 @@ dogfoods its own CI. Fork freely under MIT.
 
 ## Layout
 
-`crates/` — rust workspace. `malurus-core` is pure domain (claims,
-violations, evidence); ports are crates: `malurus-check`,
-`malurus-claims`, `malurus-rules`, `malurus-vcs`; impls:
-`malurus-check-fs`/`malurus-check-cmd`/`malurus-check-symbol`/
-`malurus-check-llm` (checkers), `malurus-kuda` (kuda index glue),
-`malurus-git` (vcs); `malurus` (cli) is the composition root.
+`crates/` — rust workspace. `mimus-core` is pure domain (claims,
+violations, evidence); ports are crates: `mimus-check`,
+`mimus-claims`, `mimus-rules`, `mimus-vcs`; impls:
+`mimus-check-fs`/`mimus-check-cmd`/`mimus-check-symbol`/
+`mimus-check-llm` (checkers), `mimus-kuda` (kuda index glue),
+`mimus-git` (vcs); `mimus` (cli) is the composition root.
 `modules/dagger/` is the shared pipeline module (Python SDK).
 
 ## Rules of thumb
@@ -20,16 +20,16 @@ violations, evidence); ports are crates: `malurus-check`,
 - Evidence or silence: a checker that can't cite claim + proof
   emits nothing.
 - `cargo build --workspace` and `cargo test --workspace` must stay green
-  (unit tests + the e2e in `crates/malurus-cli/tests/` — no docker needed).
+  (unit tests + the e2e in `crates/mimus-cli/tests/` — no docker needed).
 - Keep the binary dependency-light and sync; no async runtime.
 - Commits: conventional prefixes (`feat:`/`fix:`/`refactor:`/`docs:`/`chore:`).
-- Never commit secrets — `malurus.toml` takes names of env vars, not values.
+- Never commit secrets — `mimus.toml` takes names of env vars, not values.
 
 ## Releasing
 
-Seed once with `malurus deploy release` (publishes workspace crates,
+Seed once with `mimus deploy release` (publishes workspace crates,
 tags `{repo}-v{ver}`). Afterwards `scripts/release.sh` runs on each
-`main` push via malurus's own dogfood loop — bump, publish, tag, dist
+`main` push via mimus's own dogfood loop — bump, publish, tag, dist
 binaries. See `docs/explanation/release-model.md`.
 
 ## Docs

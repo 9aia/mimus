@@ -1,0 +1,27 @@
+[package]
+name = "mimus"
+description = "mimus — spots the cuckoo eggs in your repo: claim verification CLI"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["verification", "mimus"]
+categories = ["development-tools"]
+
+[[bin]]
+name = "mimus"
+path = "src/main.rs"
+
+[dependencies]
+mimus-core.workspace = true
+mimus-claims.workspace = true
+mimus-check.workspace = true
+mimus-check-fs.workspace = true
+mimus-check-cmd.workspace = true
+mimus-check-symbol.workspace = true
+mimus-rules.workspace = true
+mimus-config.workspace = true
+mimus-config-toml.workspace = true
+clap.workspace = true
+toml.workspace = true
+serde_json.workspace = true

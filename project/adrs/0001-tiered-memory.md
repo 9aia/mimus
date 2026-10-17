@@ -19,7 +19,7 @@ big to keep in context. Rejected.
 **B. Embedding/RAG store** — language-agnostic and good at fuzzy
 lookup, but weak on structure (dep graphs, provenance, exact
 symbol resolution) and opaque about staleness. Deferred — viable
-later as a `malurus-store` impl.
+later as a `mimus-store` impl.
 
 **C. Tiered index + query (recommended)** — L0 repo card
 (always-load), L1 module cards (on-demand), L2 symbol/dep graph
@@ -37,10 +37,10 @@ code, not a copy.
   New language = data change, not release.
 - `template` summarizer (zero-model, deterministic) is the
   default; LLM prose is an impl behind the port.
-- Committed artifacts: `.malurus/index.yaml`, `.malurus/modules/*.yaml`.
-  Gitignored: `.malurus/index.sqlite` (rebuildable).
+- Committed artifacts: `.mimus/index.yaml`, `.mimus/modules/*.yaml`.
+  Gitignored: `.mimus/index.sqlite` (rebuildable).
 - Provenance per card `{files, content_hash, commit_sha}` →
-  `malurus status` = sha diff vs HEAD. Cards end with `verify:`
+  `mimus status` = sha diff vs HEAD. Cards end with `verify:`
   file lists — agents must check memory against source.
 
 ## Consequences
@@ -48,5 +48,5 @@ code, not a copy.
 - Staleness is a property of the data, not a promise in prose.
 - Incremental regen (content-hash → affected cards only) keeps
   `sync` cheap on large workspaces.
-- Malurus (the critic, 9aia/malurus) builds on the same index:
+- Mimus (the critic, 9aia/mimus) builds on the same index:
   claim extraction + verification reuse the query layer.

@@ -1,12 +1,12 @@
-# malurus
+# mimus
 
 *Spots the cuckoo eggs in your repo.*
 
 A critic for repos and agent memory. Extracts claims from docs,
 comments, and index cards; verifies them against the code —
 mechanically where it can, flagged-with-evidence where it can't.
-Named for *Malurus cyaneus*, the fairywren that detects parasitic
-eggs that don't match its clutch.
+Named for *Mimus polyglottos*, the mockingbird that spots
+impostor eggs in its nest.
 
 ```
 claims ──► extract ──► classify ──► verify ──► report
@@ -29,16 +29,16 @@ claims ──► extract ──► classify ──► verify ──► report
   `llm`), claim sources, sinks — ports/impls are separate crates
 - rules are data (`rules/*.toml`), not code — a convention like
   "dispatch via `lang.eval`, never `kind ==`" is a rule file
-- docs-as-tests: `malurus check` in CI means docs can't silently rot
+- docs-as-tests: `mimus check` in CI means docs can't silently rot
 
 ## vs. a linter
 
-- linters check code shape; malurus checks *claims about reality* —
+- linters check code shape; mimus checks *claims about reality* —
   "this command works", "this path exists", "this doc's numbers
   are current", "this ADR isn't superseded by the code"
 - violations are enumerable and verifiable — a doc sweep becomes a
   checklist, not a vibe
-- it audits the memory layer too: kuda remembers, malurus doubts
+- it audits the memory layer too: kuda remembers, mimus doubts
 
 ## Install
 
@@ -46,25 +46,25 @@ Platform: **Linux + git**. The `symbol` checker wants a `kuda`
 index; the `llm` checker wants a provider key.
 
 ```sh
-cargo install malurus                                  # crates.io (post-0.1.0)
-cargo install --git https://github.com/9aia/malurus malurus   # today
+cargo install mimus                                  # crates.io (post-0.1.0)
+cargo install --git https://github.com/9aia/mimus mimus   # today
 ```
 
 ## Quickstart
 
 ```sh
 cd your-repo
-malurus init            # detect sources -> malurus.toml + rules/
-malurus check           # mechanical claims: paths, cmds, symbols
-malurus check --all     # + semantic tier (reported, not gated)
-malurus audit           # trust-score the .kuda/ cards
-malurus report          # full violations list with evidence
-malurus doctor          # checker/kuda-index health
+mimus init            # detect sources -> mimus.toml + rules/
+mimus check           # mechanical claims: paths, cmds, symbols
+mimus check --all     # + semantic tier (reported, not gated)
+mimus audit           # trust-score the .kuda/ cards
+mimus report          # full violations list with evidence
+mimus doctor          # checker/kuda-index health
 ```
 
 ## Docs
 
-Full docs: **[9aia.com/malurus](https://9aia.com/malurus/)** —
+Full docs: **[9aia.com/mimus](https://9aia.com/mimus/)** —
 tutorial, how-tos, cli/rules/crate-API reference, architecture
 (Diátaxis).
 

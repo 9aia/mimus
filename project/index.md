@@ -1,6 +1,6 @@
 # Project index
 
-Planning and design docs for malurus's next iterations.
+Planning and design docs for mimus's next iterations.
 
 - [TODO](TODO.md) — 0.1.0: claim model, mechanical checkers, check
 - [BACKLOG](BACKLOG.md) — unscheduled ideas + remaining seams (0.2+)

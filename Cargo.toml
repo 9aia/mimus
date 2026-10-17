@@ -1,28 +1,28 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/malurus-cli",
-    "crates/malurus-core",
-    "crates/malurus-claims",
-    "crates/malurus-check",
-    "crates/malurus-check-fs",
-    "crates/malurus-check-cmd",
-    "crates/malurus-check-symbol",
-    "crates/malurus-rules",
-    "crates/malurus-vcs",
-    "crates/malurus-git",
-    "crates/malurus-secret",
-    "crates/malurus-keyring",
-    "crates/malurus-dotenv",
-    "crates/malurus-config",
-    "crates/malurus-config-toml",
+    "crates/mimus-cli",
+    "crates/mimus-core",
+    "crates/mimus-claims",
+    "crates/mimus-check",
+    "crates/mimus-check-fs",
+    "crates/mimus-check-cmd",
+    "crates/mimus-check-symbol",
+    "crates/mimus-rules",
+    "crates/mimus-vcs",
+    "crates/mimus-git",
+    "crates/mimus-secret",
+    "crates/mimus-keyring",
+    "crates/mimus-dotenv",
+    "crates/mimus-config",
+    "crates/mimus-config-toml",
 ]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-repository = "https://github.com/9aia/malurus"
+repository = "https://github.com/9aia/mimus"
 description = "Spots the cuckoo eggs in your repo — claim extraction + verification: docs-as-tests, memory audit"
 
 # The profile that 'dist' will build with
@@ -31,20 +31,20 @@ inherits = "release"
 lto = "thin"
 
 [workspace.dependencies]
-malurus-core = { path = "crates/malurus-core", version = "0.1.0" }
-malurus-claims = { path = "crates/malurus-claims", version = "0.1.0" }
-malurus-check = { path = "crates/malurus-check", version = "0.1.0" }
-malurus-check-fs = { path = "crates/malurus-check-fs", version = "0.1.0" }
-malurus-check-cmd = { path = "crates/malurus-check-cmd", version = "0.1.0" }
-malurus-check-symbol = { path = "crates/malurus-check-symbol", version = "0.1.0" }
-malurus-rules = { path = "crates/malurus-rules", version = "0.1.0" }
-malurus-vcs = { path = "crates/malurus-vcs", version = "0.1.0" }
-malurus-git = { path = "crates/malurus-git", version = "0.1.0" }
-malurus-secret = { path = "crates/malurus-secret", version = "0.1.0" }
-malurus-keyring = { path = "crates/malurus-keyring", version = "0.1.0" }
-malurus-dotenv = { path = "crates/malurus-dotenv", version = "0.1.0" }
-malurus-config = { path = "crates/malurus-config", version = "0.1.0" }
-malurus-config-toml = { path = "crates/malurus-config-toml", version = "0.1.0" }
+mimus-core = { path = "crates/mimus-core", version = "0.1.0" }
+mimus-claims = { path = "crates/mimus-claims", version = "0.1.0" }
+mimus-check = { path = "crates/mimus-check", version = "0.1.0" }
+mimus-check-fs = { path = "crates/mimus-check-fs", version = "0.1.0" }
+mimus-check-cmd = { path = "crates/mimus-check-cmd", version = "0.1.0" }
+mimus-check-symbol = { path = "crates/mimus-check-symbol", version = "0.1.0" }
+mimus-rules = { path = "crates/mimus-rules", version = "0.1.0" }
+mimus-vcs = { path = "crates/mimus-vcs", version = "0.1.0" }
+mimus-git = { path = "crates/mimus-git", version = "0.1.0" }
+mimus-secret = { path = "crates/mimus-secret", version = "0.1.0" }
+mimus-keyring = { path = "crates/mimus-keyring", version = "0.1.0" }
+mimus-dotenv = { path = "crates/mimus-dotenv", version = "0.1.0" }
+mimus-config = { path = "crates/mimus-config", version = "0.1.0" }
+mimus-config-toml = { path = "crates/mimus-config-toml", version = "0.1.0" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "0.8"

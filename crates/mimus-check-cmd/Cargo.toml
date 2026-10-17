@@ -1,0 +1,13 @@
+[package]
+name = "mimus-check-cmd"
+description = "Check impl: command claims -> PATH/sh parse"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["verification", "mimus"]
+categories = ["development-tools"]
+
+[dependencies]
+mimus-core.workspace = true
+mimus-check.workspace = true

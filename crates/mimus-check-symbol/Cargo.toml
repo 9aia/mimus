@@ -1,0 +1,13 @@
+[package]
+name = "mimus-check-symbol"
+description = "Check impl: symbol claims -> kuda index (stub)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["verification", "mimus"]
+categories = ["development-tools"]
+
+[dependencies]
+mimus-core.workspace = true
+mimus-check.workspace = true

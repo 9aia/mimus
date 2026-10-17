@@ -14,7 +14,7 @@ import re
 import subprocess
 
 MAIN = (pathlib.Path(__file__).parent.parent
-        / "dagger/src/malurus/main.py")
+        / "dagger/src/mimus/main.py")
 
 
 def module_source() -> str:

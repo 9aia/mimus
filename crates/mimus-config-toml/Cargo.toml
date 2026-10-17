@@ -1,0 +1,14 @@
+[package]
+name = "mimus-config-toml"
+description = "Config impl: mimus.toml file (explicit path, env, ./, ~/.config)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["verification", "mimus"]
+categories = ["development-tools"]
+
+[dependencies]
+mimus-config.workspace = true
+mimus-core.workspace = true
+toml = "0.8"

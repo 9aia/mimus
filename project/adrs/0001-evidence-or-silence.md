@@ -16,7 +16,7 @@ output, noisy. Rejected as the core mechanism (viable as one
 checker behind the port, report-tier only).
 
 **B. Rule-matching linter over prose** — catches known-bad patterns
-but can't verify factual claims. Partial — kept as `malurus-rules`.
+but can't verify factual claims. Partial — kept as `mimus-rules`.
 
 **C. Claim extraction + typed verification (recommended)** — parse
 claims into a taxonomy; each claim type routes to the checker that
@@ -34,7 +34,7 @@ findings.
   emitted.
 - Every violation = claim + evidence + suggested fix. No evidence,
   no finding ("evidence or silence").
-- `malurus audit` applies the same machinery to `.kuda/` cards —
+- `mimus audit` applies the same machinery to `.kuda/` cards —
   memory gets a trust score, not a free pass.
 - Rules are data (`rules/*.toml`) — conventions as files, not code.
 
