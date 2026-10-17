@@ -11,3 +11,4 @@ categories = ["development-tools"]
 [dependencies]
 mimus-core.workspace = true
 mimus-check.workspace = true
+rusqlite.workspace = true
