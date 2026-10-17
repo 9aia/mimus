@@ -1,0 +1,13 @@
+[package]
+name = "malurus-check-symbol"
+description = "Check impl: symbol claims -> kuda index (stub)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["verification", "malurus"]
+categories = ["development-tools"]
+
+[dependencies]
+malurus-core.workspace = true
+malurus-check.workspace = true

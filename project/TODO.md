@@ -22,7 +22,7 @@
 - [ ] `malurus report` — violations with claim+evidence+fix
 
 ## Scaffold debt (forked from bupha — rewrite crate-by-crate)
-- [ ] Crates still implement bupha's CI domain (see kuda TODO —
-      same repurpose/drop list applies; `malurus-secret*`/`malurus-vcs`/
-      `malurus-git`/`malurus-cli` keep, the runner/trigger/tunnel
-      set drops).
+- [x] Topology landed: CI crates dropped (recoverable from history),
+      check/claims/rules crates stubbed, `malurus-core` rewritten
+      to the claim/violation domain, `malurus` CLI works — `init`
+      and `check` (fs+cmd checkers + rules) are functional.

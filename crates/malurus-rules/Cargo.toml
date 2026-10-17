@@ -1,0 +1,16 @@
+[package]
+name = "malurus-rules"
+description = "Convention rules as data — rules/*.toml"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["verification", "malurus"]
+categories = ["development-tools"]
+
+[dependencies]
+malurus-core.workspace = true
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+regex = "1"
+glob = "0.3"

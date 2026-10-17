@@ -1,11 +1,11 @@
 [package]
 name = "malurus-core"
-description = "malurus domain core: config types, job queues, shared primitives — no ports, no integrations"
+description = "malurus domain core: claims, violations, evidence, trust — no ports, no integrations"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-keywords = ["ci", "malurus"]
+keywords = ["verification", "malurus"]
 categories = ["development-tools"]
 
 [dependencies]

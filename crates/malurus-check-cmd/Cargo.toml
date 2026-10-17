@@ -1,0 +1,13 @@
+[package]
+name = "malurus-check-cmd"
+description = "Check impl: command claims -> PATH/sh parse"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["verification", "malurus"]
+categories = ["development-tools"]
+
+[dependencies]
+malurus-core.workspace = true
+malurus-check.workspace = true

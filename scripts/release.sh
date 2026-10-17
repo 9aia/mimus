@@ -16,27 +16,24 @@ if [ -z "$last" ]; then
 fi
 changed="$(git diff --name-only "${last}..HEAD")"
 
+# workspace crates in publish order (path-deps first)
+order="malurus-core malurus-vcs malurus-config malurus-secret \
+malurus-check malurus-claims malurus-rules \
+malurus-git malurus-config-toml malurus-keyring malurus-dotenv \
+malurus-check-fs malurus-check-cmd malurus-check-symbol \
+malurus"
+
 touched=""
-for c in malurus-core malurus-runner malurus-tunnel malurus-trigger malurus-status \
-         malurus-vcs malurus-queue malurus-service malurus-secret malurus-config malurus-cache \
-         malurus-git malurus-queue-redb malurus-keyring malurus-dotenv malurus-config-toml malurus-cache-sccache \
-         malurus-dagger malurus-shell malurus-github malurus-cloudflared \
-         malurus-systemd malurus-cli; do
+for c in $order malurus-cli; do
     grep -q "^crates/$c/" <<<"$changed" && touched="$touched $c"
 done
 # the bin re-publishes whenever any crate changed
 [ -n "$touched" ] && touched="$touched malurus"
 if [ -z "$touched" ]; then echo "no crate changes since $last"; exit 0; fi
-
-order="malurus-core malurus-trigger malurus-status malurus-runner \
-malurus-tunnel malurus-vcs malurus-queue malurus-service malurus-secret malurus-config malurus-cache \
-malurus-dagger malurus-shell malurus-github malurus-cloudflared \
-malurus-git malurus-queue-redb malurus-keyring malurus-dotenv malurus-config-toml malurus-cache-sccache \
-malurus-systemd malurus"
-published=""
+published=""; tags=""
 for c in $order; do
-    p="${c}"; [ "$c" = malurus ] && p="malurus"   # cli package name
-    dir="crates/$c"
+    p="${c}"; cdir="$c"
+    [ "$c" = malurus ] && cdir="malurus-cli"      # cli package dir
     grep -q " ${c} \|^${c} \?$\| ${c}$" <<<" $touched " || continue
     cargo set-version -p "$p" --bump patch
     for i in 1 2 3 4 5; do
@@ -44,7 +41,7 @@ for c in $order; do
     done
     published="$published $p"
     # Per-crate tag — versions diverge independently in a monorepo.
-    ver_c="$(grep -m1 '^version' "crates/$p/Cargo.toml" | cut -d'"' -f2)"
+    ver_c="$(grep -m1 '^version' "crates/$cdir/Cargo.toml" | cut -d'"' -f2)"
     tags="$tags $p-v$ver_c"
 done
 
