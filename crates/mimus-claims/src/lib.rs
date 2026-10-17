@@ -80,13 +80,22 @@ fn classify(span: &str) -> Option<ClaimKind> {
         }
         return Some(ClaimKind::Path);
     }
-    // Command-ish: starts with a plausible binary word.
+    // Command-ish: only when the first token is a known binary —
+    // "starts with a lowercase word" eats code keywords (pub, data).
     if s.contains(' ') {
         let first = s.split_whitespace().next()?;
-        if first
-            .chars()
-            .all(|c| c.is_ascii_lowercase() || c == '-' || c == '_')
-        {
+        const BINARIES: &[&str] = &[
+            "cargo", "rustc", "rustup", "git", "gh", "npm", "npx", "yarn", "pnpm", "bun",
+            "deno", "node", "pip", "pip3", "uv", "python", "python3", "pytest", "poetry",
+            "go", "make", "cmake", "ninja", "meson", "bazel", "mvn", "gradle", "docker",
+            "kubectl", "helm", "terraform", "ansible", "systemctl", "journalctl", "dagger",
+            "curl", "wget", "ssh", "scp", "rsync", "jq", "tar", "gzip", "zip", "unzip",
+            "rg", "grep", "find", "sed", "awk", "sort", "diff", "patch", "xargs", "tee",
+            "sh", "bash", "zsh", "sqlite3", "psql", "mysql", "openssl", "ffmpeg",
+            "nextest", "cargo-nextest", "kuda", "mimus", "bupha", "hnl", "clippy",
+            "rustfmt", "rustdoc", "wasm-pack", "trunk", "vite", "tsc", "eslint",
+        ];
+        if BINARIES.contains(&first) {
             return Some(ClaimKind::Command);
         }
         return None;
