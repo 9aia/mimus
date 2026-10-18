@@ -30,8 +30,9 @@ and `data Eq` get read as shell.
   rules. This is the `mimus check` gate; if it flags something,
   the evidence is reproducible by anyone.
 - **Semantic** — advisory: the `acp` checker spawns an ACP agent
-  (`acp_cmd`, e.g. `cline --acp -P cline-pass -m
-  cline-free/mimo-v2.6-flash`) to verify `behavior` claims —
+  (`acp_cmd`, e.g. `env CLINE_PROVIDER=cline-pass
+  CLINE_MODEL=cline-free/mimo-v2.6-flash cline --acp` —
+  provider/model are env vars; -P/-m flags are ignored in ACP mode) to verify `behavior` claims —
   including kuda card prose. Runs with `--all` or
   `[check].semantic`; every finding is `warn` + evidence.
   **Can never gate** — that is load-bearing, not a limitation.
