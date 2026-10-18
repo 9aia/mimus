@@ -329,6 +329,20 @@ impl Checker for AcpChecker {
         if claims.len() <= 1 {
             return claims.iter().map(|c| self.check(c)).collect();
         }
+        // self-cleaning cache — keys are claim+file hashes; claims
+        // no longer in the set are dropped so the file can't grow
+        {
+            let keys: std::collections::HashSet<String> =
+                claims.iter().map(|c| self.claim_key(c)).collect();
+            if let Ok(mut v) = self.verdicts.lock() {
+                if v.retain(|k, _| keys.contains(k)).is_some() {
+                    let _ = std::fs::write(
+                        &self.cache_path,
+                        serde_json::to_string_pretty(&*v).unwrap_or_default(),
+                    );
+                }
+            }
+        }
         // triage + cache first — dead paths are free verdicts,
         // cached claims never re-prompt
         let mut out: Vec<Option<Result<Option<Violation>, String>>> =
@@ -409,7 +423,13 @@ impl Checker for AcpChecker {
         for c in claims {
             for tok in c.text.split(|ch: char| !(ch.is_alphanumeric() || ch == '_')) {
                 let tok = tok.trim_matches(|ch: char| !ch.is_alphanumeric());
-                if tok.len() >= 6 && tok.chars().next().map(|c| c.is_alphabetic()).unwrap_or(false) {
+                // identifier-shaped subjects only — snake_case or
+                // Capitalized, ≥6 chars. Filters natural words so
+                // clusters are genuinely about the same thing.
+                let identish = tok.len() >= 6
+                    && (tok.contains('_')
+                        || tok.chars().next().map(|c| c.is_uppercase()).unwrap_or(false));
+                if identish {
                     subject.entry(tok.to_owned()).or_default().push(c);
                 }
             }
