@@ -10,12 +10,48 @@ use std::path::Path;
 /// the things they assert (paths, commands, names).
 pub fn extract(text: &str, source: &Path) -> Vec<Claim> {
     let mut out = Vec::new();
+    let mut in_fence = false;
+    let mut behavior_seen = 0usize;
     for (line_no, line) in text.lines().enumerate() {
+        if line.trim_start().starts_with("```") {
+            in_fence = !in_fence;
+            continue;
+        }
         for span in backtick_spans(line) {
             if let Some(kind) = classify(span) {
                 out.push(Claim {
                     kind,
                     text: span.to_owned(),
+                    source: source.to_path_buf(),
+                    line: (line_no + 1) as u32,
+                });
+            }
+        }
+        // prose assertions -> Behavior claims for the semantic
+        // checker; unhandled kinds are skipped by checkers that
+        // don't claim them, so mechanical runs are unaffected.
+        // Cap per file: docs full of assertions shouldn't flood
+        // the (rate-limited) agent.
+        if !in_fence && behavior_seen < 10 {
+            let t = line.trim();
+            let assertive = t.ends_with('.')
+                && !t.starts_with('#')
+                && !t.starts_with('|')
+                && !t.starts_with('-')
+                && !t.starts_with('*')
+                && t.split_whitespace().count() >= 6
+                && t.split_whitespace().any(|w| {
+                    matches!(
+                        w.trim_matches(|c: char| !c.is_alphabetic()),
+                        "is" | "are" | "stores" | "uses" | "reads" | "writes"
+                            | "returns" | "contains" | "supports" | "defaults"
+                    )
+                });
+            if assertive {
+                behavior_seen += 1;
+                out.push(Claim {
+                    kind: ClaimKind::Behavior,
+                    text: t.to_owned(),
                     source: source.to_path_buf(),
                     line: (line_no + 1) as u32,
                 });
