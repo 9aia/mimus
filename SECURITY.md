@@ -7,7 +7,7 @@ Do not open public issues for security reports.
 
 ## Scope
 
-- `mimus check --cmd` executes shell lines it finds in docs — it
+- `mimus check` executes shell lines it finds in docs — it
   verifies *your own repo's* documented commands; never point it at
   untrusted sources without `--no-cmd`.
 - `mimus` reads source trees and doc files; it does not write to
