@@ -29,3 +29,6 @@ Ideas parked, not scheduled. Pull into project/TODO.md when picked up.
 ## Release
 - [ ] crates.io release — `scripts/release.sh` publishes the
       crate graph in dep order; needs a dry-run pass + tags
+- [ ] AcpChecker: batch claims per prompt (e.g. 5/session/prompt)
+      + optional inter-request delay — 46 back-to-back prompts is
+      rude to the provider and hits rate limits
