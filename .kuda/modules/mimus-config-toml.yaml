@@ -1,0 +1,75 @@
+name: mimus-config-toml
+path: crates/mimus-config-toml/Cargo.toml
+purpose: 'Config adapter: mimus.toml file (explicit path, env, ./, ~/.config)'
+api:
+- name: mimus-config-toml
+  kind: module
+  file: crates/mimus-config-toml/Cargo.toml
+  line: 1
+  module: mimus-config-toml
+- name: tmp
+  kind: function
+  file: crates/mimus-config-toml/tests/load.rs
+  line: 4
+  module: mimus-config-toml
+- name: CFG
+  kind: const
+  file: crates/mimus-config-toml/tests/load.rs
+  line: 8
+  module: mimus-config-toml
+- name: loads_via_env_var
+  kind: function
+  file: crates/mimus-config-toml/tests/load.rs
+  line: 18
+  module: mimus-config-toml
+- name: explicit_path_and_missing_error
+  kind: function
+  file: crates/mimus-config-toml/tests/load.rs
+  line: 34
+  module: mimus-config-toml
+- name: TomlSource
+  kind: type
+  file: crates/mimus-config-toml/src/lib.rs
+  line: 7
+  module: mimus-config-toml
+- name: load
+  kind: function
+  file: crates/mimus-config-toml/src/lib.rs
+  line: 13
+  module: mimus-config-toml
+deps:
+- mimus-config
+- mimus-core
+- toml
+- mimus_config
+- mimus_config_toml
+- mimus_config
+notes: ''
+verify:
+- crates/mimus-config-toml/Cargo.toml
+- crates/mimus-config-toml/tests/load.rs
+- crates/mimus-config-toml/tests/load.rs
+- crates/mimus-config-toml/tests/load.rs
+- crates/mimus-config-toml/tests/load.rs
+- crates/mimus-config-toml/src/lib.rs
+- crates/mimus-config-toml/src/lib.rs
+provenance:
+  files:
+  - crates/mimus-config-toml/Cargo.toml
+  - crates/mimus-config-toml/tests/load.rs
+  - crates/mimus-config-toml/tests/load.rs
+  - crates/mimus-config-toml/tests/load.rs
+  - crates/mimus-config-toml/tests/load.rs
+  - crates/mimus-config-toml/src/lib.rs
+  - crates/mimus-config-toml/src/lib.rs
+  hashes:
+  - 47f21a9cf176c7708d2a879eff9f464589ceb363
+  - 85e779dae9b49918b6567c32e8b2ef0a87cef4af
+  - 85e779dae9b49918b6567c32e8b2ef0a87cef4af
+  - 85e779dae9b49918b6567c32e8b2ef0a87cef4af
+  - 85e779dae9b49918b6567c32e8b2ef0a87cef4af
+  - df0435c4e074ab77e947823692b3c00b93fcbfcf
+  - df0435c4e074ab77e947823692b3c00b93fcbfcf
+  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
+  generated_at: '1792310965'
+  generator: kuda-template/0.1.0

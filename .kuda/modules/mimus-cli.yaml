@@ -1,0 +1,202 @@
+name: mimus-cli
+path: crates/mimus-cli/tests/e2e.rs
+purpose: '*Spots the cuckoo eggs in your repo.*'
+api:
+- name: mimus
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 6
+  module: mimus-cli
+- name: help_and_stub
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 15
+  module: mimus-cli
+- name: check_flags_dead_path
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 24
+  module: mimus-cli
+- name: EXAMPLE_TOML
+  kind: const
+  file: crates/mimus-cli/src/main.rs
+  line: 11
+  module: mimus-cli
+- name: Cli
+  kind: type
+  file: crates/mimus-cli/src/main.rs
+  line: 19
+  module: mimus-cli
+- name: Cmd
+  kind: type
+  file: crates/mimus-cli/src/main.rs
+  line: 34
+  module: mimus-cli
+- name: main
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 70
+  module: mimus-cli
+- name: root
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 88
+  module: mimus-cli
+- name: init
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 97
+  module: mimus-cli
+- name: load
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 117
+  module: mimus-cli
+- name: doc_claims
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 125
+  module: mimus-cli
+- name: claims_dump
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 158
+  module: mimus-cli
+- name: collect
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 188
+  module: mimus-cli
+- name: check
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 240
+  module: mimus-cli
+- name: card_prose_claims
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 255
+  module: mimus-cli
+- name: report
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 294
+  module: mimus-cli
+- name: fix
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 302
+  module: mimus-cli
+- name: repo_files
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 346
+  module: mimus-cli
+- name: dead_path_candidate
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 370
+  module: mimus-cli
+- name: rewrite_claim
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 406
+  module: mimus-cli
+- name: audit
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 423
+  module: mimus-cli
+- name: emit
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 478
+  module: mimus-cli
+- name: doctor
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 504
+  module: mimus-cli
+deps:
+- clap
+- mimus_check
+- mimus_config
+- mimus_config_toml
+- mimus_core
+notes: ''
+verify:
+- crates/mimus-cli/tests/e2e.rs
+- crates/mimus-cli/tests/e2e.rs
+- crates/mimus-cli/tests/e2e.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/src/main.rs
+provenance:
+  files:
+  - crates/mimus-cli/tests/e2e.rs
+  - crates/mimus-cli/tests/e2e.rs
+  - crates/mimus-cli/tests/e2e.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/src/main.rs
+  hashes:
+  - 5e8c47c0e54309f0d8597bdee10815176f70255a
+  - 5e8c47c0e54309f0d8597bdee10815176f70255a
+  - 5e8c47c0e54309f0d8597bdee10815176f70255a
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
+  generated_at: '1792310965'
+  generator: kuda-template/0.1.0

@@ -1,0 +1,141 @@
+name: dagger
+path: modules/dagger/dagger/pyproject.toml
+purpose: '*Spots the cuckoo eggs in your repo.*'
+api:
+- name: dagger
+  kind: module
+  file: modules/dagger/dagger/pyproject.toml
+  line: 1
+  module: dagger
+- name: Mimus
+  kind: type
+  file: modules/dagger/dagger/src/mimus/main.py
+  line: 102
+  module: dagger
+- name: _base
+  kind: function
+  file: modules/dagger/dagger/src/mimus/main.py
+  line: 105
+  module: dagger
+- name: _workspace
+  kind: function
+  file: modules/dagger/dagger/src/mimus/main.py
+  line: 137
+  module: dagger
+- name: _link_repo
+  kind: function
+  file: modules/dagger/dagger/src/mimus/main.py
+  line: 190
+  module: dagger
+- name: workspace
+  kind: function
+  file: modules/dagger/dagger/src/mimus/main.py
+  line: 209
+  module: dagger
+- name: with_sibling
+  kind: function
+  file: modules/dagger/dagger/src/mimus/main.py
+  line: 222
+  module: dagger
+- name: run_script
+  kind: function
+  file: modules/dagger/dagger/src/mimus/main.py
+  line: 238
+  module: dagger
+- name: _exec
+  kind: function
+  file: modules/dagger/dagger/src/mimus/main.py
+  line: 248
+  module: dagger
+- name: doctor
+  kind: function
+  file: modules/dagger/dagger/src/mimus/main.py
+  line: 268
+  module: dagger
+- name: test_shard
+  kind: function
+  file: modules/dagger/dagger/src/mimus/main.py
+  line: 292
+  module: dagger
+- name: doctests
+  kind: function
+  file: modules/dagger/dagger/src/mimus/main.py
+  line: 318
+  module: dagger
+- name: test
+  kind: function
+  file: modules/dagger/dagger/src/mimus/main.py
+  line: 335
+  module: dagger
+- name: coverage_report
+  kind: function
+  file: modules/dagger/dagger/src/mimus/main.py
+  line: 372
+  module: dagger
+- name: coverage_gate
+  kind: function
+  file: modules/dagger/dagger/src/mimus/main.py
+  line: 398
+  module: dagger
+- name: run
+  kind: function
+  file: modules/dagger/dagger/src/mimus/main.py
+  line: 416
+  module: dagger
+deps: []
+notes: ''
+verify:
+- modules/dagger/dagger/pyproject.toml
+- modules/dagger/dagger/src/mimus/main.py
+- modules/dagger/dagger/src/mimus/main.py
+- modules/dagger/dagger/src/mimus/main.py
+- modules/dagger/dagger/src/mimus/main.py
+- modules/dagger/dagger/src/mimus/main.py
+- modules/dagger/dagger/src/mimus/main.py
+- modules/dagger/dagger/src/mimus/main.py
+- modules/dagger/dagger/src/mimus/main.py
+- modules/dagger/dagger/src/mimus/main.py
+- modules/dagger/dagger/src/mimus/main.py
+- modules/dagger/dagger/src/mimus/main.py
+- modules/dagger/dagger/src/mimus/main.py
+- modules/dagger/dagger/src/mimus/main.py
+- modules/dagger/dagger/src/mimus/main.py
+- modules/dagger/dagger/src/mimus/main.py
+provenance:
+  files:
+  - modules/dagger/dagger/pyproject.toml
+  - modules/dagger/dagger/src/mimus/main.py
+  - modules/dagger/dagger/src/mimus/main.py
+  - modules/dagger/dagger/src/mimus/main.py
+  - modules/dagger/dagger/src/mimus/main.py
+  - modules/dagger/dagger/src/mimus/main.py
+  - modules/dagger/dagger/src/mimus/main.py
+  - modules/dagger/dagger/src/mimus/main.py
+  - modules/dagger/dagger/src/mimus/main.py
+  - modules/dagger/dagger/src/mimus/main.py
+  - modules/dagger/dagger/src/mimus/main.py
+  - modules/dagger/dagger/src/mimus/main.py
+  - modules/dagger/dagger/src/mimus/main.py
+  - modules/dagger/dagger/src/mimus/main.py
+  - modules/dagger/dagger/src/mimus/main.py
+  - modules/dagger/dagger/src/mimus/main.py
+  hashes:
+  - 6391d6a9586b1a42d2e3b1270cd9a441f321af68
+  - 912bc128df92503a9353c765bd892d9ec84c537e
+  - 912bc128df92503a9353c765bd892d9ec84c537e
+  - 912bc128df92503a9353c765bd892d9ec84c537e
+  - 912bc128df92503a9353c765bd892d9ec84c537e
+  - 912bc128df92503a9353c765bd892d9ec84c537e
+  - 912bc128df92503a9353c765bd892d9ec84c537e
+  - 912bc128df92503a9353c765bd892d9ec84c537e
+  - 912bc128df92503a9353c765bd892d9ec84c537e
+  - 912bc128df92503a9353c765bd892d9ec84c537e
+  - 912bc128df92503a9353c765bd892d9ec84c537e
+  - 912bc128df92503a9353c765bd892d9ec84c537e
+  - 912bc128df92503a9353c765bd892d9ec84c537e
+  - 912bc128df92503a9353c765bd892d9ec84c537e
+  - 912bc128df92503a9353c765bd892d9ec84c537e
+  - 912bc128df92503a9353c765bd892d9ec84c537e
+  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
+  generated_at: '1792310965'
+  generator: kuda-template/0.1.0

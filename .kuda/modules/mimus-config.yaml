@@ -1,0 +1,30 @@
+name: mimus-config
+path: crates/mimus-config/Cargo.toml
+purpose: 'Config port: where mimus.toml-shaped config comes from'
+api:
+- name: mimus-config
+  kind: module
+  file: crates/mimus-config/Cargo.toml
+  line: 1
+  module: mimus-config
+- name: ConfigSource
+  kind: trait
+  file: crates/mimus-config/src/lib.rs
+  line: 5
+  module: mimus-config
+deps:
+- mimus-core
+notes: ''
+verify:
+- crates/mimus-config/Cargo.toml
+- crates/mimus-config/src/lib.rs
+provenance:
+  files:
+  - crates/mimus-config/Cargo.toml
+  - crates/mimus-config/src/lib.rs
+  hashes:
+  - 2b57fc93873c3fa45b96c90218c20d4a3c9927f1
+  - 4c4410395d1b598e2e98bb8d009db5f57384a0b1
+  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
+  generated_at: '1792310965'
+  generator: kuda-template/0.1.0

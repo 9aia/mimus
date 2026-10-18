@@ -32,13 +32,13 @@ code, not a copy.
   extract (`manifest` | `treesitter` | `lsp`), summarize
   (`template` | `llm`), store (`sqlite` first), vcs (`git`),
   serve (`cli` | `mcp`).
-- Per-language knowledge = data (`data/langs/*`: grammar refs,
-  symbol queries, manifest kinds), never extractor code.
-  New language = data change, not release.
+- Per-language knowledge = data (kuda's data/langs/ descriptors:
+  grammar refs, symbol queries, manifest kinds), never extractor
+  code. New language = data change, not release.
 - `template` summarizer (zero-model, deterministic) is the
   default; LLM prose is an adapter behind the port.
-- Committed artifacts: `.mimus/index.yaml`, `.mimus/modules/*.yaml`.
-  Gitignored: `.mimus/index.sqlite` (rebuildable).
+- Committed artifacts: `.kuda/index.yaml`, `.kuda/modules/*.yaml`.
+  Gitignored: `.kuda/index.sqlite` (rebuildable).
 - Provenance per card `{files, content_hash, commit_sha}` →
   `mimus status` = sha diff vs HEAD. Cards end with `verify:`
   file lists — agents must check memory against source.

@@ -1,0 +1,44 @@
+name: mimus
+path: Cargo.toml
+purpose: '*Spots the cuckoo eggs in your repo.*'
+api:
+- name: mimus
+  kind: module
+  file: Cargo.toml
+  line: 1
+  module: mimus
+- name: mimus
+  kind: module
+  file: crates/mimus-cli/Cargo.toml
+  line: 1
+  module: mimus
+deps:
+- clap
+- clap-markdown
+- mimus-check
+- mimus-check-acp
+- mimus-check-cmd
+- mimus-check-fs
+- mimus-check-symbol
+- mimus-claims
+- mimus-config
+- mimus-config-toml
+- mimus-core
+- mimus-rules
+- serde_json
+- serde_yaml
+- toml
+notes: ''
+verify:
+- Cargo.toml
+- crates/mimus-cli/Cargo.toml
+provenance:
+  files:
+  - Cargo.toml
+  - crates/mimus-cli/Cargo.toml
+  hashes:
+  - dd6320097d8a5d5011182a0dfa6d5321edfcaa1c
+  - 27c0b54f3d12a0c83916fae649c6fab4ca18e4db
+  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
+  generated_at: '1792310965'
+  generator: kuda-template/0.1.0

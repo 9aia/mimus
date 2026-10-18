@@ -1,0 +1,58 @@
+name: mimus-check-fs
+path: crates/mimus-check-fs/Cargo.toml
+purpose: 'Check adapter: path claims -> filesystem'
+api:
+- name: mimus-check-fs
+  kind: module
+  file: crates/mimus-check-fs/Cargo.toml
+  line: 1
+  module: mimus-check-fs
+- name: FsChecker
+  kind: type
+  file: crates/mimus-check-fs/src/lib.rs
+  line: 9
+  module: mimus-check-fs
+- name: new
+  kind: function
+  file: crates/mimus-check-fs/src/lib.rs
+  line: 14
+  module: mimus-check-fs
+- name: handles
+  kind: function
+  file: crates/mimus-check-fs/src/lib.rs
+  line: 20
+  module: mimus-check-fs
+- name: check
+  kind: function
+  file: crates/mimus-check-fs/src/lib.rs
+  line: 24
+  module: mimus-check-fs
+deps:
+- glob
+- mimus-check
+- mimus-core
+- mimus_check
+- mimus_core
+notes: ''
+verify:
+- crates/mimus-check-fs/Cargo.toml
+- crates/mimus-check-fs/src/lib.rs
+- crates/mimus-check-fs/src/lib.rs
+- crates/mimus-check-fs/src/lib.rs
+- crates/mimus-check-fs/src/lib.rs
+provenance:
+  files:
+  - crates/mimus-check-fs/Cargo.toml
+  - crates/mimus-check-fs/src/lib.rs
+  - crates/mimus-check-fs/src/lib.rs
+  - crates/mimus-check-fs/src/lib.rs
+  - crates/mimus-check-fs/src/lib.rs
+  hashes:
+  - f2b819a109e334b4179687e87314f73ecb9b5341
+  - 227abf8da2ffe29c9ef3dcb93b0a45bd44aa57cf
+  - 227abf8da2ffe29c9ef3dcb93b0a45bd44aa57cf
+  - 227abf8da2ffe29c9ef3dcb93b0a45bd44aa57cf
+  - 227abf8da2ffe29c9ef3dcb93b0a45bd44aa57cf
+  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
+  generated_at: '1792310965'
+  generator: kuda-template/0.1.0

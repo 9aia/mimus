@@ -1,0 +1,121 @@
+name: mimus-git
+path: crates/mimus-git/Cargo.toml
+purpose: 'Vcs adapter: git via the git CLI'
+api:
+- name: mimus-git
+  kind: module
+  file: crates/mimus-git/Cargo.toml
+  line: 1
+  module: mimus-git
+- name: repo
+  kind: function
+  file: crates/mimus-git/tests/git.rs
+  line: 5
+  module: mimus-git
+- name: sync_has_commit_worktree_tag
+  kind: function
+  file: crates/mimus-git/tests/git.rs
+  line: 47
+  module: mimus-git
+- name: GitVcs
+  kind: type
+  file: crates/mimus-git/src/lib.rs
+  line: 7
+  module: mimus-git
+- name: git
+  kind: function
+  file: crates/mimus-git/src/lib.rs
+  line: 9
+  module: mimus-git
+- name: sync
+  kind: function
+  file: crates/mimus-git/src/lib.rs
+  line: 20
+  module: mimus-git
+- name: has_commit
+  kind: function
+  file: crates/mimus-git/src/lib.rs
+  line: 23
+  module: mimus-git
+- name: worktree_add
+  kind: function
+  file: crates/mimus-git/src/lib.rs
+  line: 26
+  module: mimus-git
+- name: worktree_remove
+  kind: function
+  file: crates/mimus-git/src/lib.rs
+  line: 38
+  module: mimus-git
+- name: worktree_prune
+  kind: function
+  file: crates/mimus-git/src/lib.rs
+  line: 49
+  module: mimus-git
+- name: tag_exists
+  kind: function
+  file: crates/mimus-git/src/lib.rs
+  line: 52
+  module: mimus-git
+- name: tag
+  kind: function
+  file: crates/mimus-git/src/lib.rs
+  line: 58
+  module: mimus-git
+- name: push_tag
+  kind: function
+  file: crates/mimus-git/src/lib.rs
+  line: 61
+  module: mimus-git
+deps:
+- mimus-vcs
+- mimus_git
+- mimus_vcs
+- mimus_vcs
+notes: ''
+verify:
+- crates/mimus-git/Cargo.toml
+- crates/mimus-git/tests/git.rs
+- crates/mimus-git/tests/git.rs
+- crates/mimus-git/src/lib.rs
+- crates/mimus-git/src/lib.rs
+- crates/mimus-git/src/lib.rs
+- crates/mimus-git/src/lib.rs
+- crates/mimus-git/src/lib.rs
+- crates/mimus-git/src/lib.rs
+- crates/mimus-git/src/lib.rs
+- crates/mimus-git/src/lib.rs
+- crates/mimus-git/src/lib.rs
+- crates/mimus-git/src/lib.rs
+provenance:
+  files:
+  - crates/mimus-git/Cargo.toml
+  - crates/mimus-git/tests/git.rs
+  - crates/mimus-git/tests/git.rs
+  - crates/mimus-git/src/lib.rs
+  - crates/mimus-git/src/lib.rs
+  - crates/mimus-git/src/lib.rs
+  - crates/mimus-git/src/lib.rs
+  - crates/mimus-git/src/lib.rs
+  - crates/mimus-git/src/lib.rs
+  - crates/mimus-git/src/lib.rs
+  - crates/mimus-git/src/lib.rs
+  - crates/mimus-git/src/lib.rs
+  - crates/mimus-git/src/lib.rs
+  hashes:
+  - f902acdf6baa0db069e7f6a4cf2a486d7907347c
+  - 4771ee5660d33c8f48da2bcb96ce06d492b58512
+  - 4771ee5660d33c8f48da2bcb96ce06d492b58512
+  - 3656dd009087048742191569d42973992a2d5dc3
+  - 3656dd009087048742191569d42973992a2d5dc3
+  - 3656dd009087048742191569d42973992a2d5dc3
+  - 3656dd009087048742191569d42973992a2d5dc3
+  - 3656dd009087048742191569d42973992a2d5dc3
+  - 3656dd009087048742191569d42973992a2d5dc3
+  - 3656dd009087048742191569d42973992a2d5dc3
+  - 3656dd009087048742191569d42973992a2d5dc3
+  - 3656dd009087048742191569d42973992a2d5dc3
+  - 3656dd009087048742191569d42973992a2d5dc3
+  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
+  generated_at: '1792310965'
+  generator: kuda-template/0.1.0

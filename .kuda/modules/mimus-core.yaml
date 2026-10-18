@@ -1,0 +1,185 @@
+name: mimus-core
+path: crates/mimus-core/Cargo.toml
+purpose: 'mimus domain core: claims, violations, evidence, trust — no ports, no integrations'
+api:
+- name: mimus-core
+  kind: module
+  file: crates/mimus-core/Cargo.toml
+  line: 1
+  module: mimus-core
+- name: Claim
+  kind: type
+  file: crates/mimus-core/src/lib.rs
+  line: 13
+  module: mimus-core
+- name: ClaimKind
+  kind: type
+  file: crates/mimus-core/src/lib.rs
+  line: 27
+  module: mimus-core
+- name: Violation
+  kind: type
+  file: crates/mimus-core/src/lib.rs
+  line: 44
+  module: mimus-core
+- name: Severity
+  kind: type
+  file: crates/mimus-core/src/lib.rs
+  line: 56
+  module: mimus-core
+- name: TrustScore
+  kind: type
+  file: crates/mimus-core/src/lib.rs
+  line: 64
+  module: mimus-core
+- name: Config
+  kind: type
+  file: crates/mimus-core/src/lib.rs
+  line: 77
+  module: mimus-core
+- name: SourcesCfg
+  kind: type
+  file: crates/mimus-core/src/lib.rs
+  line: 90
+  module: mimus-core
+- name: default
+  kind: function
+  file: crates/mimus-core/src/lib.rs
+  line: 103
+  module: mimus-core
+- name: default_docs
+  kind: function
+  file: crates/mimus-core/src/lib.rs
+  line: 112
+  module: mimus-core
+- name: default_cards_glob
+  kind: function
+  file: crates/mimus-core/src/lib.rs
+  line: 120
+  module: mimus-core
+- name: CheckCfg
+  kind: type
+  file: crates/mimus-core/src/lib.rs
+  line: 126
+  module: mimus-core
+- name: default
+  kind: function
+  file: crates/mimus-core/src/lib.rs
+  line: 143
+  module: mimus-core
+- name: default_true
+  kind: function
+  file: crates/mimus-core/src/lib.rs
+  line: 153
+  module: mimus-core
+- name: RulesCfg
+  kind: type
+  file: crates/mimus-core/src/lib.rs
+  line: 159
+  module: mimus-core
+- name: default
+  kind: function
+  file: crates/mimus-core/src/lib.rs
+  line: 169
+  module: mimus-core
+- name: default_rules_dir
+  kind: function
+  file: crates/mimus-core/src/lib.rs
+  line: 177
+  module: mimus-core
+- name: ReportCfg
+  kind: type
+  file: crates/mimus-core/src/lib.rs
+  line: 183
+  module: mimus-core
+- name: default
+  kind: function
+  file: crates/mimus-core/src/lib.rs
+  line: 193
+  module: mimus-core
+- name: default_format
+  kind: function
+  file: crates/mimus-core/src/lib.rs
+  line: 201
+  module: mimus-core
+- name: default_confidence
+  kind: function
+  file: crates/mimus-core/src/lib.rs
+  line: 204
+  module: mimus-core
+deps:
+- serde
+- serde_json
+- toml
+- serde
+notes: ''
+verify:
+- crates/mimus-core/Cargo.toml
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+- crates/mimus-core/src/lib.rs
+provenance:
+  files:
+  - crates/mimus-core/Cargo.toml
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  hashes:
+  - 6b7185a94a97d0e4ebf63efd7a95dd2800f0bc41
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
+  generated_at: '1792310965'
+  generator: kuda-template/0.1.0

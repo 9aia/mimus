@@ -1,0 +1,76 @@
+name: mimus-rules
+path: crates/mimus-rules/Cargo.toml
+purpose: Convention rules as data — rules/*.toml
+api:
+- name: mimus-rules
+  kind: module
+  file: crates/mimus-rules/Cargo.toml
+  line: 1
+  module: mimus-rules
+- name: RuleDef
+  kind: type
+  file: crates/mimus-rules/src/lib.rs
+  line: 10
+  module: mimus-rules
+- name: default_severity
+  kind: function
+  file: crates/mimus-rules/src/lib.rs
+  line: 20
+  module: mimus-rules
+- name: RuleMatch
+  kind: type
+  file: crates/mimus-rules/src/lib.rs
+  line: 26
+  module: mimus-rules
+- name: load_rules
+  kind: function
+  file: crates/mimus-rules/src/lib.rs
+  line: 32
+  module: mimus-rules
+- name: eval_rule
+  kind: function
+  file: crates/mimus-rules/src/lib.rs
+  line: 51
+  module: mimus-rules
+- name: matching_files
+  kind: function
+  file: crates/mimus-rules/src/lib.rs
+  line: 77
+  module: mimus-rules
+deps:
+- glob
+- mimus-core
+- regex
+- serde
+- toml
+- mimus_core
+- serde
+notes: ''
+verify:
+- crates/mimus-rules/Cargo.toml
+- crates/mimus-rules/src/lib.rs
+- crates/mimus-rules/src/lib.rs
+- crates/mimus-rules/src/lib.rs
+- crates/mimus-rules/src/lib.rs
+- crates/mimus-rules/src/lib.rs
+- crates/mimus-rules/src/lib.rs
+provenance:
+  files:
+  - crates/mimus-rules/Cargo.toml
+  - crates/mimus-rules/src/lib.rs
+  - crates/mimus-rules/src/lib.rs
+  - crates/mimus-rules/src/lib.rs
+  - crates/mimus-rules/src/lib.rs
+  - crates/mimus-rules/src/lib.rs
+  - crates/mimus-rules/src/lib.rs
+  hashes:
+  - b1cf727ea9ec71dccd378bea295d8def00f34840
+  - 00d886e332aaf111ae6d476492c5e4ff8f26b282
+  - 00d886e332aaf111ae6d476492c5e4ff8f26b282
+  - 00d886e332aaf111ae6d476492c5e4ff8f26b282
+  - 00d886e332aaf111ae6d476492c5e4ff8f26b282
+  - 00d886e332aaf111ae6d476492c5e4ff8f26b282
+  - 00d886e332aaf111ae6d476492c5e4ff8f26b282
+  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
+  generated_at: '1792310965'
+  generator: kuda-template/0.1.0

@@ -1,0 +1,73 @@
+name: mimus-check-cmd
+path: crates/mimus-check-cmd/Cargo.toml
+purpose: 'Check adapter: command claims -> PATH/sh parse'
+api:
+- name: mimus-check-cmd
+  kind: module
+  file: crates/mimus-check-cmd/Cargo.toml
+  line: 1
+  module: mimus-check-cmd
+- name: CmdChecker
+  kind: type
+  file: crates/mimus-check-cmd/src/lib.rs
+  line: 10
+  module: mimus-check-cmd
+- name: new
+  kind: function
+  file: crates/mimus-check-cmd/src/lib.rs
+  line: 16
+  module: mimus-check-cmd
+- name: default
+  kind: function
+  file: crates/mimus-check-cmd/src/lib.rs
+  line: 22
+  module: mimus-check-cmd
+- name: binary_on_path
+  kind: function
+  file: crates/mimus-check-cmd/src/lib.rs
+  line: 27
+  module: mimus-check-cmd
+- name: handles
+  kind: function
+  file: crates/mimus-check-cmd/src/lib.rs
+  line: 42
+  module: mimus-check-cmd
+- name: check
+  kind: function
+  file: crates/mimus-check-cmd/src/lib.rs
+  line: 46
+  module: mimus-check-cmd
+deps:
+- mimus-check
+- mimus-core
+- mimus_check
+- mimus_core
+notes: ''
+verify:
+- crates/mimus-check-cmd/Cargo.toml
+- crates/mimus-check-cmd/src/lib.rs
+- crates/mimus-check-cmd/src/lib.rs
+- crates/mimus-check-cmd/src/lib.rs
+- crates/mimus-check-cmd/src/lib.rs
+- crates/mimus-check-cmd/src/lib.rs
+- crates/mimus-check-cmd/src/lib.rs
+provenance:
+  files:
+  - crates/mimus-check-cmd/Cargo.toml
+  - crates/mimus-check-cmd/src/lib.rs
+  - crates/mimus-check-cmd/src/lib.rs
+  - crates/mimus-check-cmd/src/lib.rs
+  - crates/mimus-check-cmd/src/lib.rs
+  - crates/mimus-check-cmd/src/lib.rs
+  - crates/mimus-check-cmd/src/lib.rs
+  hashes:
+  - 6b4f78cffb51266f2c162ba222cd448903d1f01e
+  - 81f5dcb241fe5d697fd587478c5ea1057cf258d5
+  - 81f5dcb241fe5d697fd587478c5ea1057cf258d5
+  - 81f5dcb241fe5d697fd587478c5ea1057cf258d5
+  - 81f5dcb241fe5d697fd587478c5ea1057cf258d5
+  - 81f5dcb241fe5d697fd587478c5ea1057cf258d5
+  - 81f5dcb241fe5d697fd587478c5ea1057cf258d5
+  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
+  generated_at: '1792310965'
+  generator: kuda-template/0.1.0

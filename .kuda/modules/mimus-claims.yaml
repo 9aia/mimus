@@ -1,0 +1,103 @@
+name: mimus-claims
+path: crates/mimus-claims/Cargo.toml
+purpose: Claim extraction — find factual assertions in prose/comments/cards
+api:
+- name: mimus-claims
+  kind: module
+  file: crates/mimus-claims/Cargo.toml
+  line: 1
+  module: mimus-claims
+- name: extract
+  kind: function
+  file: crates/mimus-claims/src/lib.rs
+  line: 11
+  module: mimus-claims
+- name: flush_para
+  kind: function
+  file: crates/mimus-claims/src/lib.rs
+  line: 58
+  module: mimus-claims
+- name: sentences
+  kind: function
+  file: crates/mimus-claims/src/lib.rs
+  line: 95
+  module: mimus-claims
+- name: is_assertion
+  kind: function
+  file: crates/mimus-claims/src/lib.rs
+  line: 102
+  module: mimus-claims
+- name: backtick_spans
+  kind: function
+  file: crates/mimus-claims/src/lib.rs
+  line: 115
+  module: mimus-claims
+- name: classify
+  kind: function
+  file: crates/mimus-claims/src/lib.rs
+  line: 145
+  module: mimus-claims
+- name: BINARIES
+  kind: const
+  file: crates/mimus-claims/src/lib.rs
+  line: 173
+  module: mimus-claims
+- name: tests
+  kind: module
+  file: crates/mimus-claims/src/lib.rs
+  line: 201
+  module: mimus-claims
+- name: extracts_paths_and_commands
+  kind: function
+  file: crates/mimus-claims/src/lib.rs
+  line: 205
+  module: mimus-claims
+- name: skips_formatting_and_env
+  kind: function
+  file: crates/mimus-claims/src/lib.rs
+  line: 217
+  module: mimus-claims
+deps:
+- mimus-core
+- mimus_core
+notes: ''
+verify:
+- crates/mimus-claims/Cargo.toml
+- crates/mimus-claims/src/lib.rs
+- crates/mimus-claims/src/lib.rs
+- crates/mimus-claims/src/lib.rs
+- crates/mimus-claims/src/lib.rs
+- crates/mimus-claims/src/lib.rs
+- crates/mimus-claims/src/lib.rs
+- crates/mimus-claims/src/lib.rs
+- crates/mimus-claims/src/lib.rs
+- crates/mimus-claims/src/lib.rs
+- crates/mimus-claims/src/lib.rs
+provenance:
+  files:
+  - crates/mimus-claims/Cargo.toml
+  - crates/mimus-claims/src/lib.rs
+  - crates/mimus-claims/src/lib.rs
+  - crates/mimus-claims/src/lib.rs
+  - crates/mimus-claims/src/lib.rs
+  - crates/mimus-claims/src/lib.rs
+  - crates/mimus-claims/src/lib.rs
+  - crates/mimus-claims/src/lib.rs
+  - crates/mimus-claims/src/lib.rs
+  - crates/mimus-claims/src/lib.rs
+  - crates/mimus-claims/src/lib.rs
+  hashes:
+  - 21e63d1417ba1bcba2262e855cb130e8e90f2151
+  - f47432c3fcaa1872783e08c76d0d1534dd4931cc
+  - f47432c3fcaa1872783e08c76d0d1534dd4931cc
+  - f47432c3fcaa1872783e08c76d0d1534dd4931cc
+  - f47432c3fcaa1872783e08c76d0d1534dd4931cc
+  - f47432c3fcaa1872783e08c76d0d1534dd4931cc
+  - f47432c3fcaa1872783e08c76d0d1534dd4931cc
+  - f47432c3fcaa1872783e08c76d0d1534dd4931cc
+  - f47432c3fcaa1872783e08c76d0d1534dd4931cc
+  - f47432c3fcaa1872783e08c76d0d1534dd4931cc
+  - f47432c3fcaa1872783e08c76d0d1534dd4931cc
+  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
+  generated_at: '1792310965'
+  generator: kuda-template/0.1.0

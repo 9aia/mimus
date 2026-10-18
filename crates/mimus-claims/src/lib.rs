@@ -19,7 +19,22 @@ pub fn extract(text: &str, source: &Path) -> Vec<Claim> {
             in_fence = !in_fence;
             continue;
         }
+        // fenced blocks are examples/output, not claims about this
+        // repo — a tutorial showing `nonexistent/dead.rs` as sample
+        // output must not become a dead-path violation
+        if in_fence {
+            continue;
+        }
+        // table rows are enumerations of syntax, not assertions —
+        // "| `path` | `src/lib.rs` |" is an example, not a claim
+        if line.trim_start().starts_with('|') {
+            continue;
+        }
         for span in backtick_spans(line) {
+            // `[text](url)` link syntax backticked is not a path
+            if span.contains("](") {
+                continue;
+            }
             if let Some(kind) = classify(span) {
                 out.push(Claim {
                     kind,

@@ -1,0 +1,55 @@
+name: mimus-keyring
+path: crates/mimus-keyring/Cargo.toml
+purpose: 'Secret adapter: OS keyring via secret-tool (libsecret)'
+api:
+- name: mimus-keyring
+  kind: module
+  file: crates/mimus-keyring/Cargo.toml
+  line: 1
+  module: mimus-keyring
+- name: KeyringSecrets
+  kind: type
+  file: crates/mimus-keyring/src/lib.rs
+  line: 9
+  module: mimus-keyring
+- name: default
+  kind: function
+  file: crates/mimus-keyring/src/lib.rs
+  line: 15
+  module: mimus-keyring
+- name: get
+  kind: function
+  file: crates/mimus-keyring/src/lib.rs
+  line: 23
+  module: mimus-keyring
+- name: set
+  kind: function
+  file: crates/mimus-keyring/src/lib.rs
+  line: 33
+  module: mimus-keyring
+deps:
+- mimus-secret
+- mimus_secret
+notes: ''
+verify:
+- crates/mimus-keyring/Cargo.toml
+- crates/mimus-keyring/src/lib.rs
+- crates/mimus-keyring/src/lib.rs
+- crates/mimus-keyring/src/lib.rs
+- crates/mimus-keyring/src/lib.rs
+provenance:
+  files:
+  - crates/mimus-keyring/Cargo.toml
+  - crates/mimus-keyring/src/lib.rs
+  - crates/mimus-keyring/src/lib.rs
+  - crates/mimus-keyring/src/lib.rs
+  - crates/mimus-keyring/src/lib.rs
+  hashes:
+  - ab61c787206bd76c1f9937084c108473b6ece3fc
+  - 418e6920f4ee57190ff3fcbacce821d132d23205
+  - 418e6920f4ee57190ff3fcbacce821d132d23205
+  - 418e6920f4ee57190ff3fcbacce821d132d23205
+  - 418e6920f4ee57190ff3fcbacce821d132d23205
+  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
+  generated_at: '1792310965'
+  generator: kuda-template/0.1.0

@@ -1,0 +1,29 @@
+name: mimus-vcs
+path: crates/mimus-vcs/Cargo.toml
+purpose: 'Vcs port: VCS operations for repos and worktrees'
+api:
+- name: mimus-vcs
+  kind: module
+  file: crates/mimus-vcs/Cargo.toml
+  line: 1
+  module: mimus-vcs
+- name: Vcs
+  kind: trait
+  file: crates/mimus-vcs/src/lib.rs
+  line: 9
+  module: mimus-vcs
+deps: []
+notes: ''
+verify:
+- crates/mimus-vcs/Cargo.toml
+- crates/mimus-vcs/src/lib.rs
+provenance:
+  files:
+  - crates/mimus-vcs/Cargo.toml
+  - crates/mimus-vcs/src/lib.rs
+  hashes:
+  - 81d7057c56b51400c3eaf54edd1c6fc0ec685b1c
+  - 590bf2ee9cfe80a9448050438d122b5866c594a0
+  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
+  generated_at: '1792310965'
+  generator: kuda-template/0.1.0

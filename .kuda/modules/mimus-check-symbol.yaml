@@ -1,0 +1,75 @@
+name: mimus-check-symbol
+path: crates/mimus-check-symbol/Cargo.toml
+purpose: 'Check adapter: symbol claims -> kuda index (stub)'
+api:
+- name: mimus-check-symbol
+  kind: module
+  file: crates/mimus-check-symbol/Cargo.toml
+  line: 1
+  module: mimus-check-symbol
+- name: SymbolChecker
+  kind: type
+  file: crates/mimus-check-symbol/src/lib.rs
+  line: 19
+  module: mimus-check-symbol
+- name: new
+  kind: function
+  file: crates/mimus-check-symbol/src/lib.rs
+  line: 24
+  module: mimus-check-symbol
+- name: index_present
+  kind: function
+  file: crates/mimus-check-symbol/src/lib.rs
+  line: 30
+  module: mimus-check-symbol
+- name: Hit
+  kind: type
+  file: crates/mimus-check-symbol/src/lib.rs
+  line: 35
+  module: mimus-check-symbol
+- name: handles
+  kind: function
+  file: crates/mimus-check-symbol/src/lib.rs
+  line: 42
+  module: mimus-check-symbol
+- name: check
+  kind: function
+  file: crates/mimus-check-symbol/src/lib.rs
+  line: 46
+  module: mimus-check-symbol
+deps:
+- mimus-check
+- mimus-core
+- rusqlite
+- mimus_check
+- mimus_core
+- rusqlite
+notes: ''
+verify:
+- crates/mimus-check-symbol/Cargo.toml
+- crates/mimus-check-symbol/src/lib.rs
+- crates/mimus-check-symbol/src/lib.rs
+- crates/mimus-check-symbol/src/lib.rs
+- crates/mimus-check-symbol/src/lib.rs
+- crates/mimus-check-symbol/src/lib.rs
+- crates/mimus-check-symbol/src/lib.rs
+provenance:
+  files:
+  - crates/mimus-check-symbol/Cargo.toml
+  - crates/mimus-check-symbol/src/lib.rs
+  - crates/mimus-check-symbol/src/lib.rs
+  - crates/mimus-check-symbol/src/lib.rs
+  - crates/mimus-check-symbol/src/lib.rs
+  - crates/mimus-check-symbol/src/lib.rs
+  - crates/mimus-check-symbol/src/lib.rs
+  hashes:
+  - 9fbf6254aae6add24670adaa8808b5c101844e2c
+  - 6bcf02653c3f1dfe2aee2a5f4e9c3fee72ba3706
+  - 6bcf02653c3f1dfe2aee2a5f4e9c3fee72ba3706
+  - 6bcf02653c3f1dfe2aee2a5f4e9c3fee72ba3706
+  - 6bcf02653c3f1dfe2aee2a5f4e9c3fee72ba3706
+  - 6bcf02653c3f1dfe2aee2a5f4e9c3fee72ba3706
+  - 6bcf02653c3f1dfe2aee2a5f4e9c3fee72ba3706
+  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
+  generated_at: '1792310965'
+  generator: kuda-template/0.1.0

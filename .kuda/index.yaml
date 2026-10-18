@@ -1,0 +1,114 @@
+name: mimus
+root: /home/luis/GitHub/9aia/mimus
+purpose: '*Spots the cuckoo eggs in your repo.*'
+modules:
+- _root
+- dagger
+- mimus
+- mimus-check
+- mimus-check-acp
+- mimus-check-cmd
+- mimus-check-fs
+- mimus-check-symbol
+- mimus-claims
+- mimus-cli
+- mimus-config
+- mimus-config-toml
+- mimus-core
+- mimus-dotenv
+- mimus-git
+- mimus-keyring
+- mimus-rules
+- mimus-secret
+- mimus-vcs
+commands:
+- cargo check
+- cargo test --workspace
+provenance:
+  files:
+  - Cargo.toml
+  - modules/dagger/dagger/pyproject.toml
+  - crates/mimus-claims/Cargo.toml
+  - crates/mimus-check-fs/Cargo.toml
+  - crates/mimus-cli/Cargo.toml
+  - crates/mimus-dotenv/Cargo.toml
+  - crates/mimus-check-acp/Cargo.toml
+  - crates/mimus-secret/Cargo.toml
+  - crates/mimus-check/Cargo.toml
+  - crates/mimus-vcs/Cargo.toml
+  - crates/mimus-core/Cargo.toml
+  - crates/mimus-config/Cargo.toml
+  - crates/mimus-rules/Cargo.toml
+  - crates/mimus-keyring/Cargo.toml
+  - crates/mimus-config-toml/Cargo.toml
+  - crates/mimus-check-cmd/Cargo.toml
+  - crates/mimus-git/Cargo.toml
+  - crates/mimus-check-symbol/Cargo.toml
+  - crates/mimus-claims/src/lib.rs
+  - crates/mimus-check-fs/src/lib.rs
+  - crates/mimus-cli/tests/e2e.rs
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-dotenv/tests/store.rs
+  - crates/mimus-dotenv/src/lib.rs
+  - crates/mimus-check-acp/src/lib.rs
+  - crates/mimus-secret/src/lib.rs
+  - crates/mimus-check/src/lib.rs
+  - crates/mimus-vcs/src/lib.rs
+  - crates/mimus-core/src/lib.rs
+  - crates/mimus-config/src/lib.rs
+  - crates/mimus-rules/src/lib.rs
+  - crates/mimus-keyring/src/lib.rs
+  - crates/mimus-config-toml/tests/load.rs
+  - crates/mimus-config-toml/src/lib.rs
+  - crates/mimus-check-cmd/src/lib.rs
+  - crates/mimus-git/tests/git.rs
+  - crates/mimus-git/src/lib.rs
+  - crates/mimus-check-symbol/src/lib.rs
+  - modules/dagger/dagger/src/mimus/main.py
+  - modules/dagger/dagger/src/mimus/__init__.py
+  - modules/dagger/tests/test_self_patch.py
+  hashes:
+  - dd6320097d8a5d5011182a0dfa6d5321edfcaa1c
+  - 6391d6a9586b1a42d2e3b1270cd9a441f321af68
+  - 21e63d1417ba1bcba2262e855cb130e8e90f2151
+  - f2b819a109e334b4179687e87314f73ecb9b5341
+  - 27c0b54f3d12a0c83916fae649c6fab4ca18e4db
+  - 26c064bafcb0a94b0c50dd4538bd8e2cd8963000
+  - 41c8b740933ac566f68b8bf5cd4b76a56ce4dfd5
+  - e19d2f415bf9c2b1602d12c39402b368e2e0565d
+  - e7348ffc0841bbee8073e26c5481cd858fd776ba
+  - 81d7057c56b51400c3eaf54edd1c6fc0ec685b1c
+  - 6b7185a94a97d0e4ebf63efd7a95dd2800f0bc41
+  - 2b57fc93873c3fa45b96c90218c20d4a3c9927f1
+  - b1cf727ea9ec71dccd378bea295d8def00f34840
+  - ab61c787206bd76c1f9937084c108473b6ece3fc
+  - 47f21a9cf176c7708d2a879eff9f464589ceb363
+  - 6b4f78cffb51266f2c162ba222cd448903d1f01e
+  - f902acdf6baa0db069e7f6a4cf2a486d7907347c
+  - 9fbf6254aae6add24670adaa8808b5c101844e2c
+  - f47432c3fcaa1872783e08c76d0d1534dd4931cc
+  - 227abf8da2ffe29c9ef3dcb93b0a45bd44aa57cf
+  - 5e8c47c0e54309f0d8597bdee10815176f70255a
+  - 68d16a3e17cf75cf6178bba5237f1eaaf68ccfb3
+  - 719060f5a90ada40a4b96a353f6b27be1a2cbeaf
+  - f94d46cdf76ee3de44514c82d852bccd0b347adc
+  - ac2e344d30be1b39e48ee7412ab34fe930f67581
+  - 110d5a90006dab0fba61f5dd0ae4caac454ae786
+  - 0f9122c451053fe82ed011caaee0f24a4cf4f8f0
+  - 590bf2ee9cfe80a9448050438d122b5866c594a0
+  - 36adc553623d8b0e310cd9aa5c6e68cf6f4fe86a
+  - 4c4410395d1b598e2e98bb8d009db5f57384a0b1
+  - 00d886e332aaf111ae6d476492c5e4ff8f26b282
+  - 418e6920f4ee57190ff3fcbacce821d132d23205
+  - 85e779dae9b49918b6567c32e8b2ef0a87cef4af
+  - df0435c4e074ab77e947823692b3c00b93fcbfcf
+  - 81f5dcb241fe5d697fd587478c5ea1057cf258d5
+  - 4771ee5660d33c8f48da2bcb96ce06d492b58512
+  - 3656dd009087048742191569d42973992a2d5dc3
+  - 6bcf02653c3f1dfe2aee2a5f4e9c3fee72ba3706
+  - 912bc128df92503a9353c765bd892d9ec84c537e
+  - 4093067c2bfef36b97a7be4448a54a5439d61d91
+  - d515a59e736b23d553075159e989585bba9ca252
+  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
+  generated_at: '1792310965'
+  generator: kuda/0.1.0

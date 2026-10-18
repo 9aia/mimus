@@ -1,0 +1,8 @@
+name = "no-unwrap-in-checkers"
+message = "checkers must degrade to silence, not panic — return Err for the checker-error path"
+severity = "warn"
+files = "crates/mimus-check-*/src/**/*.rs"
+
+[match]
+kind = "source-pattern"
+pattern = '\.unwrap\(\)'

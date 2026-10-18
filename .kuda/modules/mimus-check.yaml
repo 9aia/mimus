@@ -1,0 +1,47 @@
+name: mimus-check
+path: crates/mimus-check/Cargo.toml
+purpose: Check port — verify a claim against reality
+api:
+- name: mimus-check
+  kind: module
+  file: crates/mimus-check/Cargo.toml
+  line: 1
+  module: mimus-check
+- name: Checker
+  kind: trait
+  file: crates/mimus-check/src/lib.rs
+  line: 10
+  module: mimus-check
+- name: check_batch
+  kind: function
+  file: crates/mimus-check/src/lib.rs
+  line: 21
+  module: mimus-check
+- name: run
+  kind: function
+  file: crates/mimus-check/src/lib.rs
+  line: 27
+  module: mimus-check
+deps:
+- mimus-core
+- mimus_core
+notes: ''
+verify:
+- crates/mimus-check/Cargo.toml
+- crates/mimus-check/src/lib.rs
+- crates/mimus-check/src/lib.rs
+- crates/mimus-check/src/lib.rs
+provenance:
+  files:
+  - crates/mimus-check/Cargo.toml
+  - crates/mimus-check/src/lib.rs
+  - crates/mimus-check/src/lib.rs
+  - crates/mimus-check/src/lib.rs
+  hashes:
+  - e7348ffc0841bbee8073e26c5481cd858fd776ba
+  - 0f9122c451053fe82ed011caaee0f24a4cf4f8f0
+  - 0f9122c451053fe82ed011caaee0f24a4cf4f8f0
+  - 0f9122c451053fe82ed011caaee0f24a4cf4f8f0
+  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
+  generated_at: '1792310965'
+  generator: kuda-template/0.1.0

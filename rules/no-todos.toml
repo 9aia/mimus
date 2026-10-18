@@ -1,0 +1,8 @@
+name = "no-todos"
+message = "TODO left in committed source"
+severity = "warn"
+files = "crates/**/*.rs"
+
+[match]
+kind = "source-pattern"
+pattern = "TODO|FIXME"

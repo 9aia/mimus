@@ -1,0 +1,116 @@
+name: mimus-check-acp
+path: crates/mimus-check-acp/Cargo.toml
+purpose: 'Semantic checker: spawns an ACP agent to verify prose claims'
+api:
+- name: mimus-check-acp
+  kind: module
+  file: crates/mimus-check-acp/Cargo.toml
+  line: 1
+  module: mimus-check-acp
+- name: AcpChecker
+  kind: type
+  file: crates/mimus-check-acp/src/lib.rs
+  line: 16
+  module: mimus-check-acp
+- name: AcpClient
+  kind: type
+  file: crates/mimus-check-acp/src/lib.rs
+  line: 22
+  module: mimus-check-acp
+- name: new
+  kind: function
+  file: crates/mimus-check-acp/src/lib.rs
+  line: 30
+  module: mimus-check-acp
+- name: connect
+  kind: function
+  file: crates/mimus-check-acp/src/lib.rs
+  line: 39
+  module: mimus-check-acp
+- name: spawn
+  kind: function
+  file: crates/mimus-check-acp/src/lib.rs
+  line: 55
+  module: mimus-check-acp
+- name: send
+  kind: function
+  file: crates/mimus-check-acp/src/lib.rs
+  line: 73
+  module: mimus-check-acp
+- name: request
+  kind: function
+  file: crates/mimus-check-acp/src/lib.rs
+  line: 79
+  module: mimus-check-acp
+- name: verify_prompt
+  kind: function
+  file: crates/mimus-check-acp/src/lib.rs
+  line: 127
+  module: mimus-check-acp
+- name: handles
+  kind: function
+  file: crates/mimus-check-acp/src/lib.rs
+  line: 143
+  module: mimus-check-acp
+- name: check
+  kind: function
+  file: crates/mimus-check-acp/src/lib.rs
+  line: 147
+  module: mimus-check-acp
+- name: check_batch
+  kind: function
+  file: crates/mimus-check-acp/src/lib.rs
+  line: 181
+  module: mimus-check-acp
+deps:
+- mimus-check
+- mimus-core
+- serde
+- serde_json
+- mimus_check
+- mimus_core
+- serde_json
+notes: ''
+verify:
+- crates/mimus-check-acp/Cargo.toml
+- crates/mimus-check-acp/src/lib.rs
+- crates/mimus-check-acp/src/lib.rs
+- crates/mimus-check-acp/src/lib.rs
+- crates/mimus-check-acp/src/lib.rs
+- crates/mimus-check-acp/src/lib.rs
+- crates/mimus-check-acp/src/lib.rs
+- crates/mimus-check-acp/src/lib.rs
+- crates/mimus-check-acp/src/lib.rs
+- crates/mimus-check-acp/src/lib.rs
+- crates/mimus-check-acp/src/lib.rs
+- crates/mimus-check-acp/src/lib.rs
+provenance:
+  files:
+  - crates/mimus-check-acp/Cargo.toml
+  - crates/mimus-check-acp/src/lib.rs
+  - crates/mimus-check-acp/src/lib.rs
+  - crates/mimus-check-acp/src/lib.rs
+  - crates/mimus-check-acp/src/lib.rs
+  - crates/mimus-check-acp/src/lib.rs
+  - crates/mimus-check-acp/src/lib.rs
+  - crates/mimus-check-acp/src/lib.rs
+  - crates/mimus-check-acp/src/lib.rs
+  - crates/mimus-check-acp/src/lib.rs
+  - crates/mimus-check-acp/src/lib.rs
+  - crates/mimus-check-acp/src/lib.rs
+  hashes:
+  - 41c8b740933ac566f68b8bf5cd4b76a56ce4dfd5
+  - ac2e344d30be1b39e48ee7412ab34fe930f67581
+  - ac2e344d30be1b39e48ee7412ab34fe930f67581
+  - ac2e344d30be1b39e48ee7412ab34fe930f67581
+  - ac2e344d30be1b39e48ee7412ab34fe930f67581
+  - ac2e344d30be1b39e48ee7412ab34fe930f67581
+  - ac2e344d30be1b39e48ee7412ab34fe930f67581
+  - ac2e344d30be1b39e48ee7412ab34fe930f67581
+  - ac2e344d30be1b39e48ee7412ab34fe930f67581
+  - ac2e344d30be1b39e48ee7412ab34fe930f67581
+  - ac2e344d30be1b39e48ee7412ab34fe930f67581
+  - ac2e344d30be1b39e48ee7412ab34fe930f67581
+  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
+  generated_at: '1792310965'
+  generator: kuda-template/0.1.0
