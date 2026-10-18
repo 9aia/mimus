@@ -40,7 +40,7 @@ get an honest "cancelled" status.
 
 - **No release-plz / GHA**: the point of the project is that CI is a
   local loop — depending on hosted CI to ship it would be
-  self-defeating. `release.sh` is deliberately boring bash so it can
+  self-defeating. `scripts/release.sh` is deliberately boring bash so it can
   run as a plain `cmd` under `runner.kind = "shell"`.
 - **Latest-wins, not `all`**: a release that misses an intermediate
   push loses nothing — the tag lands on HEAD, which contains

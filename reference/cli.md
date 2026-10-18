@@ -86,3 +86,31 @@ Checker/config/kuda-index health
     <a href="https://crates.io/crates/clap-markdown"><code>clap-markdown</code></a>.
 </i></small>
 
+
+
+## claims
+
+```console
+$ mimus claims [--all]
+```
+
+Dump extracted claims (kind/source/line) — the tuning surface
+for extractor precision. `--all` includes `.kuda` card prose.
+
+## coverage
+
+```console
+$ mimus coverage
+```
+
+Reverse-direction check: indexed symbols (via `check.kuda_index`)
+never named in any doc source. Per-module gap list; advisory.
+
+## fix --semantic
+
+```console
+$ mimus fix --semantic [--dry]
+```
+
+Agentic repair tier: for grounded REFUTED findings the agent
+proposes corrected claim text — `--dry` previews; prose docs only.
