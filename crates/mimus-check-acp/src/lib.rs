@@ -17,6 +17,10 @@ pub struct AcpChecker {
     cmd: String,
     root: PathBuf,
     inner: Mutex<Option<(AcpClient, String)>>,
+    /// claim-key -> verdict line — `.mimus/verdicts.json`; an
+    /// unchanged claim on an unchanged file never re-prompts.
+    verdicts: Mutex<std::collections::HashMap<String, String>>,
+    cache_path: PathBuf,
 }
 
 struct AcpClient {
@@ -26,12 +30,132 @@ struct AcpClient {
     id: u64,
 }
 
+/// REFUTED verdicts must cite grounded evidence — a path-like
+/// token in the evidence that actually exists under `root`.
+/// A refute without proof is pedantry, not signal (P1).
+fn evidence_grounded(root: &std::path::Path, evidence: &str) -> bool {
+    evidence.split(|c: char| !(c.is_alphanumeric() || c == '_' || c == '/' || c == '.' || c == '-'))
+        .filter(|t| t.contains('/') || t.ends_with(".rs") || t.ends_with(".md") || t.ends_with(".toml"))
+        .map(|t| t.trim_matches(|c: char| c == '.' || c == '/'))
+        .any(|t| !t.is_empty() && root.join(t).exists())
+}
+
+/// A dead-path token inside a claim — mechanical triage: provable
+/// without the agent, so don't spend a prompt on it (P3).
+fn dead_path_token(root: &std::path::Path, text: &str) -> Option<String> {
+    for t in text.split(|c: char| !(c.is_alphanumeric() || c == '_' || c == '/' || c == '.' || c == '-')) {
+        let t = t.trim_matches(|c: char| c == '.');
+        if t.contains("://") || t.len() < 5 || !t.contains('/') {
+            continue;
+        }
+        if !root.join(t).exists() {
+            return Some(t.to_owned());
+        }
+    }
+    None
+}
+
+/// Verdict line -> Violation. Grounded refutes only — pedantry
+/// without a real citation becomes silence.
+fn refuted_violation(
+    root: &std::path::Path,
+    claim: &Claim,
+    verdict: &str,
+) -> Option<Violation> {
+    let rest = verdict.strip_prefix("REFUTED")?;
+    let evidence = rest.trim_start_matches(':').trim().to_owned();
+    if evidence.is_empty() || !evidence_grounded(root, &evidence) {
+        return None;
+    }
+    Some(Violation {
+        claim: claim.clone(),
+        evidence,
+        fix: None,
+        severity: Severity::Warn,
+    })
+}
+
+/// `mimus doctor` probe — spawn the agent, send one canned
+/// prompt, confirm text actually streams back (P6).
+pub fn probe(cmd: &str, root: &PathBuf) -> Result<String, String> {
+    let (mut client, sid) = AcpChecker::connect(cmd, root)?;
+    let (_res, prose) = client.request(
+        "session/prompt",
+        json!({"sessionId": sid, "prompt":[{"type":"text","text":"Reply with only the word: ok"}]}),
+    )?;
+    if prose.trim().is_empty() {
+        Err("agent answered but streamed no text".into())
+    } else {
+        Ok(format!("ok — {} chars streamed", prose.len()))
+    }
+}
+
+/// `mimus fix --semantic` — propose a corrected claim line (P4).
+/// Single prompt, no session state needed beyond connect.
+pub fn propose(cmd: &str, root: &PathBuf, claim_text: &str, evidence: &str) -> Result<String, String> {
+    let (mut client, sid) = AcpChecker::connect(cmd, root)?;
+    let prompt = format!(
+        "This claim about the repository is FALSE.\n\
+         Claim: \"{claim_text}\"\nEvidence: {evidence}\n\n\
+         Write the corrected claim text — one line, same style, \
+         grounded in the actual code. No preamble, no quotes."
+    );
+    let (_res, prose) = client.request(
+        "session/prompt",
+        json!({"sessionId": sid, "prompt":[{"type":"text","text":prompt}]}),
+    )?;
+    let line = prose.lines().map(str::trim).find(|l| !l.is_empty()).unwrap_or("");
+    if line.is_empty() {
+        Err("agent proposed nothing".into())
+    } else {
+        Ok(line.to_owned())
+    }
+}
+
 impl AcpChecker {
     pub fn new(cmd: impl Into<String>, root: impl Into<PathBuf>) -> Self {
+        let root = root.into();
+        let cache_path = root.join(".mimus/verdicts.json");
+        let verdicts = std::fs::read_to_string(&cache_path)
+            .ok()
+            .and_then(|t| serde_json::from_str(&t).ok())
+            .unwrap_or_default();
         Self {
             cmd: cmd.into(),
-            root: root.into(),
+            root,
             inner: Mutex::new(None),
+            verdicts: Mutex::new(verdicts),
+            cache_path,
+        }
+    }
+
+    /// Cache key: claim text + the bytes of its source file.
+    /// Same claim on same content -> same verdict, no prompt.
+    fn claim_key(&self, claim: &Claim) -> String {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        let mut h = DefaultHasher::new();
+        claim.text.hash(&mut h);
+        if let Ok(b) = std::fs::read(self.root.join(&claim.source)) {
+            b.hash(&mut h);
+        }
+        format!("{:x}", h.finish())
+    }
+
+    fn cache_get(&self, key: &str) -> Option<String> {
+        self.verdicts.lock().ok()?.get(key).cloned()
+    }
+
+    fn cache_put(&self, key: String, verdict: String) {
+        if let Ok(mut v) = self.verdicts.lock() {
+            v.insert(key, verdict);
+            let _ = std::fs::create_dir_all(
+                self.cache_path.parent().unwrap_or(&self.root),
+            );
+            let _ = std::fs::write(
+                &self.cache_path,
+                serde_json::to_string_pretty(&*v).unwrap_or_default(),
+            );
         }
     }
 
@@ -146,30 +270,52 @@ impl Checker for AcpChecker {
     }
 
     fn check(&self, claim: &Claim) -> Result<Option<Violation>, String> {
-        let mut guard = self.inner.lock().map_err(|e| e.to_string())?;
-        if guard.is_none() {
-            *guard = Some(Self::connect(&self.cmd, &self.root)?);
-        }
-        let (client, sid) = guard.as_mut().unwrap();
-        // debounce — one agent, many claims; be polite to the
-        // provider (rate limits) rather than fanning out
-        std::thread::sleep(std::time::Duration::from_millis(1500));
-        let (_res, prose) = client.request(
-            "session/prompt",
-            json!({"sessionId": sid.as_str(),
-                   "prompt":[{"type":"text","text":verify_prompt(claim)}]}),
-        )?;
-        // only REFUTED becomes a violation — advisory Warn always
-        let first = prose.lines().find(|l| !l.trim().is_empty()).unwrap_or("");
-        if let Some(rest) = first.trim().strip_prefix("REFUTED") {
-            let evidence = rest.trim_start_matches(':').trim().to_owned();
+        // triage: dead-path tokens are decidable for free (P3)
+        if let Some(dead) = dead_path_token(&self.root, &claim.text) {
             return Ok(Some(Violation {
                 claim: claim.clone(),
-                evidence: if evidence.is_empty() {
-                    "agent refuted this claim".into()
-                } else {
-                    evidence
-                },
+                evidence: format!("`{dead}` does not exist"),
+                fix: None,
+                severity: Severity::Warn,
+            }));
+        }
+        let key = self.claim_key(claim);
+        let first = match self.cache_get(&key) {
+            Some(v) => v,
+            None => {
+                let mut guard = self.inner.lock().map_err(|e| e.to_string())?;
+                if guard.is_none() {
+                    *guard = Some(Self::connect(&self.cmd, &self.root)?);
+                }
+                let (client, sid) = guard.as_mut().unwrap();
+                // debounce — one agent, many claims; be polite to
+                // the provider (rate limits) rather than fanning out
+                std::thread::sleep(std::time::Duration::from_millis(1500));
+                let (_res, prose) = client.request(
+                    "session/prompt",
+                    json!({"sessionId": sid.as_str(),
+                           "prompt":[{"type":"text","text":verify_prompt(claim)}]}),
+                )?;
+                let v = prose
+                    .lines()
+                    .find(|l| !l.trim().is_empty())
+                    .unwrap_or("")
+                    .trim()
+                    .to_owned();
+                self.cache_put(key, v.clone());
+                v
+            }
+        };
+        // only grounded REFUTED becomes a violation — a refute
+        // without a real citation is pedantry, not signal
+        if let Some(rest) = first.strip_prefix("REFUTED") {
+            let evidence = rest.trim_start_matches(':').trim().to_owned();
+            if evidence.is_empty() || !evidence_grounded(&self.root, &evidence) {
+                return Ok(None); // unproven refute -> silence
+            }
+            return Ok(Some(Violation {
+                claim: claim.clone(),
+                evidence,
                 fix: None,
                 severity: Severity::Warn,
             }));
@@ -183,11 +329,37 @@ impl Checker for AcpChecker {
         if claims.len() <= 1 {
             return claims.iter().map(|c| self.check(c)).collect();
         }
+        // triage + cache first — dead paths are free verdicts,
+        // cached claims never re-prompt
+        let mut out: Vec<Option<Result<Option<Violation>, String>>> =
+            Vec::with_capacity(claims.len());
+        let mut pending: Vec<(usize, &Claim)> = Vec::new();
+        for (i, c) in claims.iter().enumerate() {
+            if let Some(dead) = dead_path_token(&self.root, &c.text) {
+                out.push(Some(Ok(Some(Violation {
+                    claim: c.clone(),
+                    evidence: format!("`{dead}` does not exist"),
+                    fix: None,
+                    severity: Severity::Warn,
+                }))));
+                continue;
+            }
+            let key = self.claim_key(c);
+            if let Some(v) = self.cache_get(&key) {
+                out.push(Some(Ok(refuted_violation(&self.root, c, &v))));
+                continue;
+            }
+            out.push(None);
+            pending.push((i, c));
+        }
+        if pending.is_empty() {
+            return out.into_iter().map(|o| o.unwrap()).collect();
+        }
         // one session, one prompt, numbered verdicts
-        let numbered: String = claims
+        let numbered: String = pending
             .iter()
             .enumerate()
-            .map(|(i, c)| format!("{}. {}:{}\n{}\n", i + 1, c.source.display(), c.line, c.text))
+            .map(|(i, (_, c))| format!("{}. {}:{}\n{}\n", i + 1, c.source.display(), c.line, c.text))
             .collect();
         let prompt = format!(
             "For each numbered claim about this repository, reply on \
@@ -214,24 +386,21 @@ impl Checker for AcpChecker {
             Ok((_, prose)) => prose,
             Err(e) => return vec![Err(e)],
         };
-        // parse numbered verdicts back to per-claim results
-        let mut out: Vec<Result<Option<Violation>, String>> = claims
-            .iter()
-            .enumerate()
-            .map(|(i, c)| {
-                let tag = format!("{} ", i + 1);
-                let verdict = prose.lines().find(|l| l.trim_start().starts_with(&tag));
-                match verdict {
-                    Some(l) if l.contains("REFUTED") => Ok(Some(Violation {
-                        claim: c.clone(),
-                        evidence: l.splitn(2, ':').nth(1).unwrap_or(l).trim().to_owned(),
-                        fix: None,
-                        severity: Severity::Warn,
-                    })),
-                    _ => Ok(None),
-                }
-            })
-            .collect();
+        // parse numbered verdicts back — cache every verdict,
+        // surface only grounded refutes
+        for (i, (orig, c)) in pending.iter().enumerate() {
+            let tag = format!("{} ", i + 1);
+            let verdict = prose
+                .lines()
+                .find(|l| l.trim_start().starts_with(&tag))
+                .unwrap_or("")
+                .trim()
+                .to_owned();
+            self.cache_put(self.claim_key(c), verdict.clone());
+            out[*orig] = Some(Ok(refuted_violation(&self.root, c, &verdict)));
+        }
+        let mut out: Vec<Result<Option<Violation>, String>> =
+            out.into_iter().map(|o| o.unwrap()).collect();
         // doc↔doc pass: claims sharing a subject token get one
         // "do these contradict?" prompt per cluster — bounded,
         // advisory. Results append as extra violations.

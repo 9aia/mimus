@@ -5,7 +5,7 @@ use clap::{Parser, Subcommand};
 use mimus_check::Checker;
 use mimus_config::ConfigSource;
 use mimus_config_toml::TomlSource;
-use mimus_core::{Config, Severity, Violation};
+use mimus_core::{ClaimKind, Config, Severity, Violation};
 use std::path::{Path, PathBuf};
 
 const EXAMPLE_TOML: &str = include_str!("../../../examples/mimus.toml.example");
@@ -48,6 +48,10 @@ enum Cmd {
         /// Show the plan, write nothing.
         #[arg(long)]
         dry: bool,
+        /// Agentic tier: agent proposes corrected claim text for
+        /// semantic (REFUTED) findings. Needs [check].acp_cmd.
+        #[arg(long)]
+        semantic: bool,
     },
     /// Trust-score .kuda/ cards vs source.
     Audit,
@@ -75,7 +79,7 @@ fn main() {
     let code = match &cli.cmd {
         Cmd::Init => init(&cli),
         Cmd::Check { all, no_cmd } => check(&cli, *all, *no_cmd),
-        Cmd::Fix { dry } => fix(&cli, *dry),
+        Cmd::Fix { dry, semantic } => fix(&cli, *dry, *semantic),
         Cmd::Report => report(&cli),
         Cmd::Audit => audit(&cli),
         Cmd::Doctor => doctor(&cli),
@@ -415,12 +419,44 @@ fn report(cli: &Cli) -> i32 {
 /// v1 scope: dead `path` claims where exactly one same-basename
 /// file exists in the repo (a moved file) — everything else is
 /// flagged for a human, never silently "fixed".
-fn fix(cli: &Cli, dry: bool) -> i32 {
-    let Some((root, violations)) = collect(cli, false) else {
+fn fix(cli: &Cli, dry: bool, semantic: bool) -> i32 {
+    let cfg = load(cli).ok();
+    let acp_cmd = cfg
+        .as_ref()
+        .and_then(|c| c.check.acp_cmd.clone());
+    let Some((root, violations)) = collect(cli, semantic && acp_cmd.is_some()) else {
         return 2;
     };
     let files = repo_files(&root);
     let (mut applied, mut flagged) = (0usize, 0usize);
+    for v in &violations {
+        // agentic tier: refuted-with-evidence claim -> agent
+        // proposes the corrected line (prose docs only)
+        if semantic && v.severity == Severity::Warn && v.claim.kind == ClaimKind::Behavior {
+            if let Some(cmd) = &acp_cmd {
+                match mimus_check_acp::propose(cmd, &root, &v.claim.text, &v.evidence) {
+                    Ok(new_line) => {
+                        println!(
+                            "{}:{} `{}` -> `{new_line}`{}",
+                            v.claim.source.display(),
+                            v.claim.line,
+                            v.claim.text,
+                            if dry { " (dry)" } else { "" }
+                        );
+                        if !dry {
+                            if let Ok(text) = std::fs::read_to_string(root.join(&v.claim.source)) {
+                                let patched = text.replacen(&v.claim.text, &new_line, 1);
+                                let _ = std::fs::write(root.join(&v.claim.source), patched);
+                            }
+                        }
+                        applied += 1;
+                        continue;
+                    }
+                    Err(e) => eprintln!("propose {}:{}: {e}", v.claim.source.display(), v.claim.line),
+                }
+            }
+        }
+    }
     for v in &violations {
         let rewrite = match v.claim.kind {
             mimus_core::ClaimKind::Path => dead_path_candidate(&root, &files, &v.claim.text),
@@ -646,5 +682,15 @@ fn doctor(cli: &Cli) -> i32 {
         Err(e) => println!("  config   --  {e}"),
     }
     println!("  adapters    fs, cmd (symbol/llm pending kuda schema + provider)");
+    // P6: live ACP probe — the agent path fails loudly here
+    // rather than mid-check.
+    if let Ok(c) = load(cli) {
+        if let Some(cmd) = &c.check.acp_cmd {
+            match mimus_check_acp::probe(cmd, &root(cli)) {
+                Ok(msg) => println!("  acp        ok  {msg}"),
+                Err(e) => println!("  acp        !!  {e}"),
+            }
+        }
+    }
     0
 }
