@@ -126,11 +126,12 @@ impl AcpClient {
 
 fn verify_prompt(claim: &Claim) -> String {
     format!(
-        "Verify this claim about the repository. \
+        "Try to FALSIFY this claim about the repository. \
          Claim (from {}:{}): \"{}\"\n\n\
-         Check the relevant source files if needed. Reply with ONLY one line:\n\
-         VERIFIED — if the claim is true\n\
-         REFUTED: <one-sentence evidence> — if it is false\n\
+         Open the relevant source files and hunt for counter-evidence — \
+         your job is to prove it false, not confirm it. Reply with ONLY one line:\n\
+         VERIFIED — only if you actively tried to break it and could not\n\
+         REFUTED: <one-sentence evidence> — with the file/line you found\n\
          UNVERIFIABLE — if you cannot prove either\n\
          No preamble, no explanation beyond the one line.",
         claim.source.display(),

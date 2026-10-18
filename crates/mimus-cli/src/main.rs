@@ -620,12 +620,29 @@ fn emit(violations: &[Violation], format: &str) {
 fn doctor(cli: &Cli) -> i32 {
     println!("mimus doctor");
     match load(cli) {
-        Ok(c) => println!(
-            "  config   ok  (mechanical: {}, semantic: {}, rules: {})",
-            c.check.mechanical,
-            c.check.semantic,
-            c.rules.dir.display()
-        ),
+        Ok(c) => {
+            println!(
+                "  config   ok  (mechanical: {}, semantic: {}, rules: {})",
+                c.check.mechanical,
+                c.check.semantic,
+                c.rules.dir.display()
+            );
+            // verifier-vs-writer diversity: the same agent that writes
+            // prose auditing it shares biases. Warn when acp_cmd
+            // matches the summarizer's (kuda.toml or workspace).
+            if let Some(verify_cmd) = &c.check.acp_cmd {
+                for cfg_path in ["kuda.toml", ".kuda/kuda.toml"] {
+                    if let Ok(text) = std::fs::read_to_string(root(cli).join(cfg_path)) {
+                        if text.contains("acp_cmd") && text.contains(verify_cmd.as_str()) {
+                            println!(
+                                "  diversity  !!  verifier acp_cmd matches the summarizer's — \
+                                 same model writes and audits; use a different agent/model"
+                            );
+                        }
+                    }
+                }
+            }
+        }
         Err(e) => println!("  config   --  {e}"),
     }
     println!("  adapters    fs, cmd (symbol/llm pending kuda schema + provider)");
