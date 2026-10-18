@@ -11,7 +11,9 @@ use std::path::Path;
 pub fn extract(text: &str, source: &Path) -> Vec<Claim> {
     let mut out = Vec::new();
     let mut in_fence = false;
-    let mut behavior_seen = 0usize;
+    let mut para = String::new();
+    let mut para_start = 0usize;
+    let mut para_end = 0usize;
     for (line_no, line) in text.lines().enumerate() {
         if line.trim_start().starts_with("```") {
             in_fence = !in_fence;
@@ -27,38 +29,86 @@ pub fn extract(text: &str, source: &Path) -> Vec<Claim> {
                 });
             }
         }
-        // prose assertions -> Behavior claims for the semantic
-        // checker; unhandled kinds are skipped by checkers that
-        // don't claim them, so mechanical runs are unaffected.
-        // Cap per file: docs full of assertions shouldn't flood
-        // the (rate-limited) agent.
-        if !in_fence && behavior_seen < 10 {
-            let t = line.trim();
-            let assertive = t.ends_with('.')
-                && !t.starts_with('#')
-                && !t.starts_with('|')
-                && !t.starts_with('-')
-                && !t.starts_with('*')
-                && t.split_whitespace().count() >= 6
-                && t.split_whitespace().any(|w| {
-                    matches!(
-                        w.trim_matches(|c: char| !c.is_alphabetic()),
-                        "is" | "are" | "stores" | "uses" | "reads" | "writes"
-                            | "returns" | "contains" | "supports" | "defaults"
-                    )
-                });
-            if assertive {
-                behavior_seen += 1;
-                out.push(Claim {
-                    kind: ClaimKind::Behavior,
-                    text: t.to_owned(),
-                    source: source.to_path_buf(),
-                    line: (line_no + 1) as u32,
-                });
-            }
+        // Paragraph accumulation: hard-wrapped md splits sentences
+        // across lines — join, flush on blank/heading/fence.
+        let t = line.trim();
+        let breaks = t.is_empty() || t.starts_with('#') || t.starts_with('|') || in_fence;
+        if breaks {
+            flush_para(&mut para, para_start, para_end, source, &mut out);
+            continue;
         }
+        if t.starts_with('-') || t.starts_with('*') || t.starts_with('>') {
+            continue; // list items / quotes — fragments without context
+        }
+        if para.is_empty() {
+            para_start = line_no + 1;
+        }
+        para_end = line_no + 1;
+        if !para.is_empty() {
+            para.push(' ');
+        }
+        para.push_str(t);
     }
+    flush_para(&mut para, para_start, para_end, source, &mut out);
     out
+}
+
+/// Sentence-split a paragraph into Behavior claims — whole
+/// sentences only, capped per file.
+fn flush_para(
+    para: &mut String,
+    start: usize,
+    end: usize,
+    source: &Path,
+    out: &mut Vec<Claim>,
+) {
+    if para.is_empty() {
+        return;
+    }
+    let text = std::mem::take(para);
+    let seen = out
+        .iter()
+        .filter(|c| c.source == source && c.kind == ClaimKind::Behavior)
+        .count();
+    let mut budget = 10usize.saturating_sub(seen);
+    for sent in sentences(&text) {
+        if budget == 0 {
+            break;
+        }
+        if !is_assertion(sent) {
+            continue;
+        }
+        budget -= 1;
+        out.push(Claim {
+            kind: ClaimKind::Behavior,
+            text: sent.to_owned(),
+            source: source.to_path_buf(),
+            // line granularity: use paragraph start; precise
+            // mapping needs offsets, not worth it v1
+            line: start.max(end) as u32,
+        });
+    }
+}
+
+/// Naive sentence split on ". " / ".\n" — good enough for claim
+/// extraction (false splits cost a claim, not correctness).
+fn sentences(text: &str) -> Vec<&str> {
+    text.split(". ")
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .collect()
+}
+
+fn is_assertion(s: &str) -> bool {
+    !s.ends_with(':') // list intro, not a claim
+        && s.split_whitespace().count() >= 6
+        && s.split_whitespace().any(|w| {
+            matches!(
+                w.trim_matches(|c: char| !c.is_alphabetic()),
+                "is" | "are" | "stores" | "uses" | "reads" | "writes"
+                    | "returns" | "contains" | "supports" | "defaults"
+            )
+        })
 }
 
 /// Text inside `…` spans on one line.

@@ -55,6 +55,13 @@ enum Cmd {
     Report,
     /// Checker/config/kuda-index health.
     Doctor,
+    /// Dump extracted claims (kind/source/line) — tuning aid for
+    /// the extractor's precision on real docs.
+    Claims {
+        /// Include card-prose Behavior claims too.
+        #[arg(long)]
+        all: bool,
+    },
     /// Emit CLI reference markdown (docs pipeline).
     #[command(hide = true, name = "gen-cli-docs")]
     GenCliDocs,
@@ -69,6 +76,7 @@ fn main() {
         Cmd::Report => report(&cli),
         Cmd::Audit => audit(&cli),
         Cmd::Doctor => doctor(&cli),
+        Cmd::Claims { all } => claims_dump(&cli, *all),
         Cmd::GenCliDocs => {
             println!("{}", clap_markdown::help_markdown::<Cli>());
             0
@@ -113,6 +121,68 @@ fn load(cli: &Cli) -> Result<Config, String> {
     .load()
 }
 
+/// Doc-glob -> claims (shared by `check` and `claims` dump).
+fn doc_claims(cfg: &Config, root: &Path) -> Vec<mimus_core::Claim> {
+    let mut claims = Vec::new();
+    for pat in &cfg.sources.docs {
+        for p in mimus_rules::matching_files(&root, pat) {
+            // source globs catch build output too — prune it
+            let noisy = p.components().any(|c| {
+                let s = c.as_os_str().to_str();
+                matches!(
+                    s,
+                    Some("node_modules" | "dist" | ".cache" | "target")
+                ) || s.map(|n| n.ends_with(".files")).unwrap_or(false)
+            }) || p
+                .file_name()
+                .and_then(|n| n.to_str())
+                .map(|n| {
+                    n.starts_with("LICENSE")
+                        || n.starts_with("NOTICE")
+                        || n.starts_with("CHANGELOG")
+                })
+                .unwrap_or(false);
+            if noisy {
+                continue;
+            }
+            if let Ok(text) = std::fs::read_to_string(&p) {
+                claims.extend(mimus_claims::extract(&text, &p));
+            }
+        }
+    }
+    claims
+}
+
+/// `mimus claims` — print what the extractor produces; the tuning
+/// surface for prose-claim precision.
+fn claims_dump(cli: &Cli, all: bool) -> i32 {
+    let cfg = match load(cli) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("{e}");
+            return 1;
+        }
+    };
+    let root = root(cli);
+    let mut claims = doc_claims(&cfg, &root);
+    if all {
+        for card in mimus_rules::matching_files(&root, ".kuda/modules/*.yaml") {
+            claims.extend(card_prose_claims(&card));
+        }
+    }
+    for c in &claims {
+        println!(
+            "{}:{} [{:?}] {}",
+            c.source.display(),
+            c.line,
+            c.kind,
+            c.text
+        );
+    }
+    eprintln!("{} claim(s)", claims.len());
+    0
+}
+
 /// Extract claims from configured doc sources and run checkers
 /// + rules — the shared verification pipeline.
 fn collect(cli: &Cli, semantic: bool) -> Option<(PathBuf, Vec<Violation>)> {
@@ -124,24 +194,7 @@ fn collect(cli: &Cli, semantic: bool) -> Option<(PathBuf, Vec<Violation>)> {
         }
     };
     let root = root(cli);
-    let mut claims = Vec::new();
-    for pat in &cfg.sources.docs {
-        for p in mimus_rules::matching_files(&root, pat) {
-            // source globs catch build output too — prune it
-            let noisy = p.components().any(|c| {
-                matches!(
-                    c.as_os_str().to_str(),
-                    Some("node_modules" | "dist" | ".cache" | "target")
-                )
-            });
-            if noisy {
-                continue;
-            }
-            if let Ok(text) = std::fs::read_to_string(&p) {
-                claims.extend(mimus_claims::extract(&text, &p));
-            }
-        }
-    }
+    let mut claims = doc_claims(&cfg, &root);
     let mut checkers: Vec<Box<dyn Checker>> = vec![
         Box::new(mimus_check_fs::FsChecker::new(&root)),
         Box::new(mimus_check_cmd::CmdChecker::new()),
