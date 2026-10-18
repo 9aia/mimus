@@ -166,7 +166,10 @@ fn claims_dump(cli: &Cli, all: bool) -> i32 {
     let root = root(cli);
     let mut claims = doc_claims(&cfg, &root);
     if all {
-        for card in mimus_rules::matching_files(&root, ".kuda/modules/*.yaml") {
+        for card in mimus_rules::matching_files(&root, ".kuda/modules/*.yaml")
+                .into_iter()
+                .chain(mimus_rules::matching_files(&root, ".kuda/files/**/*.yaml"))
+            {
             claims.extend(card_prose_claims(&card));
         }
     }
@@ -206,7 +209,10 @@ fn collect(cli: &Cli, semantic: bool) -> Option<(PathBuf, Vec<Violation>)> {
     // Advisory only (--all or [check].semantic); never gates.
     if semantic && cfg.check.semantic {
         if let Some(cmd) = &cfg.check.acp_cmd {
-            for card in mimus_rules::matching_files(&root, ".kuda/modules/*.yaml") {
+            for card in mimus_rules::matching_files(&root, ".kuda/modules/*.yaml")
+                .into_iter()
+                .chain(mimus_rules::matching_files(&root, ".kuda/files/**/*.yaml"))
+            {
                 claims.extend(card_prose_claims(&card));
             }
             checkers.push(Box::new(mimus_check_acp::AcpChecker::new(
