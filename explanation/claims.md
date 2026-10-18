@@ -29,10 +29,14 @@ and `data Eq` get read as shell.
 - **Mechanical** — deterministic and offline: paths, commands,
   rules. This is the `mimus check` gate; if it flags something,
   the evidence is reproducible by anyone.
-- **Semantic** — advisory: prose-vs-behavior ("retries 3 times"
-  vs the code's 5), comment-vs-adjacent-code, ADR-vs-reality.
-  Reports with evidence; a human adjudicates. **Can never gate**
-  — that is load-bearing, not a limitation.
+- **Semantic** — advisory: the `acp` checker spawns an ACP agent
+  (`acp_cmd`, e.g. `cline --acp -P cline-pass -m
+  cline-free/mimo-v2.6-flash`) to verify `behavior` claims —
+  including kuda card prose. Runs with `--all` or
+  `[check].semantic`; every finding is `warn` + evidence.
+  **Can never gate** — that is load-bearing, not a limitation.
+  Claims fold into one prompt per batch, and each prompt is
+  debounced — polite to the provider.
 
 Style opinions are never emitted at all.
 
