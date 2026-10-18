@@ -133,6 +133,10 @@ pub struct CheckCfg {
     /// kuda index path for the symbol checker.
     #[serde(default)]
     pub kuda_index: Option<PathBuf>,
+    /// ACP agent command for the semantic checker
+    /// (e.g. "cline --acp"). Semantic tier is advisory only.
+    #[serde(default)]
+    pub acp_cmd: Option<String>,
 }
 
 impl Default for CheckCfg {
@@ -141,6 +145,7 @@ impl Default for CheckCfg {
             mechanical: true,
             semantic: false,
             kuda_index: None,
+            acp_cmd: None,
         }
     }
 }

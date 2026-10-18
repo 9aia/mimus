@@ -256,6 +256,7 @@ dependencies = [
  "clap",
  "clap-markdown",
  "mimus-check",
+ "mimus-check-acp",
  "mimus-check-cmd",
  "mimus-check-fs",
  "mimus-check-symbol",
@@ -274,6 +275,16 @@ name = "mimus-check"
 version = "0.1.0"
 dependencies = [
  "mimus-core",
+]
+
+[[package]]
+name = "mimus-check-acp"
+version = "0.1.0"
+dependencies = [
+ "mimus-check",
+ "mimus-core",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

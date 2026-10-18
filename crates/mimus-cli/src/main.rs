@@ -115,7 +115,7 @@ fn load(cli: &Cli) -> Result<Config, String> {
 
 /// Extract claims from configured doc sources and run checkers
 /// + rules — the shared verification pipeline.
-fn collect(cli: &Cli) -> Option<(PathBuf, Vec<Violation>)> {
+fn collect(cli: &Cli, semantic: bool) -> Option<(PathBuf, Vec<Violation>)> {
     let cfg = match load(cli) {
         Ok(c) => c,
         Err(e) => {
@@ -149,6 +149,19 @@ fn collect(cli: &Cli) -> Option<(PathBuf, Vec<Violation>)> {
     if let Some(idx) = &cfg.check.kuda_index {
         checkers.push(Box::new(mimus_check_symbol::SymbolChecker::new(idx)));
     }
+    // semantic tier: card prose -> behavior claims -> agent verify.
+    // Advisory only (--all or [check].semantic); never gates.
+    if semantic && cfg.check.semantic {
+        if let Some(cmd) = &cfg.check.acp_cmd {
+            for card in mimus_rules::matching_files(&root, ".kuda/modules/*.yaml") {
+                claims.extend(card_prose_claims(&card));
+            }
+            checkers.push(Box::new(mimus_check_acp::AcpChecker::new(
+                cmd.clone(),
+                root.clone(),
+            )));
+        }
+    }
     let mut violations: Vec<Violation> = mimus_check::run(&checkers, &claims)
         .filter_map(|r| match r {
             Ok(v) => Some(v),
@@ -171,8 +184,8 @@ fn collect(cli: &Cli) -> Option<(PathBuf, Vec<Violation>)> {
     Some((root, violations))
 }
 
-fn check(cli: &Cli, _all: bool, _no_cmd: bool) -> i32 {
-    let Some((_root, violations)) = collect(cli) else {
+fn check(cli: &Cli, all: bool, _no_cmd: bool) -> i32 {
+    let Some((_root, violations)) = collect(cli, all) else {
         return 2;
     };
     emit(&violations, &cli.format);
@@ -181,6 +194,48 @@ fn check(cli: &Cli, _all: bool, _no_cmd: bool) -> i32 {
     } else {
         0
     }
+}
+
+/// Card prose -> Behavior claims: `purpose:` and `notes:` fields
+/// of .kuda module cards are agent/machine assertions — the
+/// semantic checker can try to falsify them.
+fn card_prose_claims(card: &Path) -> Vec<mimus_core::Claim> {
+    let Ok(text) = std::fs::read_to_string(card) else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    let mut in_notes = false;
+    for (i, line) in text.lines().enumerate() {
+        let t = line.trim();
+        if let Some(p) = t.strip_prefix("purpose:") {
+            let p = p.trim().trim_matches('\'').trim_matches('"');
+            if !p.is_empty() && p != "''" {
+                out.push(mimus_core::Claim {
+                    kind: mimus_core::ClaimKind::Behavior,
+                    text: p.to_owned(),
+                    source: card.to_path_buf(),
+                    line: (i + 1) as u32,
+                });
+            }
+            in_notes = false;
+            continue;
+        }
+        if t.starts_with("notes:") {
+            in_notes = true;
+            continue;
+        }
+        if in_notes && (line.starts_with("  ") || line.starts_with("\t")) && !t.is_empty() {
+            out.push(mimus_core::Claim {
+                kind: mimus_core::ClaimKind::Behavior,
+                text: t.trim_start_matches('-').trim().to_owned(),
+                source: card.to_path_buf(),
+                line: (i + 1) as u32,
+            });
+        } else if in_notes {
+            in_notes = false;
+        }
+    }
+    out
 }
 
 fn report(cli: &Cli) -> i32 {
@@ -192,7 +247,7 @@ fn report(cli: &Cli) -> i32 {
 /// file exists in the repo (a moved file) — everything else is
 /// flagged for a human, never silently "fixed".
 fn fix(cli: &Cli, dry: bool) -> i32 {
-    let Some((root, violations)) = collect(cli) else {
+    let Some((root, violations)) = collect(cli, false) else {
         return 2;
     };
     let files = repo_files(&root);
