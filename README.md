@@ -4,69 +4,80 @@
 
 A critic for repos and agent memory. Extracts claims from docs,
 comments, and index cards; verifies them against the code —
-mechanically where it can, flagged-with-evidence where it can't.
-Named for *Mimus polyglottos*, the mockingbird that spots
-impostor eggs in its nest.
+mechanically where it can, flagged-with-evidence where it can't —
+and **repairs** the mechanically-fixable ones. Named for *Mimus
+polyglottos*, the mockingbird that spots impostor eggs in its nest.
 
 ```
-claims ──► extract ──► classify ──► verify ──► report
-            │            │           │          │
-        md/comments/  mechanical/  kuda index  CI gate +
-        cards         semantic     + checkers  evidence
+sources ──► extract ──► classify ──► verify ──► report/fix
+    │         │           │           │           │
+ docs/*.md  claims     path/cmd/   fs PATH     violations
+ comments   +lines    symbol/     kuda idx    + evidence
+ .kuda/               count…      rules/*.toml + rewrites
+ cards
 ```
 
 ## Features
 
-- evidence or silence — every violation carries the claim, the
-  proof, and the fix; if a checker can't cite both, it doesn't
-  emit (false positives kill critics faster than false negatives)
-- three tiers: **mechanical** (paths/commands/symbols/counts —
-  CI-gateable), **semantic** (prose vs behavior — reported for
-  human adjudication), and a hard rule: no style opinions
-- memory audit — verifies `kuda` cards against source and scores
-  card trust; stale claims get demoted, not just refreshed
-- every concern behind a port: checkers (`fs` | `cmd` | `symbol` |
-  `llm`), claim sources, sinks — ports/adapters are separate crates
-- rules are data (`rules/*.toml`), not code — a convention like
-  "dispatch via `lang.eval`, never `kind ==`" is a rule file
-- docs-as-tests: `mimus check` in CI means docs can't silently rot
+- **Evidence or silence** — every violation carries claim + proof
+  + fix; a checker that can't cite both emits nothing. False
+  positives kill a critic faster than false negatives
+- **Two tiers**: **mechanical** (paths, commands, symbols, rules —
+  CI-gateable, exit 1) and **semantic** (advisory, human adjudicates
+  — can never gate). No style opinions, ever
+- **`mimus fix`** — rewrites dead `path` claims to the moved file
+  (unique-basename match); `--dry` previews. Everything else flags
+  for a human — no silent "fixes"
+- **Memory audit** — `mimus audit` trust-scores `.kuda/` cards
+  against source via provenance hashes (fresh / drifted /
+  contradicted). kuda remembers; mimus doubts, even the memory
+- **Checkers**: `fs` (paths) · `cmd` (binary on PATH — never
+  executes) · `symbol` (real `.kuda/index.sqlite` schema —
+  namespaced claims refuted, externals silent) · `rules/*.toml`
+  conventions as data
+- **Command extraction is conservative** — first-token binary
+  allowlist, so `pub fn` never reads as shell
 
 ## vs. a linter
 
 - linters check code shape; mimus checks *claims about reality* —
-  "this command works", "this path exists", "this doc's numbers
-  are current", "this ADR isn't superseded by the code"
-- violations are enumerable and verifiable — a doc sweep becomes a
-  checklist, not a vibe
-- it audits the memory layer too: kuda remembers, mimus doubts
+  "this command works", "this path exists", "this symbol lives
+  where the doc says"
+- real-world dogfood: 1,530 stale references found in a ~100-module
+  repo's docs; 340 of them mechanically fixable
 
 ## Install
 
-Platform: **Linux + git**. The `symbol` checker wants a `kuda`
-index; the `llm` checker wants a provider key.
+Platform: **Linux + git**. `symbol` checker wants a `kuda` index.
 
 ```sh
-cargo install mimus                                  # crates.io (post-0.1.0)
-cargo install --git https://github.com/9aia/mimus mimus   # today
+cargo install --git https://github.com/9aia/mimus mimus
 ```
 
 ## Quickstart
 
 ```sh
 cd your-repo
-mimus init            # detect sources -> mimus.toml + rules/
-mimus check           # mechanical claims: paths, cmds, symbols
-mimus check --all     # + semantic tier (reported, not gated)
-mimus audit           # trust-score the .kuda/ cards
-mimus report          # full violations list with evidence
-mimus doctor          # checker/kuda-index health
+mimus init          # mimus.toml + rules/
+mimus check         # mechanical tier; exit 1 on errors
+mimus check --no-cmd    # skip the command checker
+mimus fix --dry     # preview dead-path rewrites
+mimus fix           # apply them
+mimus audit         # trust-score .kuda/ cards
+mimus report        # full list w/ evidence (--format json)
+mimus doctor        # checker/config/index health
 ```
+
+## The pair
+
+**mimus** doubts; **[kuda](https://github.com/9aia/kuda)** remembers
+— index, cards, queries, MCP/ACP surfaces. `mimus audit` is the
+falsifier for that memory.
 
 ## Docs
 
 Full docs: **[9aia.com/mimus](https://9aia.com/mimus/)** —
-tutorial, how-tos, cli/rules/crate-API reference, architecture
-(Diátaxis).
+tutorial, how-tos, reference, explanation (Diátaxis).
 
 [CONTRIBUTING](CONTRIBUTING.md) · [SECURITY](SECURITY.md) ·
-[LICENSE](LICENSE) (MIT) · [project](project/index.md) — TODO, backlog, ADRs
+[LICENSE](LICENSE) (MIT) · [project](project/index.md)
