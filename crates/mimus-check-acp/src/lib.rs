@@ -34,6 +34,21 @@ impl AcpChecker {
             inner: Mutex::new(None),
         }
     }
+
+    /// Spawn + handshake + session — shared by check/check_batch.
+    fn connect(cmd: &str, root: &PathBuf) -> Result<(AcpClient, String), String> {
+        let mut client = AcpClient::spawn(cmd)?;
+        client.request(
+            "initialize",
+            json!({"protocolVersion":1,"clientCapabilities":{},"clientInfo":{"name":"mimus","version":"0.1.0"}}),
+        )?;
+        let (session, _) = client.request(
+            "session/new",
+            json!({"cwd": root, "mcpServers": []}),
+        )?;
+        let sid = session["sessionId"].as_str().unwrap_or("mimus").to_owned();
+        Ok((client, sid))
+    }
 }
 
 impl AcpClient {
@@ -132,19 +147,12 @@ impl Checker for AcpChecker {
     fn check(&self, claim: &Claim) -> Result<Option<Violation>, String> {
         let mut guard = self.inner.lock().map_err(|e| e.to_string())?;
         if guard.is_none() {
-            let mut client = AcpClient::spawn(&self.cmd)?;
-            client.request(
-                "initialize",
-                json!({"protocolVersion":1,"clientCapabilities":{},"clientInfo":{"name":"mimus","version":"0.1.0"}}),
-            )?;
-            let (session, _) = client.request(
-                "session/new",
-                json!({"cwd": self.root, "mcpServers": []}),
-            )?;
-            let sid = session["sessionId"].as_str().unwrap_or("mimus").to_owned();
-            *guard = Some((client, sid));
+            *guard = Some(Self::connect(&self.cmd, &self.root)?);
         }
         let (client, sid) = guard.as_mut().unwrap();
+        // debounce — one agent, many claims; be polite to the
+        // provider (rate limits) rather than fanning out
+        std::thread::sleep(std::time::Duration::from_millis(1500));
         let (_res, prose) = client.request(
             "session/prompt",
             json!({"sessionId": sid.as_str(),
@@ -166,5 +174,62 @@ impl Checker for AcpChecker {
             }));
         }
         Ok(None) // VERIFIED or UNVERIFIABLE — silence
+    }
+
+    /// One prompt per claim batch — folds N claims into a single
+    /// numbered verify prompt so we don't spam the provider.
+    fn check_batch(&self, claims: &[Claim]) -> Vec<Result<Option<Violation>, String>> {
+        if claims.len() <= 1 {
+            return claims.iter().map(|c| self.check(c)).collect();
+        }
+        // one session, one prompt, numbered verdicts
+        let numbered: String = claims
+            .iter()
+            .enumerate()
+            .map(|(i, c)| format!("{}. {}:{}\n{}\n", i + 1, c.source.display(), c.line, c.text))
+            .collect();
+        let prompt = format!(
+            "For each numbered claim about this repository, reply on \
+             its own line as `N VERIFIED`, `N REFUTED: <evidence>`, or \
+             `N UNVERIFIABLE`. One line per claim, no extras:\n{numbered}"
+        );
+        let mut guard = match self.inner.lock() {
+            Ok(g) => g,
+            Err(e) => return vec![Err(e.to_string())],
+        };
+        if guard.is_none() {
+            match Self::connect(&self.cmd, &self.root) {
+                Ok(s) => *guard = Some(s),
+                Err(e) => return vec![Err(e)],
+            }
+        }
+        let (client, sid) = guard.as_mut().unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(1500));
+        let prose = match client.request(
+            "session/prompt",
+            json!({"sessionId": sid.as_str(),
+                   "prompt":[{"type":"text","text":prompt}]}),
+        ) {
+            Ok((_, prose)) => prose,
+            Err(e) => return vec![Err(e)],
+        };
+        // parse numbered verdicts back to per-claim results
+        claims
+            .iter()
+            .enumerate()
+            .map(|(i, c)| {
+                let tag = format!("{} ", i + 1);
+                let verdict = prose.lines().find(|l| l.trim_start().starts_with(&tag));
+                match verdict {
+                    Some(l) if l.contains("REFUTED") => Ok(Some(Violation {
+                        claim: c.clone(),
+                        evidence: l.splitn(2, ':').nth(1).unwrap_or(l).trim().to_owned(),
+                        fix: None,
+                        severity: Severity::Warn,
+                    })),
+                    _ => Ok(None),
+                }
+            })
+            .collect()
     }
 }

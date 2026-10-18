@@ -14,6 +14,13 @@ pub trait Checker: Send + Sync {
     /// `Ok(None)` = verified — OR unverifiable. Evidence-or-silence:
     /// a checker that can't prove the claim false emits nothing.
     fn check(&self, claim: &Claim) -> Result<Option<Violation>, String>;
+
+    /// Batch path — default is per-claim. Checkers that talk to a
+    /// rate-limited backend (ACP agents) override this to fold many
+    /// claims into one prompt.
+    fn check_batch(&self, claims: &[Claim]) -> Vec<Result<Option<Violation>, String>> {
+        claims.iter().map(|c| self.check(c)).collect()
+    }
 }
 
 /// Route claims to the checkers that handle their kind.
@@ -21,11 +28,26 @@ pub fn run<'a>(
     checkers: &'a [Box<dyn Checker>],
     claims: &'a [Claim],
 ) -> impl Iterator<Item = Result<Violation, String>> + 'a {
-    claims.iter().filter_map(move |c| {
-        checkers
+    // group claims by the first checker that handles each kind,
+    // then batch through it — one claim still works
+    let mut grouped: Vec<(usize, Vec<Claim>)> = Vec::new();
+    for c in claims {
+        if let Some(i) = checkers
             .iter()
-            .find(|ch| ch.handles().contains(&c.kind))
-            .map(|ch| ch.check(c))
-            .and_then(|r| r.transpose())
-    })
+            .position(|ch| ch.handles().contains(&c.kind))
+        {
+            match grouped.iter_mut().find(|(g, _)| *g == i) {
+                Some((_, v)) => v.push(c.clone()),
+                None => grouped.push((i, vec![c.clone()])),
+            }
+        }
+    }
+    grouped
+        .into_iter()
+        .flat_map(move |(i, cs)| {
+            checkers[i]
+                .check_batch(&cs)
+                .into_iter()
+                .filter_map(|r| r.transpose())
+        })
 }
