@@ -26,6 +26,27 @@ impl Checker for FsChecker {
         if text.is_empty() || text.starts_with("http") {
             return Ok(None); // not a path claim in practice — silence
         }
+        // unproveable claims — silence, not violations:
+        if text.starts_with('~') || text.starts_with('$') {
+            return Ok(None); // host/env-relative — can't verify per-repo
+        }
+        if text.contains('<') || text.contains('>') {
+            return Ok(None); // placeholder syntax, not a literal path
+        }
+        // glob claims verify by expansion (docs legitimately write
+        // `crates/*/Cargo.toml`), not literal existence
+        if text.contains('*') || text.contains('?') || text.contains('[') {
+            let pat = Path::new(&self.root).join(text).to_string_lossy().into_owned();
+            return Ok(match glob::glob(&pat).map(|mut g| g.next().is_some()) {
+                Ok(true) => None,
+                _ => Some(Violation {
+                    claim: claim.clone(),
+                    evidence: format!("no files match `./{text}`"),
+                    fix: None,
+                    severity: Severity::Error,
+                }),
+            });
+        }
         let p = Path::new(&self.root).join(text);
         if p.exists() {
             return Ok(None);

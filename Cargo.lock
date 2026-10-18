@@ -288,6 +288,7 @@ dependencies = [
 name = "mimus-check-fs"
 version = "0.1.0"
 dependencies = [
+ "glob",
  "mimus-check",
  "mimus-core",
 ]

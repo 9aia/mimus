@@ -127,6 +127,16 @@ fn collect(cli: &Cli) -> Option<(PathBuf, Vec<Violation>)> {
     let mut claims = Vec::new();
     for pat in &cfg.sources.docs {
         for p in mimus_rules::matching_files(&root, pat) {
+            // source globs catch build output too — prune it
+            let noisy = p.components().any(|c| {
+                matches!(
+                    c.as_os_str().to_str(),
+                    Some("node_modules" | "dist" | ".cache" | "target")
+                )
+            });
+            if noisy {
+                continue;
+            }
             if let Ok(text) = std::fs::read_to_string(&p) {
                 claims.extend(mimus_claims::extract(&text, &p));
             }
