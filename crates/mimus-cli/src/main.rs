@@ -55,6 +55,9 @@ enum Cmd {
     Report,
     /// Checker/config/kuda-index health.
     Doctor,
+    /// Doc coverage — which indexed symbols no doc ever names.
+    /// The reverse direction of `check`: code has it, docs silent.
+    Coverage,
     /// Dump extracted claims (kind/source/line) — tuning aid for
     /// the extractor's precision on real docs.
     Claims {
@@ -77,6 +80,7 @@ fn main() {
         Cmd::Audit => audit(&cli),
         Cmd::Doctor => doctor(&cli),
         Cmd::Claims { all } => claims_dump(&cli, *all),
+        Cmd::Coverage => coverage(&cli),
         Cmd::GenCliDocs => {
             println!("{}", clap_markdown::help_markdown::<Cli>());
             0
@@ -150,7 +154,113 @@ fn doc_claims(cfg: &Config, root: &Path) -> Vec<mimus_core::Claim> {
             }
         }
     }
+    // code comments asserting things -> Behavior claims the
+    // semantic tier verifies against the code they sit on.
+    if cfg.sources.comments {
+        for pat in ["crates/**/*.rs", "src/**/*.rs", "**/*.py", "**/*.ts"] {
+            for p in mimus_rules::matching_files(&root, pat) {
+                let noisy = p.components().any(|c| {
+                    matches!(
+                        c.as_os_str().to_str(),
+                        Some("node_modules" | "dist" | ".cache" | "target"
+                             | "tests" | "fixtures")
+                    )
+                });
+                if noisy {
+                    continue;
+                }
+                if let Ok(text) = std::fs::read_to_string(&p) {
+                    claims.extend(mimus_claims::extract_comments(&text, &p));
+                }
+            }
+        }
+    }
     claims
+}
+
+/// `mimus coverage` — reverse check: symbols present in the index
+/// but absent from every doc source. Mechanical (name-mention
+/// level); advisory, never gates.
+fn coverage(cli: &Cli) -> i32 {
+    let cfg = match load(cli) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("{e}");
+            return 1;
+        }
+    };
+    let Some(idx) = &cfg.check.kuda_index else {
+        eprintln!("coverage needs [check].kuda_index — run `kuda sync` first");
+        return 1;
+    };
+    let root = root(cli);
+    let syms = match mimus_check_symbol::all_symbols(&root.join(idx)) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("index {}: {e}", idx.display());
+            return 1;
+        }
+    };
+    // doc corpus: every doc source as text + whole-token index
+    let mut corpus = String::new();
+    for pat in &cfg.sources.docs {
+        for p in mimus_rules::matching_files(&root, pat) {
+            if let Ok(t) = std::fs::read_to_string(&p) {
+                corpus.push_str(&t);
+                corpus.push('\n');
+            }
+        }
+    }
+    let tokens: std::collections::HashSet<&str> = corpus
+        .split(|c: char| !(c.is_alphanumeric() || c == '_'))
+        .filter(|t| !t.is_empty())
+        .collect();
+    // generic names are unmatchable noise — `new`, `get`, `run`…
+    const GENERIC: &[&str] = &[
+        "new", "get", "set", "run", "main", "default", "from", "into",
+        "clone", "fmt", "drop", "len", "push", "iter", "read", "write",
+    ];
+    let mut by_mod: std::collections::BTreeMap<String, Vec<String>> =
+        std::collections::BTreeMap::new();
+    let mut total = 0usize;
+    let mut covered = 0usize;
+    let mut seen = std::collections::HashSet::new();
+    for (name, kind, file, module) in &syms {
+        // tests are docs for the suite, not the API — skip
+        if file.contains("/tests/") || file.ends_with("_test.rs") {
+            continue;
+        }
+        if name.len() < 4 || GENERIC.contains(&name.as_str()) {
+            continue;
+        }
+        if !seen.insert(name.clone()) {
+            continue; // same name in N files counts once
+        }
+        total += 1;
+        let named = tokens.contains(name.as_str())
+            || corpus.contains(name.as_str());
+        if named {
+            covered += 1;
+        } else {
+            by_mod
+                .entry(format!("{module} ({kind})"))
+                .or_default()
+                .push(name.clone());
+        }
+    }
+    let pct = if total > 0 { covered * 100 / total } else { 0 };
+    println!("{covered}/{total} symbols named in docs ({pct}%)");
+    for (m, names) in &by_mod {
+        let list: Vec<_> = names.iter().take(12).collect();
+        let more = names.len().saturating_sub(list.len());
+        let more = if more > 0 { format!(" +{more} more") } else { String::new() };
+        println!("  {m}: {}", {
+            let mut s = list.iter().map(|n| n.as_str()).collect::<Vec<_>>().join(", ");
+            s.push_str(&more);
+            s
+        });
+    }
+    0
 }
 
 /// `mimus claims` — print what the extractor produces; the tuning

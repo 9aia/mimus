@@ -234,3 +234,36 @@ mod tests {
         assert!(claims.iter().all(|c| c.kind == ClaimKind::Symbol));
     }
 }
+
+/// Extract assertive comment lines as Behavior claims — the
+/// code↔code consistency surface: comments that assert things the
+/// code may or may not do. `//`, `///`, `//!`, `#` lines; capped.
+pub fn extract_comments(text: &str, source: &Path) -> Vec<Claim> {
+    let mut out = Vec::new();
+    for (i, line) in text.lines().enumerate() {
+        let t = line.trim();
+        let body = t
+            .strip_prefix("///")
+            .or_else(|| t.strip_prefix("//!"))
+            .or_else(|| t.strip_prefix("//"))
+            .or_else(|| t.strip_prefix('#'))
+            .map(str::trim);
+        let Some(b) = body else { continue };
+        if b.len() < 20 || b.starts_with('!') || b.starts_with('[') {
+            continue; // doc attrs / annotations
+        }
+        if !is_assertion(b) {
+            continue;
+        }
+        out.push(Claim {
+            kind: ClaimKind::Behavior,
+            text: b.to_owned(),
+            source: source.to_path_buf(),
+            line: (i + 1) as u32,
+        });
+        if out.len() >= 10 {
+            break;
+        }
+    }
+    out
+}

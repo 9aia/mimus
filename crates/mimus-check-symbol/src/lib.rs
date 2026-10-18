@@ -10,7 +10,7 @@
 use mimus_check::Checker;
 use mimus_core::{Claim, ClaimKind, Severity, Violation};
 use rusqlite::{params, Connection};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 /// Checks `ClaimKind::Symbol` — `new(kuda_index_path)`.
@@ -30,6 +30,21 @@ impl SymbolChecker {
     pub fn index_present(&self) -> bool {
         self.conn.is_some()
     }
+}
+
+/// Every indexed symbol — `(name, kind, file, module)` — for
+/// coverage analysis: which symbols no doc ever names.
+pub fn all_symbols(index: &Path) -> Result<Vec<(String, String, String, String)>, String> {
+    let conn = Connection::open(index).map_err(|e| e.to_string())?;
+    let mut st = conn
+        .prepare("SELECT name,kind,file,module FROM symbols")
+        .map_err(|e| e.to_string())?;
+    let rows = st
+        .query_map([], |r| {
+            Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
+        })
+        .map_err(|e| e.to_string())?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
 }
 
 struct Hit {

@@ -214,7 +214,7 @@ impl Checker for AcpChecker {
             Err(e) => return vec![Err(e)],
         };
         // parse numbered verdicts back to per-claim results
-        claims
+        let mut out: Vec<Result<Option<Violation>, String>> = claims
             .iter()
             .enumerate()
             .map(|(i, c)| {
@@ -230,6 +230,74 @@ impl Checker for AcpChecker {
                     _ => Ok(None),
                 }
             })
-            .collect()
+            .collect();
+        // doc↔doc pass: claims sharing a subject token get one
+        // "do these contradict?" prompt per cluster — bounded,
+        // advisory. Results append as extra violations.
+        let mut subject: std::collections::HashMap<String, Vec<&Claim>> =
+            std::collections::HashMap::new();
+        for c in claims {
+            for tok in c.text.split(|ch: char| !(ch.is_alphanumeric() || ch == '_')) {
+                let tok = tok.trim_matches(|ch: char| !ch.is_alphanumeric());
+                if tok.len() >= 6 && tok.chars().next().map(|c| c.is_alphabetic()).unwrap_or(false) {
+                    subject.entry(tok.to_owned()).or_default().push(c);
+                }
+            }
+        }
+        let mut clusters: Vec<&Vec<&Claim>> = subject
+            .values()
+            .filter(|v| v.len() >= 2)
+            .collect();
+        clusters.sort_by_key(|v| std::cmp::Reverse(v.len()));
+        for cluster in clusters.into_iter().take(8) {
+            // dedupe by (source,line) — same claim can share
+            // several subject tokens
+            let mut seen = std::collections::HashSet::new();
+            let uniq: Vec<&&Claim> = cluster
+                .iter()
+                .filter(|c| seen.insert((&c.source, c.line)))
+                .collect();
+            if uniq.len() < 2 {
+                continue;
+            }
+            let body: String = uniq
+                .iter()
+                .enumerate()
+                .map(|(i, c)| {
+                    format!("{}. {}:{} — {}\n", i + 1, c.source.display(), c.line, c.text)
+                })
+                .collect();
+            let q = format!(
+                "These claims are about the same subject. Do any pair \
+                 contradict each other? Reply per contradiction as \
+                 `A vs B: <what disagrees>` or exactly `NONE`:\n{body}"
+            );
+            let (client, sid) = match guard.as_mut() {
+                Some(t) => t,
+                None => break,
+            };
+            std::thread::sleep(std::time::Duration::from_millis(1500));
+            let Ok((_, ans)) = client.request(
+                "session/prompt",
+                json!({"sessionId": sid.as_str(),
+                       "prompt":[{"type":"text","text":q}]}),
+            ) else { break };
+            for l in ans.lines() {
+                let t = l.trim();
+                if t == "NONE" || t.is_empty() {
+                    continue;
+                }
+                // any non-NONE answer = a reported contradiction —
+                // attach to the first claim in the cluster
+                out.push(Ok(Some(Violation {
+                    claim: (*uniq[0]).clone(),
+                    evidence: format!("contradiction: {t}"),
+                    fix: None,
+                    severity: Severity::Warn,
+                })));
+                break;
+            }
+        }
+        out
     }
 }
