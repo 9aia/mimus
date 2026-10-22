@@ -45,6 +45,11 @@ for c in $order; do
     tags="$tags $p-v$ver_c"
 done
 
+# docs drift with the CLI — regen generated references before
+# tagging so cli.md/config.md always match the released source
+cargo run -qp mimus -- gen-cli-docs > docs/reference/cli.md
+python3 docs/gen-config-docs.py
+
 git commit -aqm "release: bump crate versions"
 for t in $tags; do git tag "$t"; done
 ver="$(grep -m1 '^version' crates/mimus-cli/Cargo.toml | cut -d'"' -f2)"

@@ -48,10 +48,15 @@ sources ──► extract ──► classify ──► verify ──► report/f
 
 ## Install
 
-Platform: **Linux + git**. `symbol` checker wants a `kuda` index.
+Platform: **Linux + git**. The `symbol` checker, `audit`, and
+`coverage` want a [`kuda`](https://github.com/9aia/kuda) index —
+without one the mechanical tier is paths + commands + rules.
+Not on crates.io yet — install pins a commit:
 
 ```sh
 cargo install --git https://github.com/9aia/mimus mimus
+# pinned:
+# cargo install --git https://github.com/9aia/mimus --rev <sha> mimus
 ```
 
 ## Quickstart
