@@ -21,6 +21,9 @@ violations, evidence); ports are crates: `mimus-check`,
   emits nothing.
 - `cargo build --workspace` and `cargo test --workspace` must stay green
   (unit tests + the e2e in `crates/mimus-cli/tests/` — no docker needed).
+- Local gate: `git config core.hooksPath .githooks` makes
+  `scripts/check.sh` (`cargo check --workspace --all-targets`) run
+  pre-push — the compile floor, since no hosted CI watches HEAD.
 - Keep the binary dependency-light and sync; no async runtime.
 - Commits: conventional prefixes (`feat:`/`fix:`/`refactor:`/`docs:`/`chore:`).
 - Never commit secrets — `mimus.toml` takes names of env vars, not values.
