@@ -335,7 +335,9 @@ impl Checker for AcpChecker {
             let keys: std::collections::HashSet<String> =
                 claims.iter().map(|c| self.claim_key(c)).collect();
             if let Ok(mut v) = self.verdicts.lock() {
-                if v.retain(|k, _| keys.contains(k)).is_some() {
+                let before = v.len();
+                v.retain(|k, _| keys.contains(k));
+                if v.len() != before {
                     let _ = std::fs::write(
                         &self.cache_path,
                         serde_json::to_string_pretty(&*v).unwrap_or_default(),
