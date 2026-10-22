@@ -39,7 +39,7 @@ enum Cmd {
         /// Include the semantic tier (advisory only, never gates).
         #[arg(long)]
         all: bool,
-        /// Never execute documented commands.
+        /// Skip command claims — the PATH probe is machine-dependent.
         #[arg(long)]
         no_cmd: bool,
     },
@@ -302,7 +302,7 @@ fn claims_dump(cli: &Cli, all: bool) -> i32 {
 
 /// Extract claims from configured doc sources and run checkers
 /// + rules — the shared verification pipeline.
-fn collect(cli: &Cli, semantic: bool) -> Option<(PathBuf, Vec<Violation>)> {
+fn collect(cli: &Cli, semantic: bool, no_cmd: bool) -> Option<(PathBuf, Vec<Violation>)> {
     let cfg = match load(cli) {
         Ok(c) => c,
         Err(e) => {
@@ -312,10 +312,24 @@ fn collect(cli: &Cli, semantic: bool) -> Option<(PathBuf, Vec<Violation>)> {
     };
     let root = root(cli);
     let mut claims = doc_claims(&cfg, &root);
-    let mut checkers: Vec<Box<dyn Checker>> = vec![
-        Box::new(mimus_check_fs::FsChecker::new(&root)),
-        Box::new(mimus_check_cmd::CmdChecker::new()),
-    ];
+    // kind + prefix filters from [check] — tuning signal-to-noise
+    // is the operator's call, not the extractor's
+    claims.retain(|c| {
+        (cfg.check.kinds.is_empty() || cfg.check.kinds.contains(&c.kind))
+            && !cfg
+                .check
+                .ignore_prefixes
+                .iter()
+                .any(|p| c.text.starts_with(p.as_str()))
+    });
+    let mut fs = mimus_check_fs::FsChecker::new(&root);
+    fs.base_dirs = cfg.check.base_dirs.clone();
+    let mut checkers: Vec<Box<dyn Checker>> = vec![Box::new(fs)];
+    if !no_cmd {
+        let mut cmd = mimus_check_cmd::CmdChecker::new();
+        cmd.declared = cfg.check.binaries.clone();
+        checkers.push(Box::new(cmd));
+    }
     if let Some(idx) = &cfg.check.kuda_index {
         checkers.push(Box::new(mimus_check_symbol::SymbolChecker::new(idx)));
     }
@@ -357,8 +371,8 @@ fn collect(cli: &Cli, semantic: bool) -> Option<(PathBuf, Vec<Violation>)> {
     Some((root, violations))
 }
 
-fn check(cli: &Cli, all: bool, _no_cmd: bool) -> i32 {
-    let Some((_root, violations)) = collect(cli, all) else {
+fn check(cli: &Cli, all: bool, no_cmd: bool) -> i32 {
+    let Some((_root, violations)) = collect(cli, all, no_cmd) else {
         return 2;
     };
     emit(&violations, &cli.format);
@@ -424,7 +438,9 @@ fn fix(cli: &Cli, dry: bool, semantic: bool) -> i32 {
     let acp_cmd = cfg
         .as_ref()
         .and_then(|c| c.check.acp_cmd.clone());
-    let Some((root, violations)) = collect(cli, semantic && acp_cmd.is_some()) else {
+    let Some((root, violations)) =
+        collect(cli, semantic && acp_cmd.is_some(), false)
+    else {
         return 2;
     };
     let files = repo_files(&root);

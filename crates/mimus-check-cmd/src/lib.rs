@@ -10,11 +10,19 @@ use std::path::Path;
 pub struct CmdChecker {
     /// Disable execution-tier checks entirely on untrusted repos.
     pub allow_exec: bool,
+    /// Tool prerequisites the repo declares ([check].binaries) —
+    /// commands invoking these are assumed correct and skip the
+    /// PATH probe: docs may legitimately require tools the
+    /// checker's machine doesn't have.
+    pub declared: Vec<String>,
 }
 
 impl CmdChecker {
     pub fn new() -> Self {
-        Self { allow_exec: false }
+        Self {
+            allow_exec: false,
+            declared: Vec::new(),
+        }
     }
 }
 
@@ -54,6 +62,9 @@ impl Checker for CmdChecker {
             "cd" | "echo" | "export" | "set" | "if" | "for" | "while" | "test" | "true" | "false"
         ) {
             return Ok(None);
+        }
+        if self.declared.iter().any(|d| d == first) {
+            return Ok(None); // declared prerequisite — don't probe PATH
         }
         if binary_on_path(first) {
             return Ok(None);

@@ -11,6 +11,10 @@ cards = ".kuda/modules/*.yaml"   # audit the memory layer itself
 mechanical = true                # paths, commands, symbols, counts
 semantic = false                 # prose-vs-behavior; report tier
 kuda_index = ".kuda/index.sqlite"   # adapter: mimus-check-symbol — live
+# base_dirs = ["infrastructure/postgres"]  # extra roots path claims resolve against
+# kinds = ["path", "command"]    # restrict checked claim kinds (empty = all)
+# ignore_prefixes = ["api/"]     # skip claims starting with these
+# binaries = ["bun", "dagger"]   # declared prerequisites — skip the PATH probe
 
 [rules]
 dir = "rules"                    # data-driven convention rules

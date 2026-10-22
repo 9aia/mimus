@@ -137,6 +137,22 @@ pub struct CheckCfg {
     /// (e.g. "cline --acp"). Semantic tier is advisory only.
     #[serde(default)]
     pub acp_cmd: Option<String>,
+    /// Extra repo-relative roots path claims resolve against —
+    /// for docs that reference paths relative to a component
+    /// root (e.g. "infrastructure/postgres").
+    #[serde(default)]
+    pub base_dirs: Vec<PathBuf>,
+    /// Only check claims of these kinds (empty = all).
+    #[serde(default)]
+    pub kinds: Vec<ClaimKind>,
+    /// Skip claims whose text starts with any of these prefixes.
+    #[serde(default)]
+    pub ignore_prefixes: Vec<String>,
+    /// Tool prerequisites the repo declares — commands invoking
+    /// these skip the PATH probe (docs may legitimately require
+    /// tools the checker's machine lacks).
+    #[serde(default)]
+    pub binaries: Vec<String>,
 }
 
 impl Default for CheckCfg {
@@ -146,6 +162,10 @@ impl Default for CheckCfg {
             semantic: false,
             kuda_index: None,
             acp_cmd: None,
+            base_dirs: Vec::new(),
+            kinds: Vec::new(),
+            ignore_prefixes: Vec::new(),
+            binaries: Vec::new(),
         }
     }
 }
