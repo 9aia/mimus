@@ -16,8 +16,15 @@ fn help_and_stub() {
     let tmp = std::env::temp_dir();
     let out = mimus(&["--help"], &tmp);
     assert!(out.status.success());
+    // audit is report-tier — no cards is not an error
     let out = mimus(&["audit"], &tmp);
-    assert_eq!(out.status.code(), Some(2), "stub exit code");
+    assert!(out.status.success());
+    // a bad --config path is a usage failure
+    let out = mimus(
+        &["check", "--config", "/definitely/missing/mimus.toml"],
+        &tmp,
+    );
+    assert_eq!(out.status.code(), Some(2), "usage failure exit code");
 }
 
 #[test]
