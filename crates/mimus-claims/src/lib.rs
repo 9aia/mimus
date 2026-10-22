@@ -9,12 +9,26 @@ use std::path::Path;
 /// spans — the highest-precision source: writers quote exactly
 /// the things they assert (paths, commands, names).
 pub fn extract(text: &str, source: &Path) -> Vec<Claim> {
+    // <!-- mimus-ignore-file --> — intentional dead refs throughout.
+    if text.contains("mimus-ignore-file") {
+        return Vec::new();
+    }
     let mut out = Vec::new();
     let mut in_fence = false;
     let mut para = String::new();
     let mut para_start = 0usize;
     let mut para_end = 0usize;
+    let mut suppress_next = false;
     for (line_no, line) in text.lines().enumerate() {
+        // <!-- mimus-ignore --> — alone on a line it suppresses
+        // the NEXT line's claims; inline it suppresses its own.
+        if line.contains("mimus-ignore") {
+            suppress_next = !line.contains('`');
+            continue;
+        }
+        if std::mem::take(&mut suppress_next) {
+            continue;
+        }
         if line.trim_start().starts_with("```") {
             in_fence = !in_fence;
             continue;
@@ -179,6 +193,11 @@ fn classify(span: &str) -> Option<ClaimKind> {
         if s.starts_with('-') || s.chars().all(|c| c.is_ascii_uppercase() || c == '_') {
             return None;
         }
+        // `VAR=value` assignments and template/glob-placeholder
+        // spans name a shape, not a concrete file — unverifiable.
+        if looks_like_env_assignment(s) || looks_like_template(s) {
+            return None;
+        }
         return Some(ClaimKind::Path);
     }
     // Command-ish: only when the first token is a known binary —
@@ -202,6 +221,10 @@ fn classify(span: &str) -> Option<ClaimKind> {
         return None;
     }
     // Bare identifier → symbol candidate (snake/camel/Upper idents).
+    // Whole-span `<name>` is a placeholder, not a generic type.
+    if s.starts_with('<') && s.ends_with('>') {
+        return None;
+    }
     if s.chars()
         .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | ':' | '<' | '>'))
         && s.chars().any(|c| c.is_ascii_alphabetic())
@@ -210,6 +233,47 @@ fn classify(span: &str) -> Option<ClaimKind> {
         return Some(ClaimKind::Symbol);
     }
     None
+}
+
+/// `FOO=bar`, `NEURALCHAT_BFF_PUBLIC_URL=http://x` — an env
+/// assignment, not a path the repo can satisfy.
+fn looks_like_env_assignment(s: &str) -> bool {
+    match s.split_once('=') {
+        Some((k, _)) => {
+            !k.is_empty()
+                && !k.chars().next().unwrap().is_ascii_digit()
+                && k.chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '_')
+        }
+        None => false,
+    }
+}
+
+/// Spans naming a *pattern* — `..._x.md`, `{a,b}`, `<name>.rs`,
+/// `adr-mkt-0N.md`, `.md` — not a concrete path claim.
+fn looks_like_template(s: &str) -> bool {
+    if s.contains("...")
+        || s.contains('{')
+        || s.contains('}')
+        || s.contains('<')
+        || s.contains('>')
+    {
+        return true;
+    }
+    // bare extension (`.md`) — a suffix, not a file
+    if let Some(rest) = s.strip_prefix('.') {
+        if !rest.is_empty() && !rest.contains(['.', '/', '\\']) {
+            return true;
+        }
+    }
+    // digit+uppercase fragment inside a segment (`0N`, `0NN`) —
+    // serial placeholders, not real basenames. `v18`/`rfc1234`
+    // (letter-then-digit or lowercase) stay checkable.
+    s.split('/').any(|seg| {
+        seg.as_bytes()
+            .windows(2)
+            .any(|w| w[0].is_ascii_digit() && w[1].is_ascii_uppercase())
+    })
 }
 
 #[cfg(test)]
@@ -232,6 +296,44 @@ mod tests {
     fn skips_formatting_and_env() {
         let claims = extract("`KUDA_TOKEN` and `--flag` and `someVar_123`", "d".as_ref());
         assert!(claims.iter().all(|c| c.kind == ClaimKind::Symbol));
+    }
+
+    #[test]
+    fn skips_env_assignments() {
+        let claims = extract(
+            "set `NEURALCHAT_BFF_PUBLIC_URL=http://localhost:3000` then `FOO=bar`",
+            "d".as_ref(),
+        );
+        assert!(claims.is_empty(), "{:?}", claims);
+    }
+
+    #[test]
+    fn skips_template_spans() {
+        let claims = extract(
+            "name it `adr-mkt-0N.md` or `..._planejamento.md`, glob `{a,b}.toml`, type `.md`, param `<path>`",
+            "d".as_ref(),
+        );
+        assert!(claims.is_empty(), "{:?}", claims);
+    }
+
+    #[test]
+    fn mimus_ignore_suppresses() {
+        // marker alone on a line -> next line's claims
+        let c = extract(
+            "<!-- mimus-ignore -->\nsee `dead/x.md` and `real/README.md`",
+            "d".as_ref(),
+        );
+        assert!(c.is_empty(), "{:?}", c);
+        // inline marker -> same line only
+        let c = extract(
+            "see `dead/x.md` <!-- mimus-ignore -->\nbut `README.md` lives",
+            "d".as_ref(),
+        );
+        assert_eq!(c.len(), 1, "{:?}", c);
+        assert_eq!(c[0].text, "README.md");
+        // file-level marker
+        let c = extract("<!-- mimus-ignore-file -->\n`README.md`", "d".as_ref());
+        assert!(c.is_empty(), "{:?}", c);
     }
 }
 
