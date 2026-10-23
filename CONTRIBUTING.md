@@ -21,6 +21,8 @@ violations, evidence); ports are crates: `mimus-check`,
   emits nothing.
 - `cargo build --workspace` and `cargo test --workspace` must stay green
   (unit tests + the e2e in `crates/mimus-cli/tests/` — no docker needed).
+- Coverage: `scripts/coverage.sh` — cargo-llvm-cov HTML report in
+  `target/llvm-cov/html`; pass `--fail-under-lines 100` to gate.
 - Local gate: `git config core.hooksPath .githooks` makes
   `scripts/check.sh` (`cargo check --workspace --all-targets`) run
   pre-push — the compile floor, since no hosted CI watches HEAD.
