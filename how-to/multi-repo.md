@@ -1,7 +1,7 @@
 # How-to: multi-repo checking
 
 Docs in one repo make claims about sibling repos — moved crates,
-"see ../<repo>", cross-repo commands. mimus verifies those claims
+`see ../<repo>`, cross-repo commands. mimus verifies those claims
 where it can reach reality.
 
 ## Per-repo config
