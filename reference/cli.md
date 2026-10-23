@@ -7,9 +7,12 @@ This document contains the help content for the `mimus` command-line program.
 * [`mimus`↴](#mimus)
 * [`mimus init`↴](#mimus-init)
 * [`mimus check`↴](#mimus-check)
+* [`mimus fix`↴](#mimus-fix)
 * [`mimus audit`↴](#mimus-audit)
 * [`mimus report`↴](#mimus-report)
 * [`mimus doctor`↴](#mimus-doctor)
+* [`mimus coverage`↴](#mimus-coverage)
+* [`mimus claims`↴](#mimus-claims)
 
 ## `mimus`
 
@@ -21,9 +24,12 @@ Spots the cuckoo eggs in your repo — claim verification: docs-as-tests, memory
 
 * `init` — Detect sources -> mimus.toml + rules/ scaffold
 * `check` — Verify claims. Mechanical tier by default
+* `fix` — Apply mechanical rewrites for confirmed violations
 * `audit` — Trust-score .kuda/ cards vs source
 * `report` — Full violations list with evidence
 * `doctor` — Checker/config/kuda-index health
+* `coverage` — Doc coverage — which indexed symbols no doc ever names. The reverse direction of `check`: code has it, docs silent
+* `claims` — Dump extracted claims (kind/source/line) — tuning aid for the extractor's precision on real docs
 
 ###### **Options:**
 
@@ -51,7 +57,20 @@ Verify claims. Mechanical tier by default
 ###### **Options:**
 
 * `--all` — Include the semantic tier (advisory only, never gates)
-* `--no-cmd` — Never execute documented commands
+* `--no-cmd` — Skip command claims — the PATH probe is machine-dependent
+
+
+
+## `mimus fix`
+
+Apply mechanical rewrites for confirmed violations
+
+**Usage:** `mimus fix [OPTIONS]`
+
+###### **Options:**
+
+* `--dry` — Show the plan, write nothing
+* `--semantic` — Agentic tier: agent proposes corrected claim text for semantic (REFUTED) findings. Needs [check].acp_cmd
 
 
 
@@ -79,6 +98,26 @@ Checker/config/kuda-index health
 
 
 
+## `mimus coverage`
+
+Doc coverage — which indexed symbols no doc ever names. The reverse direction of `check`: code has it, docs silent
+
+**Usage:** `mimus coverage`
+
+
+
+## `mimus claims`
+
+Dump extracted claims (kind/source/line) — tuning aid for the extractor's precision on real docs
+
+**Usage:** `mimus claims [OPTIONS]`
+
+###### **Options:**
+
+* `--all` — Include card-prose Behavior claims too
+
+
+
 <hr/>
 
 <small><i>
@@ -86,31 +125,3 @@ Checker/config/kuda-index health
     <a href="https://crates.io/crates/clap-markdown"><code>clap-markdown</code></a>.
 </i></small>
 
-
-
-## claims
-
-```console
-$ mimus claims [--all]
-```
-
-Dump extracted claims (kind/source/line) — the tuning surface
-for extractor precision. `--all` includes `.kuda` card prose.
-
-## coverage
-
-```console
-$ mimus coverage
-```
-
-Reverse-direction check: indexed symbols (via `check.kuda_index`)
-never named in any doc source. Per-module gap list; advisory.
-
-## fix --semantic
-
-```console
-$ mimus fix --semantic [--dry]
-```
-
-Agentic repair tier: for grounded REFUTED findings the agent
-proposes corrected claim text — `--dry` previews; prose docs only.

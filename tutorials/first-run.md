@@ -31,7 +31,9 @@ mimus check
 
 Claim extraction scans every configured doc: backticked paths,
 shell commands, symbol names, counts, links. Each claim is
-verified against reality — the filesystem, PATH, the kuda index:
+verified against reality — the filesystem, PATH, the kuda index
+(symbol claims need `kuda sync`; without an index they're
+silence, not failures):
 
 ```
 README.md:42 [error] `src/old_api.rs` — ./src/old_api.rs does not exist
