@@ -29,3 +29,7 @@ mimus init    # detect claim sources -> mimus.toml + rules/
 mimus check   # mechanical tier: paths, commands, symbols
 mimus report  # violations with claim + evidence + fix
 ```
+
+`symbol` claims, `audit`, and `coverage` need a
+[kuda](https://github.com/9aia/kuda) index (`kuda sync`) — without
+one, the mechanical tier is paths + commands + rules.

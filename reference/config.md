@@ -27,6 +27,11 @@ url: /mimus/reference/config.md
 | `mechanical` | `bool` | optional | Mechanical tier — deterministic, CI-gateable. |
 | `semantic` | `bool` | optional | Semantic tier — advisory only, can never gate. |
 | `kuda_index` | `path` | optional | kuda index path for the symbol checker. |
+| `acp_cmd` | `string` | optional | ACP agent command for the semantic checker (e.g. "cline --acp"). Semantic tier is advisory only. |
+| `base_dirs` | `Vec<PathBuf>` | optional | Extra repo-relative roots path claims resolve against — for docs that reference paths relative to a component root (e.g. "infrastructure/postgres"). |
+| `kinds` | `Vec<ClaimKind>` | optional | Only check claims of these kinds (empty = all). |
+| `ignore_prefixes` | `list` | optional | Skip claims whose text starts with any of these prefixes. |
+| `binaries` | `list` | optional | Tool prerequisites the repo declares — commands invoking these skip the PATH probe (docs may legitimately require tools the checker's machine lacks). |
 
 ## `[rules]`
 

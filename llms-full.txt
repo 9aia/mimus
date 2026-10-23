@@ -34,7 +34,9 @@ mimus check
 
 Claim extraction scans every configured doc: backticked paths,
 shell commands, symbol names, counts, links. Each claim is
-verified against reality — the filesystem, PATH, the kuda index:
+verified against reality — the filesystem, PATH, the kuda index
+(symbol claims need `kuda sync`; without an index they're
+silence, not failures):
 
 ```
 README.md:42 [error] `src/old_api.rs` — ./src/old_api.rs does not exist
@@ -116,7 +118,7 @@ url: /mimus/how-to/multi-repo.md
 # How-to: multi-repo checking
 
 Docs in one repo make claims about sibling repos — moved crates,
-"see `../cli`", cross-repo commands. mimus verifies those claims
+`see ../<repo>`, cross-repo commands. mimus verifies those claims
 where it can reach reality.
 
 ## Per-repo config
@@ -133,8 +135,8 @@ done
 
 ## Cross-repo claims today
 
-* **Paths** are resolved relative to the repo root —
-  `../cli/crates/x` claims in docs verify if the sibling exists.
+* **Paths** are resolved relative to the repo root — a
+  ../sibling/crate claim in docs verifies if the sibling exists.
 * **Commands** check PATH, which is host-global — a doc telling
   users to run `hnl` is verified wherever `hnl` is installed.
 * **Symbols** need a kuda index per repo; the `symbol` checker
@@ -144,7 +146,7 @@ done
 ## Rules at scale
 
 Keep org-wide conventions in one place and symlink or vendor
-them per repo — a shared `rules/org/` directory fetched in CI
+them per repo — a shared rules/org/ directory fetched in CI
 works today; first-class rule inheritance is a backlog item.
 
 ## Where it goes next
@@ -356,9 +358,12 @@ This document contains the help content for the `mimus` command-line program.
 * [`mimus`↴](#mimus)
 * [`mimus init`↴](#mimus-init)
 * [`mimus check`↴](#mimus-check)
+* [`mimus fix`↴](#mimus-fix)
 * [`mimus audit`↴](#mimus-audit)
 * [`mimus report`↴](#mimus-report)
 * [`mimus doctor`↴](#mimus-doctor)
+* [`mimus coverage`↴](#mimus-coverage)
+* [`mimus claims`↴](#mimus-claims)
 
 ## `mimus`
 
@@ -370,9 +375,12 @@ Spots the cuckoo eggs in your repo — claim verification: docs-as-tests, memory
 
 * `init` — Detect sources -> mimus.toml + rules/ scaffold
 * `check` — Verify claims. Mechanical tier by default
+* `fix` — Apply mechanical rewrites for confirmed violations
 * `audit` — Trust-score .kuda/ cards vs source
 * `report` — Full violations list with evidence
 * `doctor` — Checker/config/kuda-index health
+* `coverage` — Doc coverage — which indexed symbols no doc ever names. The reverse direction of `check`: code has it, docs silent
+* `claims` — Dump extracted claims (kind/source/line) — tuning aid for the extractor's precision on real docs
 
 ###### **Options:**
 
@@ -396,7 +404,18 @@ Verify claims. Mechanical tier by default
 ###### **Options:**
 
 * `--all` — Include the semantic tier (advisory only, never gates)
-* `--no-cmd` — Never execute documented commands
+* `--no-cmd` — Skip command claims — the PATH probe is machine-dependent
+
+## `mimus fix`
+
+Apply mechanical rewrites for confirmed violations
+
+**Usage:** `mimus fix [OPTIONS]`
+
+###### **Options:**
+
+* `--dry` — Show the plan, write nothing
+* `--semantic` — Agentic tier: agent proposes corrected claim text for semantic (REFUTED) findings. Needs \[check].acp_cmd
 
 ## `mimus audit`
 
@@ -415,6 +434,22 @@ Full violations list with evidence
 Checker/config/kuda-index health
 
 **Usage:** `mimus doctor`
+
+## `mimus coverage`
+
+Doc coverage — which indexed symbols no doc ever names. The reverse direction of `check`: code has it, docs silent
+
+**Usage:** `mimus coverage`
+
+## `mimus claims`
+
+Dump extracted claims (kind/source/line) — tuning aid for the extractor's precision on real docs
+
+**Usage:** `mimus claims [OPTIONS]`
+
+###### **Options:**
+
+* `--all` — Include card-prose Behavior claims too
 
 &#xA;This document was generated automatically by
 clap-markdown.&#xA;
@@ -450,6 +485,11 @@ url: /mimus/reference/config.md
 | `mechanical` | `bool` | optional | Mechanical tier — deterministic, CI-gateable. |
 | `semantic` | `bool` | optional | Semantic tier — advisory only, can never gate. |
 | `kuda_index` | `path` | optional | kuda index path for the symbol checker. |
+| `acp_cmd` | `string` | optional | ACP agent command for the semantic checker (e.g. "cline --acp"). Semantic tier is advisory only. |
+| `base_dirs` | `Vec<PathBuf>` | optional | Extra repo-relative roots path claims resolve against — for docs that reference paths relative to a component root (e.g. "infrastructure/postgres"). |
+| `kinds` | `Vec<ClaimKind>` | optional | Only check claims of these kinds (empty = all). |
+| `ignore_prefixes` | `list` | optional | Skip claims whose text starts with any of these prefixes. |
+| `binaries` | `list` | optional | Tool prerequisites the repo declares — commands invoking these skip the PATH probe (docs may legitimately require tools the checker's machine lacks). |
 
 ## `[rules]`
 
@@ -536,6 +576,35 @@ grep, intended for terminals not parsers.
 
 `audit` always exits 0 — its scores are report-tier.
 
+## What is silence, not a violation
+
+mimus's rule is evidence-or-silence: a claim a checker cannot
+prove false emits nothing. Concretely, none of these produce a
+violation:
+
+* `/leading-slash` spans — read as URL routes or host-absolute
+  paths, never repo-relative claims
+* `a/b`-shaped misses (`application/pdf`, `tools/list`) — two
+  lowercase-word segments read as MIME types / RPC methods
+* `VAR=value` env assignments, `...`-/brace-/`<>`-template
+  spans, bare extensions (`.md`), serial placeholders
+  (`adr-mkt-0N.md`)
+* `~`- and `$`-prefixed paths, and globs verified by expansion
+* command claims whose binary is declared in
+  `[check].binaries`, or all command claims under `--no-cmd`
+
+## Tuning and suppression
+
+* `[check].kinds` / `[check].ignore_prefixes` / `base_dirs` —
+  see [config](config.md)
+* `<!-- mimus-ignore -->` — alone on a line, suppresses the next
+  line's claims; inline, suppresses its own line.
+  `<!-- mimus-ignore-file -->` skips the whole file.
+* the `cmd` checker probes the machine's PATH — results vary
+  across machines by design (missing binary = `warn`, never
+  `error`). Declare prerequisites in `[check].binaries`, or run
+  `check --no-cmd`.
+
 ---
 
 ---
@@ -551,6 +620,7 @@ documented at source (doc comments).
 * [mimus-secret](/mimus/api/mimus_secret/index.html) — port
 * [mimus-vcs](/mimus/api/mimus_vcs/index.html) — port
 * [mimus-check](/mimus/api/mimus_check/index.html) — impl
+* [mimus-check-acp](/mimus/api/mimus_check_acp/index.html) — impl
 * [mimus-check-cmd](/mimus/api/mimus_check_cmd/index.html) — impl
 * [mimus-check-fs](/mimus/api/mimus_check_fs/index.html) — impl
 * [mimus-check-symbol](/mimus/api/mimus_check_symbol/index.html) — impl
@@ -740,7 +810,7 @@ get an honest "cancelled" status.
 
 * **No release-plz / GHA**: the point of the project is that CI is a
   local loop — depending on hosted CI to ship it would be
-  self-defeating. `release.sh` is deliberately boring bash so it can
+  self-defeating. `scripts/release.sh` is deliberately boring bash so it can
   run as a plain `cmd` under `runner.kind = "shell"`.
 * **Latest-wins, not `all`**: a release that misses an intermediate
   push loses nothing — the tag lands on HEAD, which contains
@@ -826,6 +896,10 @@ mimus init    # detect claim sources -> mimus.toml + rules/
 mimus check   # mechanical tier: paths, commands, symbols
 mimus report  # violations with claim + evidence + fix
 ```
+
+`symbol` claims, `audit`, and `coverage` need a
+[kuda](https://github.com/9aia/kuda) index (`kuda sync`) — without
+one, the mechanical tier is paths + commands + rules.
 
 ---
 

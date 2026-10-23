@@ -4,7 +4,7 @@ url: /mimus/how-to/multi-repo.md
 # How-to: multi-repo checking
 
 Docs in one repo make claims about sibling repos — moved crates,
-"see `../cli`", cross-repo commands. mimus verifies those claims
+`see ../<repo>`, cross-repo commands. mimus verifies those claims
 where it can reach reality.
 
 ## Per-repo config
@@ -21,8 +21,8 @@ done
 
 ## Cross-repo claims today
 
-* **Paths** are resolved relative to the repo root —
-  `../cli/crates/x` claims in docs verify if the sibling exists.
+* **Paths** are resolved relative to the repo root — a
+  ../sibling/crate claim in docs verifies if the sibling exists.
 * **Commands** check PATH, which is host-global — a doc telling
   users to run `hnl` is verified wherever `hnl` is installed.
 * **Symbols** need a kuda index per repo; the `symbol` checker
@@ -32,7 +32,7 @@ done
 ## Rules at scale
 
 Keep org-wide conventions in one place and symlink or vendor
-them per repo — a shared `rules/org/` directory fetched in CI
+them per repo — a shared rules/org/ directory fetched in CI
 works today; first-class rule inheritance is a backlog item.
 
 ## Where it goes next

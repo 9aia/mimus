@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["SymbolChecker"]};
+window.SIDEBAR_ITEMS = {"fn":["all_symbols"],"struct":["SymbolChecker"]};

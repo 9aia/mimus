@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["EXAMPLE_TOML"],"enum":["Cmd"],"fn":["audit","check","doctor","emit","init","load","main","report","root"],"struct":["Cli"]};
+window.SIDEBAR_ITEMS = {"constant":["EXAMPLE_TOML"],"enum":["Cmd"],"fn":["audit","card_prose_claims","check","claims_dump","collect","coverage","dead_path_candidate","doc_claims","doctor","emit","fix","init","load","main","repo_files","report","rewrite_claim","root"],"struct":["Cli"]};
