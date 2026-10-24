@@ -343,10 +343,11 @@ fn collect(cli: &Cli, semantic: bool, no_cmd: bool) -> Option<(PathBuf, Vec<Viol
             {
                 claims.extend(card_prose_claims(&card));
             }
-            checkers.push(Box::new(mimus_check_acp::AcpChecker::new(
-                cmd.clone(),
-                root.clone(),
-            )));
+            let mut acp = mimus_check_acp::AcpChecker::new(cmd.clone(), root.clone());
+            // interior path-ish tokens in prose claims honor the
+            // same ignore list as whole-claim text
+            acp.ignore_prefixes = cfg.check.ignore_prefixes.clone();
+            checkers.push(Box::new(acp));
         }
     }
     let mut violations: Vec<Violation> = mimus_check::run(&checkers, &claims)
@@ -573,9 +574,7 @@ fn dead_path_candidate(root: &Path, files: &[PathBuf], claim: &str) -> Option<St
 /// Rewrite one claim occurrence inside its source line.
 fn rewrite_claim(claim: &mimus_core::Claim, new: &str) {
     let path = &claim.source;
-    let Ok(text) = std::fs::read_to_string(path) else {
-        return;
-    };
+    let Ok(text) = std::fs::read_to_string(path) else { return };
     let mut lines: Vec<String> = text.lines().map(str::to_owned).collect();
     let idx = (claim.line as usize).saturating_sub(1);
     if let Some(line) = lines.get_mut(idx) {
