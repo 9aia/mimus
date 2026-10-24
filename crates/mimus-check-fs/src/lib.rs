@@ -109,7 +109,8 @@ fn route_shaped(s: &str) -> bool {
         (it.next(), it.next(), it.next()),
         (Some(a), Some(b), None)
             if !a.is_empty()
-                && !b.is_empty()
+                // `!b.is_empty()` is dead — a trailing `/` is
+                // trimmed upstream, so `a/` never arrives here
                 && a.bytes().all(|c| c.is_ascii_lowercase())
                 && b.bytes().all(|c| c.is_ascii_lowercase())
     )

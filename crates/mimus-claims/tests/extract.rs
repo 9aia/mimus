@@ -126,6 +126,22 @@ fn comment_extraction_edges() {
 }
 
 #[test]
+fn stray_backtick_flag_spans_and_dotfiles() {
+    // trailing unclosed backtick → find('`') misses → i += 1
+    let c = kinds("see `README.md` and a stray ` here");
+    assert!(c.iter().any(|(_, t)| t == "README.md"), "{c:?}");
+    // flag-shaped path-ish span → not a claim (starts with '-')
+    let c = kinds("pass `--flag.toml` to the tool");
+    assert!(c.is_empty(), "{c:?}");
+    // `.config.toml` — leading dot with an inner dot → real path
+    let c = kinds("see `.config.toml` here");
+    assert!(
+        c.contains(&(ClaimKind::Path, ".config.toml".into())),
+        "{c:?}"
+    );
+}
+
+#[test]
 fn import_specifiers_are_not_paths() {
     // scoped packages, ~ aliases, bare package subpaths — JS import
     // specifiers, not repo-relative path claims
@@ -134,6 +150,33 @@ fn import_specifiers_are_not_paths() {
          and `~/lib/utils` and `~components/button`",
     );
     assert!(c.is_empty(), "{c:?}");
+    // snake_case + digit segments exercise every `||` arm of the
+    // specifier filter — still specifiers, still silence
+    let c = kinds("imports `foo_bar/baz9` and `a9b/c_d` here");
+    assert!(c.is_empty(), "{c:?}");
+    // empty segment (`a//b`) fails the per-segment check → Path
+    let c = kinds("see `a//b` here");
+    assert!(c.contains(&(ClaimKind::Path, "a//b".into())), "{c:?}");
+}
+
+#[test]
+fn classifier_rejects_and_env_digit_edges() {
+    // 1-2 char alnum span → below the symbol floor → not a claim
+    assert!(kinds("the `ab` rev").is_empty());
+    // disallowed chars (no space, not path-ish) → falls out: not a claim
+    assert!(kinds("the `x+y+z` op").is_empty());
+    // env-assignment with a leading-digit key → not env → Path claim
+    // (the `=` survives classification; fs triages it downstream)
+    let c = kinds("see `9foo=x.md` here");
+    assert!(c.contains(&(ClaimKind::Path, "9foo=x.md".into())), "{c:?}");
+    // dotted-leading specifier-ish segment → not a template → path
+    let c = kinds("see `.a/b` here");
+    assert!(c.contains(&(ClaimKind::Path, ".a/b".into())), "{c:?}");
+    // env-assignment with an empty key (`=x`) or punctuation in the
+    // key (`FO-O`) → not env → survives as a path claim
+    let c = kinds("see `=x.md` and `FO-O=x.md` here");
+    assert!(c.contains(&(ClaimKind::Path, "=x.md".into())), "{c:?}");
+    assert!(c.contains(&(ClaimKind::Path, "FO-O=x.md".into())), "{c:?}");
 }
 
 #[test]
@@ -148,4 +191,32 @@ fn genuine_paths_survive_specifier_filter() {
         c.contains(&(ClaimKind::Path, "docs/v1.2/notes".into())),
         "{c:?}"
     );
+}
+
+#[test]
+fn mimus_ignore_directives_suppress() {
+    // whole-file opt-out → early return, no claims at all
+    let c = kinds("<!-- mimus-ignore-file -->\nsee `dead/x.md` here");
+    assert!(c.is_empty(), "{c:?}");
+    // `mimus-ignore` alone on a line suppresses the NEXT line only
+    let c = kinds(
+        "<!-- mimus-ignore -->\nsee `dead/x.md` here\nbut `README.md` lives",
+    );
+    assert_eq!(c.len(), 1, "{c:?}");
+    assert_eq!(c[0].1, "README.md", "{c:?}");
+    // inline `mimus-ignore` with a backtick suppresses its own line,
+    // leaves suppress_next unset
+    let c = kinds("see `dead/x.md` <!-- mimus-ignore -->\nbut `README.md` lives");
+    assert_eq!(c.len(), 1, "{c:?}");
+    assert_eq!(c[0].1, "README.md", "{c:?}");
+}
+
+#[test]
+fn placeholder_and_bare_extension_spans() {
+    // whole-span `<name>` — a placeholder, not a generic type
+    assert!(kinds("fill in `<name>` here").is_empty());
+    // `.rs` alone — a bare extension/suffix, not a file
+    assert!(kinds("every `.rs` file").is_empty());
+    // `{name}` inside a path-ish span — a template placeholder
+    assert!(kinds("see `docs/{name}.md` for it").is_empty());
 }

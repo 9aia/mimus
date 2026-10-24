@@ -41,6 +41,8 @@ fn load_rules_parses_toml_and_skips_other_ext() {
     assert_eq!(rules.len(), 1);
     assert_eq!(rules[0].name, "r");
     assert_eq!(rules[0].severity, Severity::Warn); // default
+    let dbg = format!("{:?}", rules[0]);
+    assert!(dbg.contains("RuleDef") && dbg.contains("SourcePattern"), "{dbg}");
 }
 
 #[test]
@@ -48,6 +50,22 @@ fn load_rules_bad_toml_errors() {
     let dir = scratch("bad");
     std::fs::write(dir.join("r.toml"), "[[[").unwrap();
     assert!(load_rules(&dir).unwrap_err().contains("parse"));
+}
+
+/// A *.toml entry that exists but can't be read → `read {p}: {e}`
+/// — hard error, not silently skipped.
+#[test]
+#[cfg(unix)]
+fn load_rules_unreadable_toml_errors() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = scratch("unread");
+    let f = dir.join("r.toml");
+    std::fs::write(&f, "name = \"r\"\n").unwrap();
+    std::fs::set_permissions(&f, std::fs::Permissions::from_mode(0o000)).unwrap();
+    let e = load_rules(&dir).unwrap_err();
+    assert!(e.contains("read"), "{e}");
+    std::fs::set_permissions(&f, std::fs::Permissions::from_mode(0o644)).unwrap();
+    let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]

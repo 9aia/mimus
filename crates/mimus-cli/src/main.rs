@@ -539,7 +539,12 @@ fn repo_files(root: &Path) -> Vec<PathBuf> {
 fn dead_path_candidate(root: &Path, files: &[PathBuf], claim: &str) -> Option<String> {
     let claim_p = Path::new(claim.trim_start_matches("./"));
     let base = claim_p.file_name()?;
-    let parent = claim_p.parent()?.file_name().map(|f| f.to_string_lossy());
+    // parent().file_name() — None for parentless/trailing-`..`
+    // claims; and_then folds the two Options without a dead `?`
+    let parent = claim_p
+        .parent()
+        .and_then(|p| p.file_name())
+        .map(|f| f.to_string_lossy());
     let mut hits: Vec<&PathBuf> = files
         .iter()
         .filter(|f| f.file_name() == Some(base))
@@ -708,4 +713,47 @@ fn doctor(cli: &Cli) -> i32 {
         }
     }
     0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// rewrite_claim's defensive guards — stale line numbers,
+    /// drifted content, unreadable sources are all silent no-ops.
+    #[test]
+    fn rewrite_claim_guards() {
+        let dir = std::env::temp_dir()
+            .join(format!("mimus-rewrite-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let f = dir.join("doc.md");
+        std::fs::write(&f, "see `old/x.rs` here\n").unwrap();
+        let mk = |line: u32, text: &str| mimus_core::Claim {
+            kind: mimus_core::ClaimKind::Path,
+            text: text.into(),
+            source: f.clone(),
+            line,
+        };
+        // claim.line past EOF → no line to patch
+        rewrite_claim(&mk(99, "old/x.rs"), "new/y.rs");
+        // line exists but its text drifted → contains() is false
+        rewrite_claim(&mk(1, "other/z.rs"), "new/y.rs");
+        assert!(std::fs::read_to_string(&f).unwrap().contains("old/x.rs"));
+        // unreadable source → early return
+        rewrite_claim(
+            &mimus_core::Claim {
+                kind: mimus_core::ClaimKind::Path,
+                text: "x".into(),
+                source: dir.join("nope.md"),
+                line: 1,
+            },
+            "y",
+        );
+        // happy path: the claim text is replaced in place
+        rewrite_claim(&mk(1, "old/x.rs"), "new/y.rs");
+        let text = std::fs::read_to_string(&f).unwrap();
+        assert!(text.contains("new/y.rs") && !text.contains("old/x.rs"), "{text}");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }

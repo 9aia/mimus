@@ -43,7 +43,15 @@ for line in sys.stdin:
     elif method == "session/prompt":
         send({"jsonrpc": "2.0", "id": 900 + (mid or 0), "method": "session/request_permission",
               "params": {"options": [{"optionId": "proceed_once"}]}})
+        send({"jsonrpc": "2.0", "id": 903 + (mid or 0), "method": "session/request_permission",
+              "params": {"options": []}})  # no options → "allow_once" fallback
         send({"jsonrpc": "2.0", "id": 901 + (mid or 0), "method": "fs/read_text_file", "params": {}})
+        send({"jsonrpc": "2.0", "id": 902 + (mid or 0), "method": "agent/no_such_method"})
+        send({"jsonrpc": "2.0", "id": 4242, "result": {}})  # stray response — id never matches
+        send({"jsonrpc": "2.0", "method": "session/update",
+              "params": {"update": {"content": [{"text": ""}, {"type": "image"}]}}})
+        send({"jsonrpc": "2.0", "method": "session/update",
+              "params": {"update": {"content": "a bare string, not text-or-blocks"}}})
         sys.stdout.write("not json\n")
         sys.stdout.flush()
         ans = pop()
@@ -120,6 +128,71 @@ for line in sys.stdin:
         send({"jsonrpc": "2.0", "id": mid, "result": {"sessionId": "s1"}})
     elif method == "session/prompt":
         time.sleep(600)  # userActionRequired — waits forever
+"#;
+
+/// `session/new` answers with no `sessionId` — the client must
+/// fall back to its "mimus" default rather than choke.
+const NOSID_STUB: &str = r#"import json, sys
+
+def send(o):
+    sys.stdout.write(json.dumps(o) + "\n")
+    sys.stdout.flush()
+
+for line in sys.stdin:
+    try:
+        msg = json.loads(line)
+    except ValueError:
+        continue
+    mid, method = msg.get("id"), msg.get("method")
+    if method == "initialize":
+        send({"jsonrpc": "2.0", "id": mid, "result": {"protocolVersion": 1}})
+    elif method == "session/new":
+        send({"jsonrpc": "2.0", "id": mid, "result": {}})
+    elif method == "session/prompt":
+        send({"jsonrpc": "2.0", "method": "session/update",
+              "params": {"update": {"content": {"text": "VERIFIED"}}}})
+        send({"jsonrpc": "2.0", "id": mid, "result": {}})
+"#;
+
+/// Emits a non-UTF-8 line mid-prompt — read_line fails, the pump
+/// forwards the io error instead of a line.
+const BADUTF8_STUB: &str = r#"import json, sys
+
+def send(o):
+    sys.stdout.write(json.dumps(o) + "\n")
+    sys.stdout.flush()
+
+for line in sys.stdin:
+    try:
+        msg = json.loads(line)
+    except ValueError:
+        continue
+    mid, method = msg.get("id"), msg.get("method")
+    if method == "initialize":
+        send({"jsonrpc": "2.0", "id": mid, "result": {"protocolVersion": 1}})
+    elif method == "session/new":
+        send({"jsonrpc": "2.0", "id": mid, "result": {"sessionId": "s1"}})
+    elif method == "session/prompt":
+        sys.stdout.buffer.write(b"\xff\xfe not utf8\n")
+        sys.stdout.flush()
+        send({"jsonrpc": "2.0", "id": mid, "result": {}})
+"#;
+
+/// Answers `initialize` then exits on `session/new` — the
+/// handshake's second request fails.
+const HALF_STUB: &str = r#"import json, sys
+
+for line in sys.stdin:
+    try:
+        msg = json.loads(line)
+    except ValueError:
+        continue
+    if msg.get("method") == "initialize":
+        sys.stdout.write(json.dumps({"jsonrpc": "2.0", "id": msg.get("id"),
+                                    "result": {"protocolVersion": 1}}) + "\n")
+        sys.stdout.flush()
+    elif msg.get("method") == "session/new":
+        sys.exit(0)
 "#;
 
 fn tmp(tag: &str) -> PathBuf {
@@ -274,8 +347,9 @@ fn batch_numbered_verdicts_and_clusters() {
         agent(
             &dir,
             &[
-                "1 VERIFIED\\n2 REFUTED: doc.md contradicts it\\n3 UNVERIFIABLE",
+                "1 VERIFIED\\n2 REFUTED: doc.md contradicts it\\n3 UNVERIFIABLE\\n4 REFUTED: ghost/missing.md proves it",
                 "NONE",
+                "1 VERIFIED",
             ],
         ),
         &dir,
@@ -292,13 +366,22 @@ fn batch_numbered_verdicts_and_clusters() {
     let v = out[1].as_ref().unwrap().as_ref().unwrap(); // grounded REFUTED
     assert!(v.evidence.contains("doc.md"), "{}", v.evidence);
     assert!(out[2].as_ref().unwrap().is_none()); // UNVERIFIABLE
-    assert!(out[3].as_ref().unwrap().is_none()); // no verdict line → silence
+    assert!(out[3].as_ref().unwrap().is_none()); // ungrounded REFUTED → silence
                                                  // self-cleaning: a batch whose key set excludes earlier cached
                                                  // claims drops them (rewrites verdicts.json); both claims here
                                                  // resolve via triage/cache → no prompt needed
     let out = c.check_batch(&[
         claims[0].clone(),
         claim("see dead/absent-thing.rs here", "doc.md", 9),
+    ]);
+    assert_eq!(out.len(), 2);
+    assert!(out[0].as_ref().unwrap().is_none());
+    assert!(out[1].as_ref().unwrap().is_some());
+    // session reuse: a later batch with a fresh pending claim skips
+    // connect entirely (the guard is already Some)
+    let out = c.check_batch(&[
+        claim("a fresh unverified claim appears", "doc.md", 11),
+        claim("see dead/absent-thing.rs here", "doc.md", 12),
     ]);
     assert_eq!(out.len(), 2);
     assert!(out[0].as_ref().unwrap().is_none());
@@ -353,6 +436,69 @@ fn batch_contradiction_and_dead_agent() {
     let _ = std::fs::remove_dir_all(tmp("promptfail").as_path());
 }
 
+/// Every malformed `A vs B` shape is rejected — extra tokens,
+/// non-numeric ids, out-of-range/zero indexes, empty what.
+#[test]
+fn vs_line_rejects_malformed_shapes() {
+    let dir = tmp("vsmalformed");
+    std::fs::write(dir.join("doc.md"), "x").unwrap();
+    let c = AcpChecker::new(
+        agent(
+            &dir,
+            &[
+                "1 VERIFIED\\n2 VERIFIED",
+                "1 vs 2 extra token: junk\\nx vs 2: badnum\\n1 vs z: badnum2\\nx: onetok\\n1 vs: twotok\\n9 vs 9: out of range\\n0 vs 1: zero idx\\n1 vs 2:\\n: blank head\\n1 vz 2: wrong middle\\nNONE",
+            ],
+        ),
+        &dir,
+    );
+    let out = c.check_batch(&[
+        claim("SharedThing stores the value safely", "doc.md", 1),
+        claim("SharedThing resets on every boot now", "doc.md", 2),
+    ]);
+    assert_eq!(out.len(), 2, "{out:?}");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// `session/new` with no `sessionId` → the "mimus" fallback; the
+/// check still completes normally.
+#[test]
+fn session_without_id_falls_back() {
+    let dir = tmp("nosid");
+    let c = AcpChecker::new(stub_agent(&dir, NOSID_STUB), &dir);
+    assert!(c
+        .check(&claim("the engine is very fast indeed", "doc.md", 1))
+        .unwrap()
+        .is_none());
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// Non-UTF-8 bytes on stdout → read_line fails → the io error
+/// surfaces as the check error, not a hang or a panic.
+#[test]
+fn invalid_utf8_agent_output_errors() {
+    let dir = tmp("badutf8");
+    let c = AcpChecker::new(stub_agent(&dir, BADUTF8_STUB), &dir);
+    assert!(c
+        .check(&claim("the engine is very fast indeed", "doc.md", 1))
+        .is_err());
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// Agent dies answering `session/new` — connect fails there, the
+/// error surfaces from check/probe.
+#[test]
+fn session_new_failure_errors() {
+    let dir = tmp("halfhand");
+    let cmd = stub_agent(&dir, HALF_STUB);
+    assert!(probe(&cmd, &dir).is_err());
+    let c = AcpChecker::new(cmd.clone(), &dir);
+    assert!(c
+        .check(&claim("the engine is very fast indeed", "doc.md", 1))
+        .is_err());
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 #[test]
 fn batch_connect_failure() {
     let dir = tmp("connfail");
@@ -391,6 +537,10 @@ fn probe_and_propose() {
     assert!(probe(&cmd, &dir).unwrap_err().contains("no text"));
     // dead agent → error
     assert!(probe("false", &tmp("probedead")).is_err());
+    // agent answers the prompt with a JSON-RPC error → propagates
+    let dir = tmp("probejrpc");
+    let cmd = agent(&dir, &["ERROR"]);
+    assert!(probe(&cmd, &dir).unwrap_err().contains("boom"));
 
     // propose returns the agent's line
     let dir = tmp("proposeok");
@@ -405,6 +555,14 @@ fn probe_and_propose() {
     assert!(propose(&cmd, &dir, "old", "ev")
         .unwrap_err()
         .contains("proposed nothing"));
+    // prompt request itself errors → Err propagates
+    let dir = tmp("proposejrpc");
+    let cmd = agent(&dir, &["ERROR"]);
+    assert!(propose(&cmd, &dir, "old", "ev")
+        .unwrap_err()
+        .contains("boom"));
+    // dead agent → connect fails before any prompt
+    assert!(propose("false", &tmp("proposedead"), "old", "ev").is_err());
     let _ = std::fs::remove_dir_all(tmp("probeok").as_path());
     let _ = std::fs::remove_dir_all(tmp("probeempty").as_path());
     let _ = std::fs::remove_dir_all(tmp("probedead").as_path());
@@ -482,6 +640,13 @@ fn comment_slash_pairs_are_not_paths() {
     );
     let v = c.check(&cl).unwrap().unwrap();
     assert!(v.evidence.contains("old/dead-file.rs"), "{}", v.evidence);
+    // code-source claim whose slash token has no extension →
+    // filename_shaped's no-dot arm → skipped, falls to dead agent
+    let cl = claim("mentions dead/nofile in passing here", "src/x.rs", 5);
+    assert!(c.check(&cl).is_err());
+    // source with no extension at all → is_code_source's None arm
+    let cl = claim("the engine is very fast indeed", "Makefile", 1);
+    assert!(c.check(&cl).is_err());
     let _ = std::fs::remove_dir_all(&dir);
 }
 

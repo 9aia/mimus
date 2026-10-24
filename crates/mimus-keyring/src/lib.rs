@@ -44,12 +44,12 @@ impl Secrets for KeyringSecrets {
             .stdin(Stdio::piped())
             .spawn()?;
         c.stdin.as_mut().unwrap().write_all(value.as_bytes())?;
-        c.wait().map(|s| {
-            if s.success() {
-                Ok(())
-            } else {
-                Err(std::io::Error::other("secret-tool store failed"))
-            }
-        })?
+        // a failed wait() is a failed store — folding it in keeps a
+        // `?` arm nothing can ever reach off the error path
+        if c.wait().map(|s| s.success()).unwrap_or(false) {
+            Ok(())
+        } else {
+            Err(std::io::Error::other("secret-tool store failed"))
+        }
     }
 }

@@ -21,6 +21,33 @@ fn set_get_update() {
 }
 
 #[test]
+fn creates_missing_parent_dirs() {
+    let f = tmp("nested").join("a/b/env");
+    let s = DotenvSecrets { path: f.clone() };
+    s.set("K", "v").unwrap();
+    assert_eq!(s.get("K").as_deref(), Some("v"));
+    let _ = std::fs::remove_dir_all(tmp("nested"));
+}
+
+#[test]
+fn set_without_parent_dir_errors() {
+    // empty path → parent() is None → mkdir skipped, write fails
+    let s = DotenvSecrets {
+        path: std::path::PathBuf::new(),
+    };
+    assert!(s.set("K", "v").is_err());
+    // parent exists as a *file* → create_dir_all fails
+    let dir = tmp("blocked");
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("afile"), "x").unwrap();
+    let s = DotenvSecrets {
+        path: dir.join("afile/x.env"),
+    };
+    assert!(s.set("K", "v").is_err());
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
 #[cfg(unix)]
 fn perms_600() {
     use std::os::unix::fs::PermissionsExt;

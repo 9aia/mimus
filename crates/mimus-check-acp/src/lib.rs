@@ -263,8 +263,9 @@ impl AcpClient {
             .stderr(Stdio::null())
             .spawn()
             .map_err(|e| format!("spawn {cmd}: {e}"))?;
-        let stdin = child.stdin.take().ok_or("no stdin")?;
-        let mut reader = BufReader::new(child.stdout.take().ok_or("no stdout")?);
+        // stdio is piped above — take() can't return None here
+        let stdin = child.stdin.take().expect("stdin piped");
+        let mut reader = BufReader::new(child.stdout.take().expect("stdout piped"));
         // pump stdout on its own thread so reads can time out —
         // a blocked BufReader::read_line has no deadline otherwise
         let (tx, lines) = std::sync::mpsc::channel();
@@ -515,7 +516,9 @@ impl Checker for AcpChecker {
         {
             let keys: std::collections::HashSet<String> =
                 claims.iter().map(|c| self.claim_key(c)).collect();
-            if let Ok(mut v) = self.verdicts.lock() {
+            // `.map` over lock() — a poisoned lock skips pruning via
+            // Result's internals, no dead `if let` else-arm here
+            let _ = self.verdicts.lock().map(|mut v| {
                 let before = v.len();
                 v.retain(|k, _| keys.contains(k));
                 if v.len() != before {
@@ -524,7 +527,7 @@ impl Checker for AcpChecker {
                         serde_json::to_string_pretty(&*v).unwrap_or_default(),
                     );
                 }
-            }
+            });
         }
         // triage + cache first — dead paths are free verdicts,
         // cached claims never re-prompt
@@ -679,5 +682,167 @@ impl Checker for AcpChecker {
             }
         }
         out
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The pump's arms: Ok(_) send when the receiver is alive, the
+    /// send-error `break` once it's dead, and the `Err(e)` read arm
+    /// on non-UTF-8 output — all deterministic via a delayed agent.
+    #[test]
+    fn pump_breaks_after_client_drop() {
+        // Agent echoes "a" immediately, "b" after a delay. The "a"
+        // line lands a successful send; the receiver swap happens in
+        // the quiet window; "b" then lands on a dead channel →
+        // is_err → break. No sleeps needed for ordering.
+        let mut client = AcpClient::spawn(
+            "echo a; sleep 1; echo b; sleep 60",
+            &PathBuf::from("."),
+        )
+        .expect("spawn echoer");
+        let first = client
+            .lines
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .expect("a line arrives");
+        assert!(first.is_some());
+        let (_tx, dead) = std::sync::mpsc::channel();
+        let gone = std::mem::replace(&mut client.lines, dead);
+        drop(gone);
+        // the delayed "b" send now fails for sure; give the pump a
+        // beat to observe it before the client (and its stdin) drop
+        std::thread::sleep(std::time::Duration::from_millis(1500));
+        drop(client);
+        // belt & suspenders: the flood variant too
+        for _ in 0..3 {
+            let client = AcpClient::spawn(
+                "head -c 100000000 /dev/zero | tr '\\0' 'x'",
+                &PathBuf::from("."),
+            )
+            .expect("spawn flooder");
+            std::thread::sleep(std::time::Duration::from_millis(10));
+            drop(client);
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        // Err(e) arm: invalid UTF-8 on stdout → read_line errors →
+        // send(Err) → break. recv the Err line so the arm provably
+        // ran before the client drops (a bare drop races the pump).
+        let mut client = AcpClient::spawn("printf '\\377'", &PathBuf::from("."))
+            .expect("spawn binary junk");
+        let msg = client
+            .lines
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .expect("the bad byte surfaces");
+        assert!(matches!(msg, Some(Err(_))), "{msg:?}");
+        drop(client);
+        // `sh` can't be spawned with an empty PATH → connect fails
+        // at the spawn `?`. Env mutation lives inside this test so
+        // sibling tests (which tolerate spawn failure) stay sane.
+        let old_path = std::env::var("PATH").unwrap_or_default();
+        std::env::set_var("PATH", "");
+        let root = PathBuf::from(".");
+        assert!(AcpClient::spawn("anything", &root).is_err());
+        assert!(AcpChecker::connect("anything", &root).is_err());
+        std::env::set_var("PATH", old_path);
+    }
+
+    /// `MIMUS_ACP_TIMEOUT_SECS` set to garbage → parse fails →
+    /// falls back to the 240s default rather than panicking.
+    #[test]
+    fn garbage_timeout_env_falls_back() {
+        unsafe {
+            std::env::set_var("MIMUS_ACP_TIMEOUT_SECS", "not-a-number");
+        }
+        let c = AcpClient::spawn("sleep 2", &PathBuf::from(".")).expect("spawn");
+        assert_eq!(c.timeout, std::time::Duration::from_secs(240));
+        unsafe {
+            std::env::remove_var("MIMUS_ACP_TIMEOUT_SECS");
+        }
+    }
+
+    /// Writing to an agent that closed its stdin → `send` fails,
+    /// and `request` propagates the Err.
+    #[test]
+    fn send_to_closed_stdin_errors() {
+        let mut client = AcpClient::spawn("exec 0<&-; sleep 5", &PathBuf::from("."))
+            .expect("spawn");
+        std::thread::sleep(std::time::Duration::from_millis(150));
+        assert!(client.send(&json!({"x":1})).is_err());
+        assert!(client.request("initialize", json!({})).is_err());
+    }
+
+    /// A poisoned `verdicts` lock — the batch cache-prune block is
+    /// skipped rather than panicking, and `cache_get`/`cache_put`
+    /// degrade to no-cache rather than failing.
+    #[test]
+    fn poisoned_verdicts_lock_skips_prune() {
+        let dir = std::env::temp_dir()
+            .join(format!("mimus-acp-poison-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let c = AcpChecker::new("false", &dir);
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _g = c.verdicts.lock().unwrap();
+            panic!("poison the lock");
+        }));
+        // lock poisoned → cache_get misses (`.ok()?` → None), the
+        // claim falls through to the (dead) agent → Err
+        let cl = Claim {
+            kind: ClaimKind::Behavior,
+            text: "the engine is very fast indeed".into(),
+            source: "doc.md".into(),
+            line: 1,
+        };
+        assert!(c.check(&cl).is_err());
+        // direct cache_put on a poisoned lock is a silent no-op
+        c.cache_put("k".into(), "VERIFIED".into());
+        let claims = vec![
+            Claim {
+                kind: ClaimKind::Behavior,
+                text: "see dead/a-file.rs for it".into(),
+                source: "doc.md".into(),
+                line: 1,
+            },
+            Claim {
+                kind: ClaimKind::Behavior,
+                text: "see dead/b-file.rs for it".into(),
+                source: "doc.md".into(),
+                line: 2,
+            },
+        ];
+        let out = c.check_batch(&claims);
+        assert_eq!(out.len(), 2);
+        assert!(out.iter().all(|r| r.as_ref().unwrap().is_some()));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// A poisoned `inner` lock — `check` propagates an Err, while
+    /// `check_batch` recovers the guard via `into_inner()` and keeps
+    /// going (to the dead agent, here).
+    #[test]
+    fn poisoned_session_lock_paths() {
+        let dir = std::env::temp_dir()
+            .join(format!("mimus-acp-poison2-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let c = AcpChecker::new("false", &dir);
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _g = c.inner.lock().unwrap();
+            panic!("poison the lock");
+        }));
+        let cl = Claim {
+            kind: ClaimKind::Behavior,
+            text: "the engine is very fast indeed".into(),
+            source: "doc.md".into(),
+            line: 1,
+        };
+        assert!(c.check(&cl).is_err()); // map_err arm — poison surfaces
+        // batch recovers the poisoned guard, then connect fails
+        let out = c.check_batch(&[cl.clone(), cl]);
+        assert_eq!(out.len(), 1);
+        assert!(out[0].is_err());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

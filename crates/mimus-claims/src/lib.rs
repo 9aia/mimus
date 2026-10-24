@@ -156,10 +156,9 @@ fn backtick_spans(line: &str) -> Vec<&str> {
                 continue;
             }
             if let Some(end) = line[i + 1..].find('`') {
-                let span = &line[i + 1..i + 1 + end];
-                if !span.is_empty() {
-                    out.push(span);
-                }
+                // end == 0 is unreachable — adjacent backticks were
+                // consumed by the run-skip above
+                out.push(&line[i + 1..i + 1 + end]);
                 i += end + 2;
                 continue;
             }
@@ -189,8 +188,10 @@ fn classify(span: &str) -> Option<ClaimKind> {
             || s.ends_with(".yml")
             || s.ends_with(".sh"))
     {
-        // But not env vars, flags, or dotted identifiers.
-        if s.starts_with('-') || s.chars().all(|c| c.is_ascii_uppercase() || c == '_') {
+        // But not flags. (An all-caps span can't reach here —
+        // path-ish requires `/` or an extension, neither of which
+        // is uppercase/`_` — so only the `-` guard is needed.)
+        if s.starts_with('-') {
             return None;
         }
         // `@scope/pkg`, `~/alias/...` — import specifiers and host
@@ -214,7 +215,8 @@ fn classify(span: &str) -> Option<ClaimKind> {
     // Command-ish: only when the first token is a known binary —
     // "starts with a lowercase word" eats code keywords (pub, data).
     if s.contains(' ') {
-        let first = s.split_whitespace().next()?;
+        // a space implies a first token — unwrap_or avoids a dead `?`
+        let first = s.split_whitespace().next().unwrap_or("");
         const BINARIES: &[&str] = &[
             "cargo", "rustc", "rustup", "git", "gh", "npm", "npx", "yarn", "pnpm", "bun",
             "deno", "node", "pip", "pip3", "uv", "python", "python3", "pytest", "poetry",
@@ -254,7 +256,9 @@ fn classify(span: &str) -> Option<ClaimKind> {
 fn looks_like_import_specifier(s: &str) -> bool {
     s.contains('/')
         && !s.contains('.')
-        && s.chars().next().map(|c| c.is_ascii_lowercase()).unwrap_or(false)
+        // s is non-empty (checked in classify) — starts_with avoids
+        // a dead None arm on chars().next()
+        && s.starts_with(|c: char| c.is_ascii_lowercase())
         && s.split('/').all(|seg| {
             !seg.is_empty()
                 && seg
@@ -288,9 +292,11 @@ fn looks_like_template(s: &str) -> bool {
     {
         return true;
     }
-    // bare extension (`.md`) — a suffix, not a file
+    // bare extension (`.md`) — a suffix, not a file. (rest can't
+    // be empty: `.` alone never reaches the path gate — no `/`,
+    // no extension suffix)
     if let Some(rest) = s.strip_prefix('.') {
-        if !rest.is_empty() && !rest.contains(['.', '/', '\\']) {
+        if !rest.contains(['.', '/', '\\']) {
             return true;
         }
     }
