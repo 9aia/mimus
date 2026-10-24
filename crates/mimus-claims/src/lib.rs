@@ -193,9 +193,20 @@ fn classify(span: &str) -> Option<ClaimKind> {
         if s.starts_with('-') || s.chars().all(|c| c.is_ascii_uppercase() || c == '_') {
             return None;
         }
+        // `@scope/pkg`, `~/alias/...` — import specifiers and host
+        // paths, not repo-relative paths the fs checker can prove.
+        if s.starts_with('@') || s.starts_with('~') {
+            return None;
+        }
         // `VAR=value` assignments and template/glob-placeholder
         // spans name a shape, not a concrete file — unverifiable.
         if looks_like_env_assignment(s) || looks_like_template(s) {
+            return None;
+        }
+        // `nuqs/adapters/tanstack-router` — a bare package subpath:
+        // every segment lowercase-word, no filename anywhere. Same
+        // ambiguity FsChecker already resolves as silence for `a/b`.
+        if looks_like_import_specifier(s) {
             return None;
         }
         return Some(ClaimKind::Path);
@@ -233,6 +244,23 @@ fn classify(span: &str) -> Option<ClaimKind> {
         return Some(ClaimKind::Symbol);
     }
     None
+}
+
+/// `nuqs/adapters/tanstack-router`, `pkg/sub/thing` — a bare
+/// node_modules import specifier: ≥2 segments, all lowercase word
+/// characters, and no `.` anywhere (a real repo path names a file
+/// with an extension). Extensionless lowercase `docs/api/v1`-style
+/// claims are the same unprovable shape FsChecker already silences.
+fn looks_like_import_specifier(s: &str) -> bool {
+    s.contains('/')
+        && !s.contains('.')
+        && s.chars().next().map(|c| c.is_ascii_lowercase()).unwrap_or(false)
+        && s.split('/').all(|seg| {
+            !seg.is_empty()
+                && seg
+                    .bytes()
+                    .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-' || b == b'_')
+        })
 }
 
 /// `FOO=bar`, `NEURALCHAT_BFF_PUBLIC_URL=http://x` — an env
