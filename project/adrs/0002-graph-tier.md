@@ -162,7 +162,24 @@ findings depend on index freshness (stale index → stale graph —
    table in `mimus.toml` (`alias = "canonical"`, keys normalized
    like subjects) rather than a separate `.mimus/aliases.toml` —
    one config file, no extra loader.
-3. Per-file triples cache + `--diff` interplay.
+3. Per-file triples cache + `--diff` interplay. **Done** —
+   `mimus-check-graph::cache`: sqlite at `.mimus/triples.db`
+   (gitignored), keyed on `(path, content-hash, TRIPLES_VERSION)`
+   — a `files` marker row holds the key so zero-triple files
+   cache too; `triples` payload rows are rewritten wholesale per
+   file in one transaction. `extract_triples_cached` groups
+   claims by `source`, hashes the file's bytes, and serves
+   stored rows on hit; `ProseContradictionChecker` gained a
+   `cache: Option<TriplesCache>` field, opened at
+   `.mimus/triples.db` in `collect` (open failure → stderr note +
+   uncached run). `--diff` interplay: diff filters *claims* for
+   the per-claim checkers, but the buckets still read every
+   file's triples — a contradiction needs both sides, and the
+   cache makes the unchanged side cheap. Findings are gated by
+   `in_scope`: a conflict emits only when ≥1 object site sits in
+   a checked source, and the anchor prefers the in-scope site.
+   `mimus doctor` reports `triples cache ok/--` + row count
+   (read-only probe, never creates the db).
 4. `undocumented fact` class (reverse coverage — joins the
    existing `mimus coverage` command's direction).
 5. Semantic tier rescoped to fuzzy-candidate adjudication.

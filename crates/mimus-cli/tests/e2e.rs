@@ -1077,6 +1077,116 @@ fn check_prose_contradictions() {
     assert!(!so.contains("contradiction"), "{so}");
 }
 
+/// ADR-0002 ph3 — `--diff` keeps the contradiction buckets
+/// whole: the unchanged side of a conflict still counts (the
+/// warm cache serves its triples), and unchanged↔unchanged
+/// drift stays silent. An unwritable `.mimus/` degrades to a
+/// stderr note, never a failure.
+#[test]
+fn check_diff_prose_warm_cache() {
+    let d = dir("diff-cache");
+    cfg(&d, "");
+    write(
+        &d,
+        "docs/a.md",
+        "The auth service uses jwt for every request today.\n",
+    );
+    write(
+        &d,
+        "docs/b.md",
+        "The auth service uses sessions for every request today.\n",
+    );
+    write(
+        &d,
+        "docs/c.md",
+        "The pool service uses postgres everywhere.\n",
+    );
+    write(&d, "docs/e.md", "The pool service uses redis everywhere.\n");
+    let git = |args: &[&str]| {
+        let o = Command::new("git")
+            .arg("-C")
+            .arg(&d)
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(
+            o.status.success(),
+            "git {args:?}: {}",
+            String::from_utf8_lossy(&o.stderr)
+        );
+    };
+    git(&["init", "-q", "-b", "main"]);
+    git(&["-c", "user.email=t@t", "-c", "user.name=t", "add", "."]);
+    git(&[
+        "-c",
+        "user.email=t@t",
+        "-c",
+        "user.name=t",
+        "commit",
+        "-qm",
+        "init",
+    ]);
+    // warm run — populates .mimus/triples.db
+    let o = mimus(&["check"], &d);
+    let (so, _) = out(&o);
+    assert!(so.contains("contradiction"), "{so}");
+    assert!(d.join(".mimus/triples.db").exists());
+    // change only a.md: the a↔b conflict emits (jwt→oauth2 proves
+    // a.md re-extracted; b.md:1 cited proves the unchanged side
+    // still feeds the bucket — via the cache). c↔e is untouched
+    // drift → silent.
+    write(
+        &d,
+        "docs/a.md",
+        "The auth service uses oauth2 for every request today.\n",
+    );
+    let o = mimus(&["check", "--diff", "HEAD"], &d);
+    let (so, _) = out(&o);
+    assert!(so.contains("contradiction"), "{so}");
+    assert!(so.contains("oauth2"), "{so}");
+    assert!(so.contains("sessions"), "{so}");
+    assert!(so.contains("a.md:1 [warn]"), "{so}"); // anchor = changed side
+    assert!(so.contains("b.md:1"), "{so}"); // unchanged side cited
+    assert!(!so.contains("postgres"), "{so}");
+    assert!(!so.contains("redis"), "{so}");
+
+    // .mimus as a file → cache open fails → stderr note + the
+    // run completes uncached
+    let d = dir("cache-blocked");
+    cfg(&d, "");
+    write(&d, ".mimus", "x");
+    write(&d, "docs/a.md", "nothing claimed here");
+    let o = mimus(&["check"], &d);
+    let (so, se) = out(&o);
+    assert!(se.contains("triples cache"), "{se}");
+    assert!(so.contains("no violations"), "{so}");
+    assert_eq!(o.status.code(), Some(0));
+}
+
+/// doctor reports the triples cache: row count when populated,
+/// `--` when absent — and never creates the db itself.
+#[test]
+fn doctor_triples_cache() {
+    let d = dir("doc-cache");
+    cfg(&d, "");
+    write(
+        &d,
+        "docs/a.md",
+        "The auth service uses jwt for every request today.\n",
+    );
+    let _ = mimus(&["check"], &d); // populates .mimus/triples.db
+    let o = mimus(&["doctor"], &d);
+    let (so, _) = out(&o);
+    assert!(so.contains("triples cache ok"), "{so}");
+    // no db → '--', and the probe doesn't create one
+    let d = dir("doc-nocache");
+    cfg(&d, "");
+    let o = mimus(&["doctor"], &d);
+    let (so, _) = out(&o);
+    assert!(so.contains("triples cache --"), "{so}");
+    assert!(!d.join(".mimus/triples.db").exists());
+}
+
 /// `[check].kuda_index` wires the graph pass: a stale index edge
 /// gates (error), an unsupported doc claim warns.
 #[test]

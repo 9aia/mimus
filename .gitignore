@@ -6,3 +6,4 @@ coverage/
 docs/
 .kuda/index.sqlite
 .kuda/meta.json
+.mimus/

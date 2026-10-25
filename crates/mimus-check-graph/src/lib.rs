@@ -24,6 +24,11 @@
 //!   `(subject, relation)` bucket — cross-source for doc↔doc,
 //!   reflexive when one file asserts two objects for the same
 //!   slot. No index needed: this pass runs on any claim set.
+//! - phase 3: a per-file triples cache (`cache` module — sqlite
+//!   at `.mimus/triples.db`, keyed on content hash + extractor
+//!   version) skips re-extracting unchanged files, and the prose
+//!   pass's `in_scope` gate lets `--diff` keep the buckets whole
+//!   while only reporting conflicts that touch changed files.
 
 use mimus_check::GraphChecker;
 use mimus_claims::triples::{
@@ -34,6 +39,9 @@ use rusqlite::{params, Connection, OpenFlags};
 use std::collections::HashSet;
 use std::path::Path;
 use std::time::Duration;
+
+pub mod cache;
+pub use cache::{extract_triples_cached, triples_cache_rows, TriplesCache, TRIPLES_VERSION};
 
 /// Load the kuda index into a `Graph` snapshot — read-only, never
 /// creates the file. Missing tables yield empty sets: a
@@ -187,24 +195,46 @@ pub struct ProseContradictionChecker {
     /// Subject aliases from `[check].aliases` — `(phrase,
     /// canonical)` pairs resolved at bucket-key time.
     pub aliases: Vec<(String, String)>,
+    /// Per-file triples cache (phase 3) — `Some` serves unchanged
+    /// files' triples from `.mimus/triples.db`; `None` extracts
+    /// every run.
+    pub cache: Option<TriplesCache>,
 }
 
 impl ProseContradictionChecker {
     /// claims → triples → buckets → warn-tier violations.
-    pub fn run_prose(&self, claims: &[Claim]) -> Vec<Violation> {
-        let triples = extract_triples(claims);
+    /// `in_scope` gates *findings*, not extraction: the buckets
+    /// see every file's triples (a contradiction needs both
+    /// sides) but a conflict emits only when ≥1 object site is
+    /// in scope — under `--diff` that's the changed-file side,
+    /// so unchanged↔unchanged drift stays silent.
+    pub fn run_prose(
+        &mut self,
+        claims: &[Claim],
+        in_scope: &dyn Fn(&Path) -> bool,
+    ) -> Vec<Violation> {
+        let triples = match self.cache.as_mut() {
+            Some(c) => extract_triples_cached(claims, c),
+            None => extract_triples(claims),
+        };
         contradictions_with_aliases(&triples, &self.aliases)
             .iter()
-            .map(|c| contradiction_violation(c, claims))
+            .filter(|c| c.objects.iter().any(|(_, src, _)| in_scope(src)))
+            .map(|c| contradiction_violation(c, claims, in_scope))
             .collect()
     }
 }
 
 /// One contradiction → one warn violation: the class name, the
 /// bucket key it matched on, and every object with its
-/// `file:line` site is the evidence; the anchor claim is the
-/// first-seen site so output points at a real claim.
-fn contradiction_violation(c: &Contradiction, claims: &[Claim]) -> Violation {
+/// `file:line` site is the evidence. The anchor claim prefers an
+/// in-scope site — under `--diff` that's the *new* side of the
+/// disagreement, so output points at the drifted file.
+fn contradiction_violation(
+    c: &Contradiction,
+    claims: &[Claim],
+    in_scope: &dyn Fn(&Path) -> bool,
+) -> Violation {
     let class = match c.kind {
         ContradictionKind::CrossSource => "contradiction",
         ContradictionKind::Reflexive => "self-contradiction",
@@ -215,15 +245,17 @@ fn contradiction_violation(c: &Contradiction, claims: &[Claim]) -> Violation {
         .map(|(o, src, line)| format!("`{o}` ({}:{line})", src.display()))
         .collect::<Vec<_>>()
         .join(" vs ");
+    let anchor = c
+        .objects
+        .iter()
+        .position(|(_, src, _)| in_scope(src))
+        .unwrap_or(0);
+    let (obj, src, line) = &c.objects[anchor];
     // a triple's (source, line) always came from a claim in this
     // set — the position() fallback is unreachable, just total
     let i = claims
         .iter()
-        .position(|k| {
-            k.source == c.objects[0].1
-                && k.line as usize == c.objects[0].2
-                && k.text.contains(c.objects[0].0.as_str())
-        })
+        .position(|k| k.source == *src && k.line as usize == *line && k.text.contains(obj.as_str()))
         .unwrap_or_default();
     Violation {
         claim: claims[i].clone(),
@@ -711,23 +743,26 @@ mod tests {
             source: PathBuf::from(src),
             line,
         };
-        let chk = ProseContradictionChecker {
+        let mut chk = ProseContradictionChecker {
             aliases: Vec::new(),
+            cache: None,
         };
+        // no scope gate — everything emits, the pre-ph3 behavior
+        let all: &dyn Fn(&Path) -> bool = &|_| true;
         // empty in → silence
-        assert!(chk.run_prose(&[]).is_empty());
+        assert!(chk.run_prose(&[], all).is_empty());
         // agreeing claims → silence
         let claims = [
             bclaim("auth uses jwt", "a.md", 1),
             bclaim("the auth service uses jwt", "b.md", 2),
         ];
-        assert!(chk.run_prose(&claims).is_empty());
+        assert!(chk.run_prose(&claims, all).is_empty());
         // same doc, two objects → reflexive warn with both sites
         let claims = [
             bclaim("auth uses jwt", "a.md", 1),
             bclaim("auth uses sessions", "a.md", 5),
         ];
-        let v = chk.run_prose(&claims);
+        let v = chk.run_prose(&claims, all);
         assert_eq!(v.len(), 1, "{v:?}");
         assert_eq!(v[0].severity, Severity::Warn);
         // anchored on the first-seen site — the real claim
@@ -744,7 +779,7 @@ mod tests {
             bclaim("auth uses jwt", "a.md", 1),
             bclaim("auth uses sessions", "b.md", 2),
         ];
-        let v = chk.run_prose(&claims);
+        let v = chk.run_prose(&claims, all);
         assert_eq!(v.len(), 1, "{v:?}");
         assert!(v[0].evidence.contains("contradiction —"));
         assert!(!v[0].evidence.contains("self-contradiction"));
@@ -754,7 +789,7 @@ mod tests {
             bclaim("auth uses sessions", "a.md", 2),
             bclaim("auth uses tokens", "b.md", 3),
         ];
-        let v = chk.run_prose(&claims);
+        let v = chk.run_prose(&claims, all);
         assert_eq!(v.len(), 1, "{v:?}");
         assert!(v[0].evidence.contains("tokens"), "{}", v[0].evidence);
         // aliases fold differently-spelled subjects into one bucket
@@ -762,12 +797,81 @@ mod tests {
             bclaim("login flow uses jwt", "a.md", 1),
             bclaim("the auth service uses sessions", "b.md", 2),
         ];
-        assert!(chk.run_prose(&claims).is_empty(), "no aliases → silence");
-        let chk = ProseContradictionChecker {
+        assert!(
+            chk.run_prose(&claims, all).is_empty(),
+            "no aliases → silence"
+        );
+        let mut chk = ProseContradictionChecker {
             aliases: vec![("login flow".to_owned(), "auth".to_owned())],
+            cache: None,
         };
-        let v = chk.run_prose(&claims);
+        let v = chk.run_prose(&claims, all);
         assert_eq!(v.len(), 1, "{v:?}");
         assert!(v[0].evidence.contains("auth|uses"), "{}", v[0].evidence);
+    }
+
+    /// ADR-0002 ph3 — `in_scope` gates *findings*, not the
+    /// buckets: a conflict touching a scoped file emits and
+    /// anchors on the in-scope side; one entirely outside stays
+    /// silent. The cache path returns identical findings — once
+    /// extracting, once reading stored rows.
+    #[test]
+    fn prose_scope_gate_and_cache() {
+        let dir = std::env::temp_dir().join(format!("mimus-prose-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let (a, b, c, d) = (
+            dir.join("a.md"),
+            dir.join("b.md"),
+            dir.join("c.md"),
+            dir.join("d.md"),
+        );
+        std::fs::write(&a, "auth uses sessions\n").unwrap();
+        std::fs::write(&b, "auth uses jwt\n").unwrap();
+        std::fs::write(&c, "pool uses postgres\n").unwrap();
+        std::fs::write(&d, "pool uses redis\n").unwrap();
+        let mk = |text: &str, src: &Path, line: u32| Claim {
+            kind: ClaimKind::Behavior,
+            text: text.into(),
+            source: src.to_path_buf(),
+            line,
+        };
+        // b.md first-seen so the scope-preferred anchor is
+        // observable: in-scope a.md is the *second* object site
+        let claims = [
+            mk("auth uses jwt", &b, 1),
+            mk("auth uses sessions", &a, 1),
+            mk("pool uses postgres", &c, 1),
+            mk("pool uses redis", &d, 1),
+        ];
+        let only_a: &dyn Fn(&Path) -> bool = &|p| p == a;
+        // uncached path: a↔b emits (anchored on in-scope a.md,
+        // though b.md's site is first-seen), c↔d stays silent
+        let mut chk = ProseContradictionChecker {
+            aliases: Vec::new(),
+            cache: None,
+        };
+        let v = chk.run_prose(&claims, only_a);
+        assert_eq!(v.len(), 1, "{v:?}");
+        assert!(v[0].evidence.contains("auth|uses"), "{}", v[0].evidence);
+        assert!(v[0].evidence.contains("b.md:1"), "{}", v[0].evidence);
+        assert_eq!(v[0].claim.source, a, "anchor prefers the in-scope site");
+        assert_eq!(v[0].claim.text, "auth uses sessions");
+        // cached path — same findings across an extract run and
+        // a stored-rows run
+        let mut chk = ProseContradictionChecker {
+            aliases: Vec::new(),
+            cache: Some(TriplesCache::open(&dir.join("triples.db")).unwrap()),
+        };
+        for _ in 0..2 {
+            let v = chk.run_prose(&claims, only_a);
+            assert_eq!(v.len(), 1, "{v:?}");
+            assert_eq!(v[0].claim.source, a);
+        }
+        // nothing in scope → silence; everything → both conflicts
+        assert!(chk.run_prose(&claims, &|_| false).is_empty());
+        let v = chk.run_prose(&claims, &|_| true);
+        assert_eq!(v.len(), 2, "{v:?}");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

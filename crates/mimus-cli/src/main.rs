@@ -325,15 +325,21 @@ fn collect(
     };
     let root = root(cli);
     let mut claims = doc_claims(&cfg, &root);
-    if let Some(spec) = diff {
-        match diff_files(&root, spec) {
-            Ok(changed) => claims.retain(|c| changed.contains(&canon(&c.source))),
+    // `--diff` scope: the per-claim checkers run on claims from
+    // changed files — but the prose contradiction buckets still
+    // see every file's triples (a contradiction needs both
+    // sides; ADR-0002 ph3's per-file cache makes the unchanged
+    // side cheap). Findings are gated on scope below, at emit.
+    let changed = match diff {
+        Some(spec) => match diff_files(&root, spec) {
+            Ok(ch) => Some(ch),
             Err(e) => {
                 eprintln!("{e}");
                 return None;
             }
-        }
-    }
+        },
+        None => None,
+    };
     // kind + prefix filters from [check] — tuning signal-to-noise
     // is the operator's call, not the extractor's
     claims.retain(|c| {
@@ -344,6 +350,14 @@ fn collect(
                 .iter()
                 .any(|p| c.text.starts_with(p.as_str()))
     });
+    let mut scoped: Vec<mimus_core::Claim> = match &changed {
+        Some(set) => claims
+            .iter()
+            .filter(|c| set.contains(&canon(&c.source)))
+            .cloned()
+            .collect(),
+        None => claims.clone(),
+    };
     let mut fs = mimus_check_fs::FsChecker::new(&root);
     fs.base_dirs = cfg.check.base_dirs.clone();
     let mut checkers: Vec<Box<dyn Checker>> = vec![Box::new(fs)];
@@ -363,7 +377,9 @@ fn collect(
                 .into_iter()
                 .chain(mimus_rules::matching_files(&root, ".kuda/files/**/*.yaml"))
             {
-                claims.extend(card_prose_claims(&card));
+                let cs = card_prose_claims(&card);
+                claims.extend(cs.iter().cloned()); // card prose feeds the buckets too
+                scoped.extend(cs); // card claims bypass diff scoping — same as before
             }
             let mut acp = mimus_check_acp::AcpChecker::new(cmd.clone(), root.clone());
             // interior path-ish tokens in prose claims honor the
@@ -372,7 +388,7 @@ fn collect(
             checkers.push(Box::new(acp));
         }
     }
-    let mut violations: Vec<Violation> = mimus_check::run(&checkers, &claims)
+    let mut violations: Vec<Violation> = mimus_check::run(&checkers, &scoped)
         .filter_map(|r| match r {
             Ok(v) => Some(v),
             Err(e) => {
@@ -391,15 +407,34 @@ fn collect(
             }
         }
     }
-    // graph tier (ADR-0002 ph2) — prose contradiction buckets:
-    // contradiction (doc↔doc) + self-contradiction (reflexive),
-    // both warn tier. Index-free — runs on every claim set, not
-    // just when [check].kuda_index is set. `[check].aliases`
-    // folds differently-spelled subjects into one bucket.
-    let prose = mimus_check_graph::ProseContradictionChecker {
-        aliases: cfg.check.aliases.clone().into_iter().collect(),
+    // graph tier (ADR-0002 ph2/ph3) — prose contradiction
+    // buckets: contradiction (doc↔doc) + self-contradiction
+    // (reflexive), both warn tier. Index-free — runs on every
+    // claim set, not just when [check].kuda_index is set.
+    // `[check].aliases` folds differently-spelled subjects into
+    // one bucket.
+    //
+    // ph3: the per-file cache at .mimus/triples.db skips
+    // re-extracting unchanged files; an unwritable .mimus/ just
+    // runs uncached. `in_scope` gates *findings* to the sources
+    // the per-claim checkers saw — under --diff a conflict emits
+    // only when it touches a checked file, but the buckets still
+    // read the full set so the unchanged side of a contradiction
+    // isn't lost.
+    let cache = match mimus_check_graph::TriplesCache::open(&root.join(".mimus/triples.db")) {
+        Ok(c) => Some(c),
+        Err(e) => {
+            eprintln!("triples cache: {e}");
+            None
+        }
     };
-    violations.extend(prose.run_prose(&claims));
+    let checked: std::collections::HashSet<PathBuf> =
+        scoped.iter().map(|c| canon(&c.source)).collect();
+    let mut prose = mimus_check_graph::ProseContradictionChecker {
+        aliases: cfg.check.aliases.clone().into_iter().collect(),
+        cache,
+    };
+    violations.extend(prose.run_prose(&claims, &|p| checked.contains(&canon(p))));
     // graph tier (ADR-0002 ph1) — set-level pass over the kuda
     // index: stale-reference (error) + unsupported-claim (warn).
     // Runs whenever [check].kuda_index is set; an unreadable index
@@ -407,7 +442,7 @@ fn collect(
     if let Some(idx) = &cfg.check.kuda_index {
         match mimus_check_graph::load_graph(&root.join(idx)) {
             Ok(graph) => {
-                violations.extend(mimus_check_graph::IndexEdgeChecker.run_set(&claims, &graph))
+                violations.extend(mimus_check_graph::IndexEdgeChecker.run_set(&scoped, &graph))
             }
             Err(e) => eprintln!("graph: {}: {e}", idx.display()),
         }
@@ -838,6 +873,12 @@ fn doctor(cli: &Cli) -> i32 {
                 None => println!("  kuda index --  {} unreadable", idx.display()),
             }
         }
+    }
+    // triples cache (ADR-0002 ph3) — presence + size. Read-only
+    // probe: doctor never creates the db.
+    match mimus_check_graph::triples_cache_rows(&root(cli).join(".mimus/triples.db")) {
+        Some(n) => println!("  triples cache ok  {n} rows"),
+        None => println!("  triples cache --  absent"),
     }
     // P6: live ACP probe — the agent path fails loudly here
     // rather than mid-check.
