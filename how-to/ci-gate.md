@@ -59,5 +59,18 @@ gate. `reconcile`-style tooling consumes the JSON.
 Docs that can drift silently are docs that will. One line keeps
 them honest.
 
+### Gating only new drift (large backlogs)
+
+`mimus check --diff <spec>` runs the same checkers but only over
+claims in files matching `git diff --name-only <spec>` — PR
+checks fail on *new* drift while the existing backlog is paid
+down:
+
+```yaml
+- run: mimus check --diff "origin/${{ github.base_ref }}...HEAD"
+```
+
+`--diff` needs a git checkout — outside a repo it exits 2.
+
 See [claims & tiers](../explanation/claims.md) for why the
 semantic tier can never be this gate.
