@@ -1226,6 +1226,84 @@ fn check_graph_violations() {
     assert_eq!(o.status.code(), Some(0));
 }
 
+/// ADR-0002 ph4 — reverse coverage: a module other modules depend
+/// on that no document names warns (never gates); `--diff` reports
+/// only modules whose own indexed sources changed.
+#[test]
+fn check_graph_undocumented_fact() {
+    let d = dir("graph-undoc");
+    cfg(&d, "kuda_index = \"idx.sqlite\"\n");
+    sqlite(
+        &d.join("idx.sqlite"),
+        "CREATE TABLE symbols(name TEXT, kind TEXT, file TEXT, line INTEGER, module TEXT);\
+         CREATE TABLE edges(from_mod TEXT, to_mod TEXT, kind TEXT);\
+         INSERT INTO symbols VALUES('F','fn','src/cli.rs',1,'app-cli');\
+         INSERT INTO symbols VALUES('G','fn','src/core.rs',1,'app-core');\
+         INSERT INTO edges VALUES('app-cli','app-core','imports');",
+    );
+    write(&d, "src/cli.rs", "fn main() {}\n");
+    write(&d, "src/core.rs", "fn core() {}\n");
+    // docs name the CLI only — `app-core` is the code→doc gap
+    write(
+        &d,
+        "docs/a.md",
+        "app-cli parses every flag before dispatch.\n",
+    );
+    let o = mimus(&["check"], &d);
+    let (so, _) = out(&o);
+    assert_eq!(o.status.code(), Some(0), "warn tier never gates: {so}");
+    assert!(so.contains("named by no claim"), "{so}");
+    assert!(so.contains("app-core"), "{so}");
+    assert!(so.contains("src/core.rs:0"), "{so}"); // anchored on code
+
+    // a doc naming the module silences the class
+    write(
+        &d,
+        "docs/b.md",
+        "app-core owns the domain model and the index snapshot.\n",
+    );
+    let o = mimus(&["check"], &d);
+    let (so, _) = out(&o);
+    assert!(!so.contains("named by no claim"), "{so}");
+    // drop the mention again, then commit: --diff scopes the class
+    // to modules whose own sources changed
+    std::fs::remove_file(d.join("docs/b.md")).unwrap();
+    let git = |args: &[&str]| {
+        let o = Command::new("git")
+            .arg("-C")
+            .arg(&d)
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(
+            o.status.success(),
+            "git {args:?}: {}",
+            String::from_utf8_lossy(&o.stderr)
+        );
+    };
+    git(&["init", "-q", "-b", "main"]);
+    git(&["-c", "user.email=t@t", "-c", "user.name=t", "add", "."]);
+    git(&[
+        "-c",
+        "user.email=t@t",
+        "-c",
+        "user.name=t",
+        "commit",
+        "-qm",
+        "init",
+    ]);
+    // nothing changed → the untouched module stays silent
+    let o = mimus(&["check", "--diff", "HEAD"], &d);
+    let (so, _) = out(&o);
+    assert!(!so.contains("named by no claim"), "{so}");
+    // app-core's own source moved → the fact reports
+    write(&d, "src/core.rs", "fn core() -> u8 { 1 }\n");
+    let o = mimus(&["check", "--diff", "HEAD"], &d);
+    let (so, _) = out(&o);
+    assert!(so.contains("named by no claim"), "{so}");
+    assert!(so.contains("app-core"), "{so}");
+}
+
 /// doctor reports index age: fresh → ok, >7d → stale warning,
 /// unreadable → '--'.
 #[test]

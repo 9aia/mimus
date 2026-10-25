@@ -415,7 +415,7 @@ fn is_object_char(c: char) -> bool {
 /// `(key, replacement)` pairs, keys normalized the same way).
 /// Deterministic and inspectable: every emitted conflict can name
 /// the exact bucket key it matched on.
-fn canon_subject(raw: &str, aliases: &[(String, String)]) -> String {
+pub fn canon_subject(raw: &str, aliases: &[(String, String)]) -> String {
     let canon = canon_no_alias(raw);
     for (k, v) in aliases {
         if canon_no_alias(k) == canon {

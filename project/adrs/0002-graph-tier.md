@@ -88,7 +88,7 @@ matched on.
 | self-contradiction | same, within one file | reflexive |
 | stale-reference (error tier — mechanical-grade evidence: edge exists, target doesn't) | code edge → target not in index | code↔code |
 | unsupported claim | prose triple asserts an edge the index lacks | doc→code |
-| undocumented fact | index edge no doc triple covers | code→doc |
+| undocumented fact | public module (a dependency target) no doc text names | code→doc |
 
 **Precision rule** — the evidence bar (ADR-0001) applies: a
 conflict emits only when both objects are concrete literals
@@ -181,7 +181,27 @@ findings depend on index freshness (stale index → stale graph —
    `mimus doctor` reports `triples cache ok/--` + row count
    (read-only probe, never creates the db).
 4. `undocumented fact` class (reverse coverage — joins the
-   existing `mimus coverage` command's direction).
+   existing `mimus coverage` command's direction). **Done** —
+   `mimus-check-graph::UndocumentedFactChecker` (`run_facts`),
+   wired in `collect` under the `kuda_index` gate, warn tier.
+   Two design calls keep it precise where the raw ADR row
+   ("index edge no doc triple covers") would drown in noise:
+   * module granularity — every indexed import is a fact no doc
+     asserts, so edge-level overlap flags the whole repo; the
+     **public surface** is instead the set of modules the index
+     records as a dependency target (`imports`/`package-dep`/
+     `workspace-member` from another module — `calls`, externals
+     and self-edges never count);
+   * the haystack is mined **document text**, not claims — a crate
+     index page that lists `mimus-check-acp` documents it without
+     asserting anything checkable, and claim-level matching flagged
+     all nine such crates in this repo (measured, then discarded).
+   Names match `canon_subject`-style (case, `-`/`_`, plurals,
+   `[check].aliases`), and `Graph.module_files` (new provenance
+   column read, PRAGMA-guarded so minimal indexes degrade) gates
+   findings under `--diff` on the module's own sources. The
+   `mimus coverage` distinction is documented in
+   `docs/explanation/claims.md`.
 5. Semantic tier rescoped to fuzzy-candidate adjudication.
 6. Docs each phase: `README.md`, `docs/reference/config.md`
    (`[check].graph`, `aliases.toml`), `docs/how-to/ci-gate.md`

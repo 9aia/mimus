@@ -29,15 +29,23 @@
 //!   version) skips re-extracting unchanged files, and the prose
 //!   pass's `in_scope` gate lets `--diff` keep the buckets whole
 //!   while only reporting conflicts that touch changed files.
+//! - `undocumented-fact` (warn, phase 4): reverse coverage — a
+//!   *public* module (one the index records as a dependency target)
+//!   that no claim names is code the docs never assert. Module
+//!   granularity, not edge: every indexed import is a fact nobody
+//!   documents, while a module is the smallest unit a doc page can
+//!   reasonably cover. `in_scope` gates it the way it gates the
+//!   buckets — under `--diff` only modules whose own sources changed
+//!   report.
 
 use mimus_check::GraphChecker;
 use mimus_claims::triples::{
-    contradictions_with_aliases, extract_triples, Contradiction, ContradictionKind,
+    canon_subject, contradictions_with_aliases, extract_triples, Contradiction, ContradictionKind,
 };
 use mimus_core::{Claim, ClaimKind, Edge, EdgeKind, Graph, Severity, Violation};
 use rusqlite::{params, Connection, OpenFlags};
-use std::collections::HashSet;
-use std::path::Path;
+use std::collections::{BTreeSet, HashMap, HashSet};
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 pub mod cache;
@@ -60,6 +68,7 @@ pub fn load_graph(index: &Path) -> Result<Graph, String> {
         let (modules, symbols) = symbols(&conn)?;
         g.modules = modules;
         g.symbols = symbols;
+        g.module_files = module_files(&conn)?;
     }
     Ok(g)
 }
@@ -171,6 +180,47 @@ fn symbols(conn: &Connection) -> Result<(HashSet<String>, HashSet<String>), Stri
     Ok((modules, syms))
 }
 
+/// `module → files` — the phase-4 provenance. Optional by design:
+/// a minimal symbols table (`name`,`module` only) leaves it empty,
+/// and the graph pass then treats every module as in scope.
+#[allow(unexpected_cfgs)] // `cfg(coverage)` like mimus-check-symbol
+fn module_files(conn: &Connection) -> Result<HashMap<String, HashSet<PathBuf>>, String> {
+    if !column_exists(conn, "symbols", "file")? {
+        return Ok(HashMap::new());
+    }
+    let mut st = conn
+        .prepare("SELECT module,file FROM symbols")
+        .map_err(|e| e.to_string())?;
+    let rows = st.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)));
+    // same unreachable `?` as edges() — see above
+    #[cfg(coverage)]
+    let rows = rows.unwrap();
+    #[cfg(not(coverage))]
+    let rows = rows.map_err(|e| e.to_string())?;
+    let mut files: HashMap<String, HashSet<PathBuf>> = HashMap::new();
+    for (module, file) in rows.flatten() {
+        files.entry(module).or_default().insert(PathBuf::from(file));
+    }
+    Ok(files)
+}
+
+/// Does `table` carry `col`? PRAGMA-driven so a minimal index
+/// schema degrades instead of erroring.
+fn column_exists(conn: &Connection, table: &str, col: &str) -> Result<bool, String> {
+    let mut st = conn
+        .prepare(&format!("PRAGMA table_info({table})"))
+        .map_err(|e| e.to_string())?;
+    let rows = st
+        .query_map([], |r| r.get::<_, String>(1))
+        .map_err(|e| e.to_string())?;
+    for name in rows.flatten() {
+        if name == col {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
 /// Set-level graph pass — phase-1 classes only. Stateless; all
 /// evidence comes from the `Graph` snapshot.
 pub struct IndexEdgeChecker;
@@ -222,6 +272,127 @@ impl ProseContradictionChecker {
             .filter(|c| c.objects.iter().any(|(_, src, _)| in_scope(src)))
             .map(|c| contradiction_violation(c, claims, in_scope))
             .collect()
+    }
+}
+
+/// `undocumented-fact` — ADR-0002 phase 4: reverse coverage
+/// (code→doc), warn tier. The *public surface* is the set of
+/// modules the index records as a dependency target — internal
+/// details nobody imports aren't contract. A public module emits
+/// when no document in the mined set names it, matched the way the
+/// buckets match subjects (`canon_subject`: case, `-`/`_`, plurals
+/// and `[check].aliases` all fold), so `mimus-core`, `mimus_core`
+/// and an aliased spelling each count as documenting it. The
+/// haystack is document text, not extracted claims: a doc that
+/// merely lists a crate (`[mimus-check-acp](…)`) documents it
+/// without asserting a checkable claim — claim-level matching would
+/// flag every crate index page.
+pub struct UndocumentedFactChecker<'a> {
+    /// Subject aliases from `[check].aliases` — `(phrase,
+    /// canonical)` pairs, the same map the contradiction buckets
+    /// resolve.
+    pub aliases: &'a [(String, String)],
+}
+
+impl UndocumentedFactChecker<'_> {
+    /// `in_scope` gates *findings*, not the scan: under `--diff`
+    /// only a module whose own indexed sources changed reports;
+    /// unscoped runs pass `|_| true`. The module set itself always
+    /// comes from the whole index — a snapshot has no per-run
+    /// scope to narrow. `docs` is the concatenated text of every
+    /// document the claim set was mined from (cards included).
+    pub fn run_facts(
+        &self,
+        docs: &str,
+        graph: &Graph,
+        in_scope: &dyn Fn(&Path) -> bool,
+    ) -> Vec<Violation> {
+        // padded canonical doc text — the haystack, so `mimus-core`
+        // can't match inside `mimus-core-extra`
+        let hay = format!(" {} ", canon_subject(docs, self.aliases));
+        public_modules(graph)
+            .into_iter()
+            .filter(|m| !documented(m, &hay, self.aliases))
+            .filter(|m| module_in_scope(graph, m, in_scope))
+            .map(|m| fact_violation(graph, m))
+            .collect()
+    }
+}
+
+/// Modules the index records as a dependency *target* — the public
+/// surface other code actually consumes. `calls` edges prove nothing
+/// about the API, an unresolved target is external, and a self-edge
+/// (`a → a`) marks nothing.
+fn public_modules(graph: &Graph) -> BTreeSet<&str> {
+    graph
+        .edges
+        .iter()
+        .filter(|e| {
+            matches!(
+                e.kind,
+                EdgeKind::Imports | EdgeKind::PackageDep | EdgeKind::WorkspaceMember
+            )
+        })
+        .filter_map(|e| {
+            let target = resolve(&e.to, &graph.modules)?;
+            (module_key(&e.from) != module_key(target)).then_some(target)
+        })
+        .collect()
+}
+
+/// Does any document name `module`? Canon-matched against the padded
+/// haystack, plus every `[check].aliases` spelling whose canonical
+/// target folds onto the module.
+fn documented(module: &str, hay: &str, aliases: &[(String, String)]) -> bool {
+    let canon = canon_subject(module, aliases);
+    if canon.is_empty() {
+        // a name made only of stopwords has no needle to look for —
+        // silence beats a substring match on padding
+        return true;
+    }
+    let spellings = std::iter::once(canon.clone()).chain(
+        aliases
+            .iter()
+            .filter(|(_, target)| canon_subject(target, aliases) == canon)
+            .map(|(alias, _)| canon_subject(alias, &[])),
+    );
+    spellings
+        .filter(|n| !n.is_empty())
+        .any(|n| hay.contains(&format!(" {n} ")))
+}
+
+/// `--diff` gate: does any of the module's own indexed sources sit
+/// in scope? A snapshot without file provenance (a hand-built
+/// `Graph`) can't answer — it reports rather than silently drop.
+fn module_in_scope(graph: &Graph, module: &str, in_scope: &dyn Fn(&Path) -> bool) -> bool {
+    match graph.module_files.get(module) {
+        Some(files) => files.iter().any(|f| in_scope(f)),
+        None => true,
+    }
+}
+
+/// One undocumented public module → one warn. `line: 0` — the
+/// finding is module-level, anchored on a real source file so the
+/// report points at code rather than the index.
+fn fact_violation(graph: &Graph, module: &str) -> Violation {
+    let files = graph.module_files.get(module);
+    let source = files
+        .and_then(|f| f.iter().min())
+        .cloned()
+        .unwrap_or_else(|| graph.index.clone());
+    let n = files.map_or(0, HashSet::len);
+    Violation {
+        claim: Claim {
+            kind: ClaimKind::Symbol,
+            text: module.to_owned(),
+            source,
+            line: 0,
+        },
+        evidence: format!(
+            "public module `{module}` ({n} indexed file(s)) is named by no claim — code asserts it, the docs never do"
+        ),
+        fix: Some("document the module's role — or drop it from the public surface".into()),
+        severity: Severity::Warn,
     }
 }
 
@@ -873,5 +1044,116 @@ mod tests {
         let v = chk.run_prose(&claims, &|_| true);
         assert_eq!(v.len(), 2, "{v:?}");
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// ADR-0002 ph4 — the public surface is what the index records
+    /// as a dependency target: `imports`/`package-dep`/
+    /// `workspace-member` from a *different* module. `calls`,
+    /// unresolved externals and self-edges mark nothing.
+    #[test]
+    fn public_module_surface() {
+        let mk = |from: &str, to: &str, kind: EdgeKind| Edge {
+            from: from.into(),
+            to: to.into(),
+            kind,
+        };
+        let g = Graph {
+            modules: ["app-cli", "app-core", "app-internal"]
+                .iter()
+                .map(|s| s.to_string())
+                .collect(),
+            edges: vec![
+                mk("app-cli", "APP_CORE", EdgeKind::Imports), // folded target
+                mk("app-cli", "serde", EdgeKind::PackageDep), // external
+                mk("app-core", "app-core", EdgeKind::Imports), // self-edge
+                mk("app-core", "app-internal", EdgeKind::Calls), // not a dep
+                mk("app-core", "mim-ghost", EdgeKind::Imports), // unresolvable
+            ],
+            ..Graph::default()
+        };
+        assert_eq!(
+            public_modules(&g).into_iter().collect::<Vec<_>>(),
+            ["app-core"]
+        );
+    }
+
+    /// ADR-0002 ph4 — a public module no document names warns; any
+    /// canon or alias spelling documents it. Provenance gates the
+    /// finding under `--diff`; a snapshot without it reports rather
+    /// than drops.
+    #[test]
+    fn undocumented_fact_class() {
+        let g = Graph {
+            modules: ["app-cli", "app-core"]
+                .iter()
+                .map(|s| s.to_string())
+                .collect(),
+            edges: vec![Edge {
+                from: "app-cli".into(),
+                to: "app-core".into(),
+                kind: EdgeKind::Imports,
+            }],
+            index: PathBuf::from("idx.sqlite"),
+            ..Graph::default()
+        };
+        let facts = UndocumentedFactChecker { aliases: &[] };
+        let all: &dyn Fn(&Path) -> bool = &|_| true;
+        // any canon spelling (dash, underscore, case) documents it
+        assert!(facts
+            .run_facts("app-core owns the domain", &g, all)
+            .is_empty());
+        assert!(facts
+            .run_facts("the APP_CORE crate owns it", &g, all)
+            .is_empty());
+        // a name of stopwords only has no needle — silence
+        assert!(documented("the", " app core ", &[]));
+        // no document names it → one warn, anchored on the index
+        let v = facts.run_facts("app-cli parses flags", &g, all);
+        assert_eq!(v.len(), 1, "{v:?}");
+        let e = &v[0].evidence;
+        assert!(e.contains("app-core"), "{e}");
+        assert!(e.contains("0 indexed file(s)"), "{e}");
+        assert_eq!(v[0].severity, Severity::Warn);
+        assert_eq!(v[0].claim.text, "app-core");
+        assert_eq!(v[0].claim.line, 0);
+        assert_eq!(v[0].claim.source, PathBuf::from("idx.sqlite"));
+        assert!(v[0].fix.is_some());
+        // an alias spelling documents the module it canonicalizes to
+        let aliased = UndocumentedFactChecker {
+            aliases: &[("the core crate".to_owned(), "app-core".to_owned())],
+        };
+        assert!(aliased
+            .run_facts("the core crate owns the domain", &g, all)
+            .is_empty());
+        // a stopword alias has no needle, and unrelated aliases
+        // don't widen the match
+        let odd = UndocumentedFactChecker {
+            aliases: &[
+                ("the".to_owned(), "app-core".to_owned()),
+                ("login flow".to_owned(), "auth".to_owned()),
+            ],
+        };
+        assert_eq!(odd.run_facts("unrelated docs", &g, all).len(), 1);
+        // provenance: `--diff` scope asks the module's own files
+        let g = Graph {
+            module_files: [(
+                "app-core".to_owned(),
+                [PathBuf::from("crates/core/src/lib.rs")]
+                    .into_iter()
+                    .collect(),
+            )]
+            .into_iter()
+            .collect(),
+            ..g
+        };
+        let in_scope: &dyn Fn(&Path) -> bool = &|p| p.ends_with("lib.rs");
+        let v = facts.run_facts("app-cli parses flags", &g, in_scope);
+        assert_eq!(v.len(), 1, "{v:?}");
+        assert_eq!(v[0].claim.source, PathBuf::from("crates/core/src/lib.rs"));
+        assert!(v[0].evidence.contains("1 indexed file(s)"), "{e}");
+        // module untouched by the diff → silence
+        assert!(facts
+            .run_facts("app-cli parses flags", &g, &|_| false)
+            .is_empty());
     }
 }

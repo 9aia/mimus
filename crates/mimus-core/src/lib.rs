@@ -115,6 +115,10 @@ pub struct Graph {
     /// Indexed symbol names — the phase-2+ surface (per-file
     /// triples, undocumented fact).
     pub symbols: std::collections::HashSet<String>,
+    /// Files each module was indexed from — the phase-4 provenance:
+    /// `undocumented-fact` honors `--diff` by asking whether a
+    /// module's own sources changed.
+    pub module_files: std::collections::HashMap<String, std::collections::HashSet<PathBuf>>,
     /// Provenance — the index file this snapshot was read from.
     /// Violations sourced from the graph point here.
     pub index: PathBuf,

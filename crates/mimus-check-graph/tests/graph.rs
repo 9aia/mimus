@@ -5,6 +5,7 @@
 use mimus_check::GraphChecker;
 use mimus_check_graph::{index_age, load_graph, IndexEdgeChecker};
 use mimus_core::{Claim, ClaimKind, EdgeKind, Severity};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -34,6 +35,7 @@ fn load_full_index() {
             "{SCHEMA}\
              INSERT INTO symbols VALUES('F','fn','a.rs',1,'alpha');\
              INSERT INTO symbols VALUES('G','fn','b.rs',1,'beta');\
+             INSERT INTO symbols VALUES('H','fn','dir/a.rs',2,'alpha');\
              INSERT INTO edges VALUES('alpha','beta','imports');\
              INSERT INTO edges VALUES('alpha','serde','package-dep');\
              INSERT INTO edges VALUES('alpha','w','workspace-member');\
@@ -52,6 +54,11 @@ fn load_full_index() {
     assert_eq!(g.edges[4].kind, EdgeKind::Other); // unknown kind
     assert!(g.modules.contains("alpha") && g.modules.contains("beta"));
     assert!(g.symbols.contains("F") && g.symbols.contains("G"));
+    // phase-4 provenance: every indexed file per module, deduped
+    let alpha: HashSet<PathBuf> = ["a.rs", "dir/a.rs"].iter().map(PathBuf::from).collect();
+    let beta: HashSet<PathBuf> = [PathBuf::from("b.rs")].into_iter().collect();
+    assert_eq!(&g.module_files["alpha"], &alpha);
+    assert_eq!(&g.module_files["beta"], &beta);
     // NULL columns → row skipped by flatten(), not fatal
     let dir = tmp("nulls");
     std::fs::create_dir_all(&dir).unwrap();
@@ -72,6 +79,8 @@ fn load_full_index() {
     assert_eq!(g.edges.len(), 1);
     assert_eq!(g.symbols.len(), 1);
     assert_eq!(g.modules.len(), 1);
+    // no `file` column → no provenance, not an error
+    assert!(g.module_files.is_empty());
     let _ = std::fs::remove_dir_all(&dir);
 }
 

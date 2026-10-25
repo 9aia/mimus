@@ -133,11 +133,12 @@ fn load(cli: &Cli) -> Result<Config, String> {
     .load()
 }
 
-/// Doc-glob -> claims (shared by `check` and `claims` dump).
-fn doc_claims(cfg: &Config, root: &Path) -> Vec<mimus_core::Claim> {
-    let mut claims = Vec::new();
+/// Doc-glob -> files, build output pruned (shared by `check`,
+/// `claims`, and the reverse-coverage corpus).
+fn doc_files(cfg: &Config, root: &Path) -> Vec<PathBuf> {
+    let mut out = Vec::new();
     for pat in &cfg.sources.docs {
-        for p in mimus_rules::matching_files(&root, pat) {
+        for p in mimus_rules::matching_files(root, pat) {
             // source globs catch build output too — prune it
             let noisy = p.components().any(|c| {
                 let s = c.as_os_str().to_str();
@@ -152,12 +153,34 @@ fn doc_claims(cfg: &Config, root: &Path) -> Vec<mimus_core::Claim> {
                         || n.starts_with("CHANGELOG")
                 })
                 .unwrap_or(false);
-            if noisy {
-                continue;
+            if !noisy {
+                out.push(p);
             }
-            if let Ok(text) = std::fs::read_to_string(&p) {
-                claims.extend(mimus_claims::extract(&text, &p));
-            }
+        }
+    }
+    out
+}
+
+/// Concatenated text of the doc sources — the reverse-coverage
+/// haystack (`undocumented-fact`). Unreadable files drop out; an
+/// empty corpus just means no module counts as named.
+fn doc_corpus(files: &[PathBuf]) -> String {
+    let mut text = String::new();
+    for p in files {
+        if let Ok(t) = std::fs::read_to_string(p) {
+            text.push_str(&t);
+            text.push('\n');
+        }
+    }
+    text
+}
+
+/// Doc-glob -> claims (shared by `check` and `claims` dump).
+fn doc_claims(cfg: &Config, root: &Path) -> Vec<mimus_core::Claim> {
+    let mut claims = Vec::new();
+    for p in doc_files(cfg, root) {
+        if let Ok(text) = std::fs::read_to_string(&p) {
+            claims.extend(mimus_claims::extract(&text, &p));
         }
     }
     // code comments asserting things -> Behavior claims the
@@ -430,19 +453,34 @@ fn collect(
     };
     let checked: std::collections::HashSet<PathBuf> =
         scoped.iter().map(|c| canon(&c.source)).collect();
+    let aliases: Vec<(String, String)> = cfg.check.aliases.clone().into_iter().collect();
     let mut prose = mimus_check_graph::ProseContradictionChecker {
-        aliases: cfg.check.aliases.clone().into_iter().collect(),
+        aliases: aliases.clone(),
         cache,
     };
     violations.extend(prose.run_prose(&claims, &|p| checked.contains(&canon(p))));
-    // graph tier (ADR-0002 ph1) — set-level pass over the kuda
-    // index: stale-reference (error) + unsupported-claim (warn).
-    // Runs whenever [check].kuda_index is set; an unreadable index
-    // warns on stderr, never fails the run.
+    // graph tier (ADR-0001 ph4 reverse direction) — a module whose
+    // own indexed sources changed is "in scope" for --diff; an
+    // unscoped run has no scope to narrow.
+    let changed_scope = |p: &Path| match &changed {
+        Some(set) => set.contains(&canon(&root.join(p))),
+        None => true,
+    };
+    // graph tier (ADR-0002 ph1/ph4) — set-level passes over the
+    // kuda index: stale-reference (error), unsupported-claim (warn)
+    // and undocumented-fact (warn). Runs whenever
+    // [check].kuda_index is set; an unreadable index warns on
+    // stderr, never fails the run.
     if let Some(idx) = &cfg.check.kuda_index {
         match mimus_check_graph::load_graph(&root.join(idx)) {
             Ok(graph) => {
-                violations.extend(mimus_check_graph::IndexEdgeChecker.run_set(&scoped, &graph))
+                violations.extend(mimus_check_graph::IndexEdgeChecker.run_set(&scoped, &graph));
+                // ph4 reverse coverage reads document text, not
+                // claims: a crate index page names a module without
+                // asserting anything checkable
+                let docs = doc_corpus(&doc_files(&cfg, &root));
+                let facts = mimus_check_graph::UndocumentedFactChecker { aliases: &aliases };
+                violations.extend(facts.run_facts(&docs, &graph, &changed_scope));
             }
             Err(e) => eprintln!("graph: {}: {e}", idx.display()),
         }
