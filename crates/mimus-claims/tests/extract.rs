@@ -199,9 +199,7 @@ fn mimus_ignore_directives_suppress() {
     let c = kinds("<!-- mimus-ignore-file -->\nsee `dead/x.md` here");
     assert!(c.is_empty(), "{c:?}");
     // `mimus-ignore` alone on a line suppresses the NEXT line only
-    let c = kinds(
-        "<!-- mimus-ignore -->\nsee `dead/x.md` here\nbut `README.md` lives",
-    );
+    let c = kinds("<!-- mimus-ignore -->\nsee `dead/x.md` here\nbut `README.md` lives");
     assert_eq!(c.len(), 1, "{c:?}");
     assert_eq!(c[0].1, "README.md", "{c:?}");
     // inline `mimus-ignore` with a backtick suppresses its own line,

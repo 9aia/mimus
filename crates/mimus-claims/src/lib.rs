@@ -5,6 +5,10 @@
 use mimus_core::{Claim, ClaimKind};
 use std::path::Path;
 
+/// Claim→triple extraction + bucketed contradiction detection —
+/// the pure phase-2 engine of ADR-0002.
+pub mod triples;
+
 /// Extract claims from document text. v1 mines backtick-quoted
 /// spans — the highest-precision source: writers quote exactly
 /// the things they assert (paths, commands, names).
@@ -84,13 +88,7 @@ pub fn extract(text: &str, source: &Path) -> Vec<Claim> {
 
 /// Sentence-split a paragraph into Behavior claims — whole
 /// sentences only, capped per file.
-fn flush_para(
-    para: &mut String,
-    start: usize,
-    end: usize,
-    source: &Path,
-    out: &mut Vec<Claim>,
-) {
+fn flush_para(para: &mut String, start: usize, end: usize, source: &Path, out: &mut Vec<Claim>) {
     if para.is_empty() {
         return;
     }
@@ -218,15 +216,83 @@ fn classify(span: &str) -> Option<ClaimKind> {
         // a space implies a first token — unwrap_or avoids a dead `?`
         let first = s.split_whitespace().next().unwrap_or("");
         const BINARIES: &[&str] = &[
-            "cargo", "rustc", "rustup", "git", "gh", "npm", "npx", "yarn", "pnpm", "bun",
-            "deno", "node", "pip", "pip3", "uv", "python", "python3", "pytest", "poetry",
-            "go", "make", "cmake", "ninja", "meson", "bazel", "mvn", "gradle", "docker",
-            "kubectl", "helm", "terraform", "ansible", "systemctl", "journalctl", "dagger",
-            "curl", "wget", "ssh", "scp", "rsync", "jq", "tar", "gzip", "zip", "unzip",
-            "rg", "grep", "find", "sed", "awk", "sort", "diff", "patch", "xargs", "tee",
-            "sh", "bash", "zsh", "sqlite3", "psql", "mysql", "openssl", "ffmpeg",
-            "nextest", "cargo-nextest", "kuda", "mimus", "bupha", "hnl", "clippy",
-            "rustfmt", "rustdoc", "wasm-pack", "trunk", "vite", "tsc", "eslint",
+            "cargo",
+            "rustc",
+            "rustup",
+            "git",
+            "gh",
+            "npm",
+            "npx",
+            "yarn",
+            "pnpm",
+            "bun",
+            "deno",
+            "node",
+            "pip",
+            "pip3",
+            "uv",
+            "python",
+            "python3",
+            "pytest",
+            "poetry",
+            "go",
+            "make",
+            "cmake",
+            "ninja",
+            "meson",
+            "bazel",
+            "mvn",
+            "gradle",
+            "docker",
+            "kubectl",
+            "helm",
+            "terraform",
+            "ansible",
+            "systemctl",
+            "journalctl",
+            "dagger",
+            "curl",
+            "wget",
+            "ssh",
+            "scp",
+            "rsync",
+            "jq",
+            "tar",
+            "gzip",
+            "zip",
+            "unzip",
+            "rg",
+            "grep",
+            "find",
+            "sed",
+            "awk",
+            "sort",
+            "diff",
+            "patch",
+            "xargs",
+            "tee",
+            "sh",
+            "bash",
+            "zsh",
+            "sqlite3",
+            "psql",
+            "mysql",
+            "openssl",
+            "ffmpeg",
+            "nextest",
+            "cargo-nextest",
+            "kuda",
+            "mimus",
+            "bupha",
+            "hnl",
+            "clippy",
+            "rustfmt",
+            "rustdoc",
+            "wasm-pack",
+            "trunk",
+            "vite",
+            "tsc",
+            "eslint",
         ];
         if BINARIES.contains(&first) {
             return Some(ClaimKind::Command);
@@ -274,8 +340,7 @@ fn looks_like_env_assignment(s: &str) -> bool {
         Some((k, _)) => {
             !k.is_empty()
                 && !k.chars().next().unwrap().is_ascii_digit()
-                && k.chars()
-                    .all(|c| c.is_ascii_alphanumeric() || c == '_')
+                && k.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
         }
         None => false,
     }
@@ -284,11 +349,7 @@ fn looks_like_env_assignment(s: &str) -> bool {
 /// Spans naming a *pattern* — `..._x.md`, `{a,b}`, `<name>.rs`,
 /// `adr-mkt-0N.md`, `.md` — not a concrete path claim.
 fn looks_like_template(s: &str) -> bool {
-    if s.contains("...")
-        || s.contains('{')
-        || s.contains('}')
-        || s.contains('<')
-        || s.contains('>')
+    if s.contains("...") || s.contains('{') || s.contains('}') || s.contains('<') || s.contains('>')
     {
         return true;
     }
@@ -308,6 +369,39 @@ fn looks_like_template(s: &str) -> bool {
             .windows(2)
             .any(|w| w[0].is_ascii_digit() && w[1].is_ascii_uppercase())
     })
+}
+
+/// Extract assertive comment lines as Behavior claims — the
+/// code↔code consistency surface: comments that assert things the
+/// code may or may not do. `//`, `///`, `//!`, `#` lines; capped.
+pub fn extract_comments(text: &str, source: &Path) -> Vec<Claim> {
+    let mut out = Vec::new();
+    for (i, line) in text.lines().enumerate() {
+        let t = line.trim();
+        let body = t
+            .strip_prefix("///")
+            .or_else(|| t.strip_prefix("//!"))
+            .or_else(|| t.strip_prefix("//"))
+            .or_else(|| t.strip_prefix('#'))
+            .map(str::trim);
+        let Some(b) = body else { continue };
+        if b.len() < 20 || b.starts_with('!') || b.starts_with('[') {
+            continue; // doc attrs / annotations
+        }
+        if !is_assertion(b) {
+            continue;
+        }
+        out.push(Claim {
+            kind: ClaimKind::Behavior,
+            text: b.to_owned(),
+            source: source.to_path_buf(),
+            line: (i + 1) as u32,
+        });
+        if out.len() >= 10 {
+            break;
+        }
+    }
+    out
 }
 
 #[cfg(test)]
@@ -369,37 +463,4 @@ mod tests {
         let c = extract("<!-- mimus-ignore-file -->\n`README.md`", "d".as_ref());
         assert!(c.is_empty(), "{:?}", c);
     }
-}
-
-/// Extract assertive comment lines as Behavior claims — the
-/// code↔code consistency surface: comments that assert things the
-/// code may or may not do. `//`, `///`, `//!`, `#` lines; capped.
-pub fn extract_comments(text: &str, source: &Path) -> Vec<Claim> {
-    let mut out = Vec::new();
-    for (i, line) in text.lines().enumerate() {
-        let t = line.trim();
-        let body = t
-            .strip_prefix("///")
-            .or_else(|| t.strip_prefix("//!"))
-            .or_else(|| t.strip_prefix("//"))
-            .or_else(|| t.strip_prefix('#'))
-            .map(str::trim);
-        let Some(b) = body else { continue };
-        if b.len() < 20 || b.starts_with('!') || b.starts_with('[') {
-            continue; // doc attrs / annotations
-        }
-        if !is_assertion(b) {
-            continue;
-        }
-        out.push(Claim {
-            kind: ClaimKind::Behavior,
-            text: b.to_owned(),
-            source: source.to_path_buf(),
-            line: (i + 1) as u32,
-        });
-        if out.len() >= 10 {
-            break;
-        }
-    }
-    out
 }
