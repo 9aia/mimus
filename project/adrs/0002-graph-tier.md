@@ -34,6 +34,14 @@ question. Rejected — read the index, don't re-parse.
 object)` triples with provenance; conflicts fall out of a hash
 bucket, not an agent. Mechanical speed, agent-grade reach.
 
+**D. Embedding-similarity over claims** — vectorize claims,
+cluster near-duplicates, diff their objects. Solves the synonym
+problem (`JWT` vs `token auth`) but adds a model dependency,
+non-determinism, and can't cite *why* two claims conflict —
+the evidence bar needs an inspectable bucket key, not a cosine
+score. Rejected; subject normalization below is the
+deterministic 80%.
+
 ## Proposal
 
 ### The model
@@ -59,13 +67,21 @@ sources ──► extract ──► triples ──► bucket ──► conflicts
   `Imports`/`PackageDep` edges, API surface. An edge is already a
   triple: `(importer, imports, target)`.
 
+**Subject canonicalization** — buckets key on the normalized
+subject: lowercase, strip stopwords/inflections
+(`auth service`≡`auth`), resolve known aliases from a small
+repo dictionary (`.mimus/aliases.toml`). Aliasing is the
+dominant recall risk; normalization is deterministic and
+inspectable — every conflict can name the exact bucket key it
+matched on.
+
 **Conflict classes** (each maps to a direction of the ask):
 
 | Class | Bucket rule | Direction |
 |---|---|---|
 | contradiction | same (subj, rel), different obj, different files | doc↔doc |
 | self-contradiction | same, within one file | reflexive |
-| stale-reference | code edge → target not in index | code↔code |
+| stale-reference (error tier — mechanical-grade evidence: edge exists, target doesn't) | code edge → target not in index | code↔code |
 | unsupported claim | prose triple asserts an edge the index lacks | doc→code |
 | undocumented fact | index edge no doc triple covers | code→doc |
 
@@ -80,17 +96,22 @@ candidates* — the agent tiers them, they never gate directly.
   index — no agent, no parsing in mimus. O(n) over sources.
 - Compare is a hash bucket by `(subject, relation)` — O(n), not
   pairwise O(n²).
-- Triples are cached per file by content hash (sqlite, same
-  pattern as kuda's index) → only changed files re-extract →
-  `mimus check --diff` + cache ≈ near-instant PR sweeps on a 10k
-  monorepo.
+- Triples are cached per file by `(content hash, extractor
+  version)` (sqlite, same pattern as kuda's index) → only
+  changed files re-extract → `mimus check --diff` + cache ≈
+  near-instant PR sweeps on a 10k monorepo.
 
 ### Placement
 
-New crate `mimus-check-graph` implementing the existing
-`Checker` trait (`handles() → [Behavior, Symbol]`), warn-tier like
-the semantic pass: reports, never gates. Wired in `mimus check`
-behind `[check].graph = true` (or when `kuda_index` is set).
+New crate `mimus-check-graph`. The existing `Checker` trait is
+per-claim (`check(&Claim)`) — contradiction classes are
+*claim-vs-claim*, so the graph pass gets a second port:
+`GraphChecker::run_set(&[Claim], &Graph) -> Vec<Violation>`.
+Index-backed classes (`stale-reference`, `unsupported-claim`)
+also route per-claim where convenient. Warn-tier by default;
+`stale-reference` is error-tier (mechanical-grade). Wired into
+`mimus check` behind `[check].graph = true` (or when
+`kuda_index` is set).
 
 ## Consequences
 
@@ -117,3 +138,11 @@ findings depend on index freshness (stale index → stale graph —
 4. `undocumented fact` class (reverse coverage — joins the
    existing `mimus coverage` command's direction).
 5. Semantic tier rescoped to fuzzy-candidate adjudication.
+
+## Acceptance criteria
+
+- ≥95% precision on a planted-contradiction fixture corpus
+  (docs, comments, cards with known conflicts).
+- Sub-second graph pass on a 10k-file monorepo (index-read +
+  bucket phase, cache warm).
+- `mimus doctor` reports kuda index age; stale index warns.
