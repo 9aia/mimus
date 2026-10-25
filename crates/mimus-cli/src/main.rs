@@ -42,6 +42,10 @@ enum Cmd {
         /// Skip command claims — the PATH probe is machine-dependent.
         #[arg(long)]
         no_cmd: bool,
+        /// Only check claims in files matching `git diff` SPEC —
+        /// e.g. `--diff origin/main...HEAD` gates a PR on new drift.
+        #[arg(long, value_name = "SPEC")]
+        diff: Option<String>,
     },
     /// Apply mechanical rewrites for confirmed violations.
     Fix {
@@ -78,7 +82,7 @@ fn main() {
     let cli = Cli::parse();
     let code = match &cli.cmd {
         Cmd::Init => init(&cli),
-        Cmd::Check { all, no_cmd } => check(&cli, *all, *no_cmd),
+        Cmd::Check { all, no_cmd, diff } => check(&cli, *all, *no_cmd, diff.as_deref()),
         Cmd::Fix { dry, semantic } => fix(&cli, *dry, *semantic),
         Cmd::Report => report(&cli),
         Cmd::Audit => audit(&cli),
@@ -137,10 +141,8 @@ fn doc_claims(cfg: &Config, root: &Path) -> Vec<mimus_core::Claim> {
             // source globs catch build output too — prune it
             let noisy = p.components().any(|c| {
                 let s = c.as_os_str().to_str();
-                matches!(
-                    s,
-                    Some("node_modules" | "dist" | ".cache" | "target")
-                ) || s.map(|n| n.ends_with(".files")).unwrap_or(false)
+                matches!(s, Some("node_modules" | "dist" | ".cache" | "target"))
+                    || s.map(|n| n.ends_with(".files")).unwrap_or(false)
             }) || p
                 .file_name()
                 .and_then(|n| n.to_str())
@@ -166,8 +168,7 @@ fn doc_claims(cfg: &Config, root: &Path) -> Vec<mimus_core::Claim> {
                 let noisy = p.components().any(|c| {
                     matches!(
                         c.as_os_str().to_str(),
-                        Some("node_modules" | "dist" | ".cache" | "target"
-                             | "tests" | "fixtures")
+                        Some("node_modules" | "dist" | ".cache" | "target" | "tests" | "fixtures")
                     )
                 });
                 if noisy {
@@ -221,8 +222,8 @@ fn coverage(cli: &Cli) -> i32 {
         .collect();
     // generic names are unmatchable noise — `new`, `get`, `run`…
     const GENERIC: &[&str] = &[
-        "new", "get", "set", "run", "main", "default", "from", "into",
-        "clone", "fmt", "drop", "len", "push", "iter", "read", "write",
+        "new", "get", "set", "run", "main", "default", "from", "into", "clone", "fmt", "drop",
+        "len", "push", "iter", "read", "write",
     ];
     let mut by_mod: std::collections::BTreeMap<String, Vec<String>> =
         std::collections::BTreeMap::new();
@@ -241,8 +242,7 @@ fn coverage(cli: &Cli) -> i32 {
             continue; // same name in N files counts once
         }
         total += 1;
-        let named = tokens.contains(name.as_str())
-            || corpus.contains(name.as_str());
+        let named = tokens.contains(name.as_str()) || corpus.contains(name.as_str());
         if named {
             covered += 1;
         } else {
@@ -257,9 +257,17 @@ fn coverage(cli: &Cli) -> i32 {
     for (m, names) in &by_mod {
         let list: Vec<_> = names.iter().take(12).collect();
         let more = names.len().saturating_sub(list.len());
-        let more = if more > 0 { format!(" +{more} more") } else { String::new() };
+        let more = if more > 0 {
+            format!(" +{more} more")
+        } else {
+            String::new()
+        };
         println!("  {m}: {}", {
-            let mut s = list.iter().map(|n| n.as_str()).collect::<Vec<_>>().join(", ");
+            let mut s = list
+                .iter()
+                .map(|n| n.as_str())
+                .collect::<Vec<_>>()
+                .join(", ");
             s.push_str(&more);
             s
         });
@@ -281,9 +289,9 @@ fn claims_dump(cli: &Cli, all: bool) -> i32 {
     let mut claims = doc_claims(&cfg, &root);
     if all {
         for card in mimus_rules::matching_files(&root, ".kuda/modules/*.yaml")
-                .into_iter()
-                .chain(mimus_rules::matching_files(&root, ".kuda/files/**/*.yaml"))
-            {
+            .into_iter()
+            .chain(mimus_rules::matching_files(&root, ".kuda/files/**/*.yaml"))
+        {
             claims.extend(card_prose_claims(&card));
         }
     }
@@ -302,7 +310,12 @@ fn claims_dump(cli: &Cli, all: bool) -> i32 {
 
 /// Extract claims from configured doc sources and run checkers
 /// + rules — the shared verification pipeline.
-fn collect(cli: &Cli, semantic: bool, no_cmd: bool) -> Option<(PathBuf, Vec<Violation>)> {
+fn collect(
+    cli: &Cli,
+    semantic: bool,
+    no_cmd: bool,
+    diff: Option<&str>,
+) -> Option<(PathBuf, Vec<Violation>)> {
     let cfg = match load(cli) {
         Ok(c) => c,
         Err(e) => {
@@ -312,6 +325,15 @@ fn collect(cli: &Cli, semantic: bool, no_cmd: bool) -> Option<(PathBuf, Vec<Viol
     };
     let root = root(cli);
     let mut claims = doc_claims(&cfg, &root);
+    if let Some(spec) = diff {
+        match diff_files(&root, spec) {
+            Ok(changed) => claims.retain(|c| changed.contains(&canon(&c.source))),
+            Err(e) => {
+                eprintln!("{e}");
+                return None;
+            }
+        }
+    }
     // kind + prefix filters from [check] — tuning signal-to-noise
     // is the operator's call, not the extractor's
     claims.retain(|c| {
@@ -372,8 +394,64 @@ fn collect(cli: &Cli, semantic: bool, no_cmd: bool) -> Option<(PathBuf, Vec<Viol
     Some((root, violations))
 }
 
-fn check(cli: &Cli, all: bool, no_cmd: bool) -> i32 {
-    let Some((_root, violations)) = collect(cli, all, no_cmd) else {
+/// `git -C <root>` — one spawn-error arm for every call site.
+fn git(root: &Path, args: &[&str]) -> Result<std::process::Output, String> {
+    std::process::Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(args)
+        .output()
+        .map_err(|e| format!("git {}: {e}", args.first().unwrap_or(&"")))
+}
+
+/// `git diff --name-only <spec>` — changed files as canonical
+/// paths rooted at the repo toplevel.
+fn diff_files(root: &Path, spec: &str) -> Result<std::collections::BTreeSet<PathBuf>, String> {
+    let top = git(root, &["rev-parse", "--show-toplevel"])?;
+    if !top.status.success() {
+        return Err(format!(
+            "--diff needs a git repo: {}",
+            String::from_utf8_lossy(&top.stderr).trim()
+        ));
+    }
+    let top = PathBuf::from(String::from_utf8_lossy(&top.stdout).trim());
+    let out = git(root, &["diff", "--name-only", spec])?;
+    if !out.status.success() {
+        return Err(format!(
+            "git diff {spec}: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        ));
+    }
+    Ok(String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .map(|l| canon(&top.join(l)))
+        .collect())
+}
+
+/// Canonical path when it exists, else normalized `.`/`..`.
+fn canon(p: &Path) -> PathBuf {
+    std::fs::canonicalize(p).unwrap_or_else(|_| normalize(p))
+}
+
+fn normalize(p: &Path) -> PathBuf {
+    use std::path::Component::*;
+    let mut out = PathBuf::new();
+    for c in p.components() {
+        match c {
+            CurDir => {}
+            ParentDir => {
+                if !out.pop() {
+                    out.push("..");
+                }
+            }
+            other => out.push(other.as_os_str()),
+        }
+    }
+    out
+}
+
+fn check(cli: &Cli, all: bool, no_cmd: bool, diff: Option<&str>) -> i32 {
+    let Some((_root, violations)) = collect(cli, all, no_cmd, diff) else {
         return 2;
     };
     emit(&violations, &cli.format);
@@ -427,7 +505,7 @@ fn card_prose_claims(card: &Path) -> Vec<mimus_core::Claim> {
 }
 
 fn report(cli: &Cli) -> i32 {
-    check(cli, true, false)
+    check(cli, true, false, None)
 }
 
 /// Apply mechanical rewrites for confirmed violations.
@@ -436,12 +514,8 @@ fn report(cli: &Cli) -> i32 {
 /// flagged for a human, never silently "fixed".
 fn fix(cli: &Cli, dry: bool, semantic: bool) -> i32 {
     let cfg = load(cli).ok();
-    let acp_cmd = cfg
-        .as_ref()
-        .and_then(|c| c.check.acp_cmd.clone());
-    let Some((root, violations)) =
-        collect(cli, semantic && acp_cmd.is_some(), false)
-    else {
+    let acp_cmd = cfg.as_ref().and_then(|c| c.check.acp_cmd.clone());
+    let Some((root, violations)) = collect(cli, semantic && acp_cmd.is_some(), false, None) else {
         return 2;
     };
     let files = repo_files(&root);
@@ -469,7 +543,9 @@ fn fix(cli: &Cli, dry: bool, semantic: bool) -> i32 {
                         applied += 1;
                         continue;
                     }
-                    Err(e) => eprintln!("propose {}:{}: {e}", v.claim.source.display(), v.claim.line),
+                    Err(e) => {
+                        eprintln!("propose {}:{}: {e}", v.claim.source.display(), v.claim.line)
+                    }
                 }
             }
         }
@@ -507,7 +583,10 @@ fn fix(cli: &Cli, dry: bool, semantic: bool) -> i32 {
             }
         }
     }
-    println!("{applied} fixable{}, {flagged} flagged for human", if dry { " (dry)" } else { " applied" });
+    println!(
+        "{applied} fixable{}, {flagged} flagged for human",
+        if dry { " (dry)" } else { " applied" }
+    );
     0
 }
 
@@ -516,7 +595,9 @@ fn repo_files(root: &Path) -> Vec<PathBuf> {
     let mut out = Vec::new();
     let mut stack = vec![root.to_path_buf()];
     while let Some(d) = stack.pop() {
-        let Ok(rd) = std::fs::read_dir(&d) else { continue };
+        let Ok(rd) = std::fs::read_dir(&d) else {
+            continue;
+        };
         for e in rd.flatten() {
             let p = e.path();
             if p.is_dir() {
@@ -579,7 +660,9 @@ fn dead_path_candidate(root: &Path, files: &[PathBuf], claim: &str) -> Option<St
 /// Rewrite one claim occurrence inside its source line.
 fn rewrite_claim(claim: &mimus_core::Claim, new: &str) {
     let path = &claim.source;
-    let Ok(text) = std::fs::read_to_string(path) else { return };
+    let Ok(text) = std::fs::read_to_string(path) else {
+        return;
+    };
     let mut lines: Vec<String> = text.lines().map(str::to_owned).collect();
     let idx = (claim.line as usize).saturating_sub(1);
     if let Some(line) = lines.get_mut(idx) {
@@ -609,11 +692,19 @@ fn audit(cli: &Cli) -> i32 {
         let name = v["name"].as_str().unwrap_or("?").to_owned();
         let files: Vec<String> = v["provenance"]["files"]
             .as_sequence()
-            .map(|s| s.iter().filter_map(|f| f.as_str().map(str::to_owned)).collect())
+            .map(|s| {
+                s.iter()
+                    .filter_map(|f| f.as_str().map(str::to_owned))
+                    .collect()
+            })
             .unwrap_or_default();
         let hashes: Vec<String> = v["provenance"]["hashes"]
             .as_sequence()
-            .map(|s| s.iter().filter_map(|f| f.as_str().map(str::to_owned)).collect())
+            .map(|s| {
+                s.iter()
+                    .filter_map(|f| f.as_str().map(str::to_owned))
+                    .collect()
+            })
             .unwrap_or_default();
         let mut score = "fresh";
         for (f, h) in files.iter().zip(&hashes) {
@@ -649,7 +740,10 @@ fn audit(cli: &Cli) -> i32 {
 
 fn emit(violations: &[Violation], format: &str) {
     if format == "json" {
-        println!("{}", serde_json::to_string_pretty(violations).unwrap_or_default());
+        println!(
+            "{}",
+            serde_json::to_string_pretty(violations).unwrap_or_default()
+        );
         return;
     }
     if violations.is_empty() {
@@ -667,7 +761,10 @@ fn emit(violations: &[Violation], format: &str) {
             },
             v.claim.text,
             v.evidence,
-            v.fix.as_ref().map(|f| format!(" (fix: {f})")).unwrap_or_default(),
+            v.fix
+                .as_ref()
+                .map(|f| format!(" (fix: {f})"))
+                .unwrap_or_default(),
         );
     }
     println!("{} violation(s)", violations.len());
@@ -723,8 +820,7 @@ mod tests {
     /// drifted content, unreadable sources are all silent no-ops.
     #[test]
     fn rewrite_claim_guards() {
-        let dir = std::env::temp_dir()
-            .join(format!("mimus-rewrite-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("mimus-rewrite-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let f = dir.join("doc.md");
@@ -753,7 +849,24 @@ mod tests {
         // happy path: the claim text is replaced in place
         rewrite_claim(&mk(1, "old/x.rs"), "new/y.rs");
         let text = std::fs::read_to_string(&f).unwrap();
-        assert!(text.contains("new/y.rs") && !text.contains("old/x.rs"), "{text}");
+        assert!(
+            text.contains("new/y.rs") && !text.contains("old/x.rs"),
+            "{text}"
+        );
         let _ = std::fs::remove_dir_all(&dir);
+    }
+}
+
+#[cfg(test)]
+mod cov_tests {
+    #![allow(clippy::unwrap_used)]
+    use super::*;
+
+    #[test]
+    fn normalize_collapses_dot_components() {
+        assert_eq!(normalize(Path::new("./a/../b")), PathBuf::from("b"));
+        assert_eq!(normalize(Path::new("../x")), PathBuf::from("../x"));
+        assert_eq!(normalize(Path::new("/a/./b")), PathBuf::from("/a/b"));
+        assert!(canon(Path::new("/definitely/not/here")).ends_with("here"));
     }
 }

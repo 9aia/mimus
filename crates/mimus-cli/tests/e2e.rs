@@ -112,7 +112,10 @@ fn check_json_and_clean() {
     write(&d, "docs/a.md", "see `nonexistent/dead.rs` now");
     let o = mimus(&["check", "--format", "json"], &d);
     let (so, _) = out(&o);
-    assert!(so.contains("\"nonexistent/dead.rs\"") || so.contains("nonexistent/dead.rs"), "{so}");
+    assert!(
+        so.contains("\"nonexistent/dead.rs\"") || so.contains("nonexistent/dead.rs"),
+        "{so}"
+    );
     assert_eq!(o.status.code(), Some(1));
     // no claims at all → clean
     let d = dir("clean");
@@ -123,14 +126,20 @@ fn check_json_and_clean() {
     assert!(so.contains("no violations"), "{so}");
     assert_eq!(o.status.code(), Some(0));
     // unloadable config → collect() bails → usage error
-    let o = mimus(&["check", "--config", "/definitely/missing/x.toml"], &dir("check-badcfg"));
+    let o = mimus(
+        &["check", "--config", "/definitely/missing/x.toml"],
+        &dir("check-badcfg"),
+    );
     assert_eq!(o.status.code(), Some(2));
 }
 
 #[test]
 fn check_kinds_and_prefix_filters() {
     let d = dir("filters");
-    cfg(&d, "kinds = [\"path\"]\nignore_prefixes = [\"nonexistent\"]\n");
+    cfg(
+        &d,
+        "kinds = [\"path\"]\nignore_prefixes = [\"nonexistent\"]\n",
+    );
     write(
         &d,
         "docs/a.md",
@@ -195,12 +204,28 @@ fn check_comment_claims_and_noise() {
     );
     write(&d, "docs/a.md", "plain prose, nothing to see");
     // assertive comment → Behavior claim (no checker → silence)
-    write(&d, "src/code.rs", "// The engine uses sqlite for all persistence work today\nfn f() {}\n");
+    write(
+        &d,
+        "src/code.rs",
+        "// The engine uses sqlite for all persistence work today\nfn f() {}\n",
+    );
     // noise dirs are pruned from comment scanning
-    write(&d, "tests/t.rs", "// The tests use sqlite for all persistence work today\n");
-    write(&d, "node_modules/x.ts", "// The lib uses sqlite for all persistence work today\n");
+    write(
+        &d,
+        "tests/t.rs",
+        "// The tests use sqlite for all persistence work today\n",
+    );
+    write(
+        &d,
+        "node_modules/x.ts",
+        "// The lib uses sqlite for all persistence work today\n",
+    );
     // an unreadable source file is skipped, not fatal
-    write(&d, "src/locked.rs", "// The store uses sqlite for all persistence work today\n");
+    write(
+        &d,
+        "src/locked.rs",
+        "// The store uses sqlite for all persistence work today\n",
+    );
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -232,7 +257,11 @@ fn check_doc_noise_pruning() {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(d.join("docs/unreadable.md"), std::fs::Permissions::from_mode(0o000)).unwrap();
+        std::fs::set_permissions(
+            d.join("docs/unreadable.md"),
+            std::fs::Permissions::from_mode(0o000),
+        )
+        .unwrap();
     }
     let o = mimus(&["check"], &d);
     let (so, _) = out(&o);
@@ -332,11 +361,19 @@ fn claims_dump_with_cards() {
     );
     write(&d, ".kuda/modules/empty.yaml", "name: e\npurpose: ''\n");
     // unreadable card → skipped by card_prose_claims
-    write(&d, ".kuda/modules/opaque.yaml", "name: o\npurpose: 'hidden'\n");
+    write(
+        &d,
+        ".kuda/modules/opaque.yaml",
+        "name: o\npurpose: 'hidden'\n",
+    );
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(d.join(".kuda/modules/opaque.yaml"), std::fs::Permissions::from_mode(0o000)).unwrap();
+        std::fs::set_permissions(
+            d.join(".kuda/modules/opaque.yaml"),
+            std::fs::Permissions::from_mode(0o000),
+        )
+        .unwrap();
     }
     let o = mimus(&["claims", "--all"], &d);
     let (so, se) = out(&o);
@@ -358,7 +395,10 @@ fn claims_dump_with_cards() {
 #[test]
 fn coverage_report() {
     // unloadable config → usage error before anything runs
-    let o = mimus(&["coverage", "--config", "/definitely/missing/x.toml"], &dir("cov-badcfg"));
+    let o = mimus(
+        &["coverage", "--config", "/definitely/missing/x.toml"],
+        &dir("cov-badcfg"),
+    );
     assert_eq!(o.status.code(), Some(1));
     // no kuda_index configured → advisory error
     let d = dir("cov-noidx");
@@ -392,7 +432,11 @@ fn coverage_report() {
         ));
     }
     sqlite(&d.join("idx.sqlite"), &rows);
-    write(&d, "docs/a.md", "DocumentedFunc is documented; xxSubStryy inline");
+    write(
+        &d,
+        "docs/a.md",
+        "DocumentedFunc is documented; xxSubStryy inline",
+    );
     let o = mimus(&["coverage"], &d);
     let (so, _) = out(&o);
     assert_eq!(o.status.code(), Some(0));
@@ -437,7 +481,11 @@ fn coverage_report() {
 fn audit_scores_cards() {
     let d = dir("audit");
     cfg(&d, "");
-    Command::new("git").args(["init", "-q", "-b", "main"]).arg(&d).output().unwrap();
+    Command::new("git")
+        .args(["init", "-q", "-b", "main"])
+        .arg(&d)
+        .output()
+        .unwrap();
     write(&d, "f.rs", "fn f() {}\n");
     let hash = String::from_utf8(
         Command::new("git")
@@ -451,13 +499,21 @@ fn audit_scores_cards() {
     .unwrap()
     .trim()
     .to_owned();
-    write(&d, ".kuda/modules/fresh.yaml", &format!(
-        "name: fresh-mod\nprovenance:\n  files: [\"f.rs\"]\n  hashes: [\"{hash}\"]\n"
-    ));
-    write(&d, ".kuda/modules/drifted.yaml",
-        "name: drifted-mod\nprovenance:\n  files: [\"f.rs\"]\n  hashes: [\"deadbeef\"]\n");
-    write(&d, ".kuda/modules/contra.yaml",
-        "name: contra-mod\nprovenance:\n  files: [\"gone.rs\"]\n  hashes: [\"whatever\"]\n");
+    write(
+        &d,
+        ".kuda/modules/fresh.yaml",
+        &format!("name: fresh-mod\nprovenance:\n  files: [\"f.rs\"]\n  hashes: [\"{hash}\"]\n"),
+    );
+    write(
+        &d,
+        ".kuda/modules/drifted.yaml",
+        "name: drifted-mod\nprovenance:\n  files: [\"f.rs\"]\n  hashes: [\"deadbeef\"]\n",
+    );
+    write(
+        &d,
+        ".kuda/modules/contra.yaml",
+        "name: contra-mod\nprovenance:\n  files: [\"gone.rs\"]\n  hashes: [\"whatever\"]\n",
+    );
     write(&d, ".kuda/modules/broken.yaml", "[[[ not yaml");
     write(&d, ".kuda/modules/bare.yaml", "other: fields only\n");
     let o = mimus(&["audit"], &d);
@@ -515,7 +571,7 @@ fn doctor_variants() {
     let (so, _) = out(&o);
     assert!(so.contains("diversity"), "{so}");
     assert!(so.contains("acp        !!"), "{so}"); // stub missing → probe fails
-    // a kuda.toml naming a *different* agent → no diversity warning
+                                                   // a kuda.toml naming a *different* agent → no diversity warning
     let d = dir("doc-divok");
     cfg(&d, "acp_cmd = \"mimus-agent --acp\"\n");
     write(&d, "kuda.toml", "acp_cmd = \"kuda-agent --acp\"\n");
@@ -563,11 +619,7 @@ fn fix_mechanical_rewrites() {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(
-            d.join("locked"),
-            std::fs::Permissions::from_mode(0o000),
-        )
-        .unwrap();
+        std::fs::set_permissions(d.join("locked"), std::fs::Permissions::from_mode(0o000)).unwrap();
     }
     // dry first — plan printed, nothing written
     let o = mimus(&["fix", "--dry"], &d);
@@ -575,9 +627,11 @@ fn fix_mechanical_rewrites() {
     assert!(so.contains("`old/moved.rs` -> `sub/moved.rs`"), "{so}");
     assert!(so.contains("(dry)"), "{so}");
     assert!(so.contains("flagged"), "{so}");
-    assert!(String::from_utf8(std::fs::read(d.join("docs/a.md")).unwrap())
-        .unwrap()
-        .contains("old/moved.rs"));
+    assert!(
+        String::from_utf8(std::fs::read(d.join("docs/a.md")).unwrap())
+            .unwrap()
+            .contains("old/moved.rs")
+    );
     // real run — rewrites applied
     let o = mimus(&["fix"], &d);
     let (so, _) = out(&o);
@@ -585,12 +639,16 @@ fn fix_mechanical_rewrites() {
     assert!(so.contains("`p1/x.rs` -> `w/p1/x.rs`"), "{so}");
     assert!(so.contains("flagged for human"), "{so}"); // dupse.rs ambiguous
     assert!(so.contains("applied"), "{so}");
-    assert!(String::from_utf8(std::fs::read(d.join("docs/a.md")).unwrap())
-        .unwrap()
-        .contains("sub/moved.rs"));
-    assert!(String::from_utf8(std::fs::read(d.join("docs/c.md")).unwrap())
-        .unwrap()
-        .contains("w/p1/x.rs"));
+    assert!(
+        String::from_utf8(std::fs::read(d.join("docs/a.md")).unwrap())
+            .unwrap()
+            .contains("sub/moved.rs")
+    );
+    assert!(
+        String::from_utf8(std::fs::read(d.join("docs/c.md")).unwrap())
+            .unwrap()
+            .contains("w/p1/x.rs")
+    );
     // bad config → usage failure
     let d = dir("fix-nocfg");
     let o = mimus(&["fix"], &d);
@@ -676,7 +734,11 @@ fn check_all_without_acp_cmd() {
     let d = dir("sem-nocmd");
     cfg(&d, "semantic = true\n");
     write(&d, "docs/a.md", "plain prose here");
-    write(&d, ".kuda/modules/m.yaml", "name: m\npurpose: 'the module stores real things'\n");
+    write(
+        &d,
+        ".kuda/modules/m.yaml",
+        "name: m\npurpose: 'the module stores real things'\n",
+    );
     let o = mimus(&["check", "--all"], &d);
     let (so, se) = out(&o);
     assert_eq!(o.status.code(), Some(0), "{so} {se}");
@@ -701,7 +763,11 @@ fn check_all_runs_semantic_tier() {
     let agent = acp_agent(&d, &["1 VERIFIED"]);
     cfg(&d, &format!("semantic = true\nacp_cmd = \"{agent}\"\n"));
     write(&d, "docs/a.md", "plain prose here");
-    write(&d, ".kuda/modules/m.yaml", "name: m\npurpose: 'the module stores real things'\n");
+    write(
+        &d,
+        ".kuda/modules/m.yaml",
+        "name: m\npurpose: 'the module stores real things'\n",
+    );
     let o = mimus(&["check", "--all"], &d);
     let (so, se) = out(&o);
     assert_eq!(o.status.code(), Some(0), "{so} {se}");
@@ -737,10 +803,15 @@ fn fix_semantic_proposes_rewrites() {
     let (so, se) = out(&o);
     assert_eq!(o.status.code(), Some(0), "{so} {se}");
     // first refuted claim → corrected line proposed + applied
-    assert!(so.contains("`the module stores real things` -> `the module stores cached things`"), "{so}");
-    assert!(String::from_utf8(std::fs::read(d.join(".kuda/modules/m.yaml")).unwrap())
-        .unwrap()
-        .contains("the module stores cached things"));
+    assert!(
+        so.contains("`the module stores real things` -> `the module stores cached things`"),
+        "{so}"
+    );
+    assert!(
+        String::from_utf8(std::fs::read(d.join(".kuda/modules/m.yaml")).unwrap())
+            .unwrap()
+            .contains("the module stores cached things")
+    );
     // second → agent proposed nothing → error, flagged for human
     assert!(se.contains("propose"), "{se}");
     assert!(so.contains("flagged for human"), "{so}");
@@ -758,15 +829,20 @@ fn fix_semantic_proposes_rewrites() {
     );
     cfg(&d, &format!("semantic = true\nacp_cmd = \"{agent}\"\n"));
     write(&d, "docs/a.md", "nothing here");
-    write(&d, ".kuda/modules/m.yaml",
-        "name: m\npurpose: 'the module stores real things'\n");
+    write(
+        &d,
+        ".kuda/modules/m.yaml",
+        "name: m\npurpose: 'the module stores real things'\n",
+    );
     let o = mimus(&["fix", "--dry", "--semantic"], &d);
     let (so, se) = out(&o);
     assert_eq!(o.status.code(), Some(0), "{so} {se}");
     assert!(so.contains("(dry)"), "{so}");
-    assert!(String::from_utf8(std::fs::read(d.join(".kuda/modules/m.yaml")).unwrap())
-        .unwrap()
-        .contains("the module stores real things"));
+    assert!(
+        String::from_utf8(std::fs::read(d.join(".kuda/modules/m.yaml")).unwrap())
+            .unwrap()
+            .contains("the module stores real things")
+    );
 
     // agent proposes a fix but the claim's source vanished between
     // extraction and apply — the re-read fails, no write attempted
@@ -783,8 +859,11 @@ fn fix_semantic_proposes_rewrites() {
     );
     cfg(&d, &format!("semantic = true\nacp_cmd = \"{agent}\"\n"));
     write(&d, "docs/a.md", "nothing here");
-    write(&d, ".kuda/modules/m.yaml",
-        "name: m\npurpose: 'the module stores real things'\n");
+    write(
+        &d,
+        ".kuda/modules/m.yaml",
+        "name: m\npurpose: 'the module stores real things'\n",
+    );
     let o = mimus(&["fix", "--semantic"], &d);
     let (so, se) = out(&o);
     assert_eq!(o.status.code(), Some(0), "{so} {se}");
@@ -818,4 +897,99 @@ fn gen_cli_docs() {
     let (so, _) = out(&o);
     assert_eq!(o.status.code(), Some(0));
     assert!(so.contains("mimus"), "{so}");
+}
+
+/// `check --diff SPEC` — only claims in `git diff`-changed files
+/// are checked; a dead claim in an untouched file is suppressed.
+#[test]
+fn check_diff_scopes_to_changed_files() {
+    let d = dir("diff");
+    cfg(&d, "");
+    write(&d, "docs/a.md", "nothing claimed");
+    write(&d, "docs/b.md", "see `dead.rs` now");
+    let git = |args: &[&str]| {
+        let o = Command::new("git")
+            .arg("-C")
+            .arg(&d)
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(
+            o.status.success(),
+            "git {args:?}: {}",
+            String::from_utf8_lossy(&o.stderr)
+        );
+    };
+    git(&["init", "-q", "-b", "main"]);
+    git(&["-c", "user.email=t@t", "-c", "user.name=t", "add", "."]);
+    git(&[
+        "-c",
+        "user.email=t@t",
+        "-c",
+        "user.name=t",
+        "commit",
+        "-qm",
+        "init",
+    ]);
+    // working-tree change to a.md only — b.md's dead claim is
+    // untouched by the diff and must not be reported.
+    write(&d, "docs/a.md", "see `gone.rs` too");
+    let o = mimus(&["check", "--diff", "HEAD"], &d);
+    let (so, se) = out(&o);
+    assert_eq!(o.status.code(), Some(1), "{so} {se}");
+    assert!(so.contains("gone.rs"), "{so}");
+    assert!(!so.contains("dead.rs"), "{so}");
+    // without --diff both fire
+    let o = mimus(&["check"], &d);
+    let (so, _) = out(&o);
+    assert!(so.contains("gone.rs") && so.contains("dead.rs"), "{so}");
+}
+
+/// `--diff` outside a git repo is a usage failure, not a crash.
+#[test]
+fn check_diff_requires_git_repo() {
+    let d = dir("diff-nogit");
+    cfg(&d, "");
+    write(&d, "docs/a.md", "nothing claimed");
+    let o = mimus(&["check", "--diff", "HEAD"], &d);
+    let (_, se) = out(&o);
+    assert_eq!(o.status.code(), Some(2), "{se}");
+    assert!(se.contains("git repo"), "{se}");
+}
+
+/// A spec git itself rejects is also a usage failure.
+#[test]
+fn check_diff_bad_spec() {
+    let d = dir("diff-badspec");
+    cfg(&d, "");
+    write(&d, "docs/a.md", "nothing claimed");
+    let o = Command::new("git")
+        .arg("-C")
+        .arg(&d)
+        .args(["init", "-q", "-b", "main"])
+        .output()
+        .unwrap();
+    assert!(o.status.success());
+    let o = mimus(&["check", "--diff", "bogus..spec"], &d);
+    let (_, se) = out(&o);
+    assert_eq!(o.status.code(), Some(2), "{se}");
+    assert!(se.contains("git diff"), "{se}");
+}
+
+/// `git` missing from PATH — the spawn error surfaces cleanly.
+#[test]
+fn check_diff_no_git_binary() {
+    let d = dir("diff-nogitbin");
+    cfg(&d, "");
+    write(&d, "docs/a.md", "nothing claimed");
+    let o = Command::new(env!("CARGO_BIN_EXE_mimus"))
+        .args(["check", "--diff", "HEAD"])
+        .current_dir(&d)
+        .env("PATH", "")
+        .env_remove("MIMUS_CONFIG")
+        .output()
+        .unwrap();
+    let (_, se) = out(&o);
+    assert_eq!(o.status.code(), Some(2), "{se}");
+    assert!(se.contains("git"), "{se}");
 }
