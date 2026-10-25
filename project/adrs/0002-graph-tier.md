@@ -31,8 +31,13 @@ question. Rejected — read the index, don't re-parse.
 
 **C. Triple extraction + bucketed contradiction detection
 (recommended)** — reduce every source to `(subject, relation,
-object)` triples with provenance; conflicts fall out of a hash
-bucket, not an agent. Mechanical speed, agent-grade reach.
+object)` triples with provenance; literal-grade conflicts emit
+mechanically; the rest become *agent adjudication candidates*.
+The semantic tier stays the primary semantic reasoner — the
+bucket pass is its intake filter, not its replacement: instead
+of the agent scanning every claim, it receives pre-bucketed
+candidate pairs. Mechanical speed for what must gate, agent
+reach for what needs understanding.
 
 **D. Embedding-similarity over claims** — vectorize claims,
 cluster near-duplicates, diff their objects. Solves the synonym
