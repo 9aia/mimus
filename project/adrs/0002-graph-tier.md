@@ -138,6 +138,10 @@ findings depend on index freshness (stale index → stale graph —
 4. `undocumented fact` class (reverse coverage — joins the
    existing `mimus coverage` command's direction).
 5. Semantic tier rescoped to fuzzy-candidate adjudication.
+6. Docs each phase: `README.md`, `docs/reference/config.md`
+   (`[check].graph`, `aliases.toml`), `docs/how-to/ci-gate.md`
+   (`--diff` is already shipped + documented), and this ADR's
+   status → accepted when phase 2 lands.
 
 ## Acceptance criteria
 
