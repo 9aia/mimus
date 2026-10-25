@@ -202,7 +202,19 @@ findings depend on index freshness (stale index → stale graph —
    findings under `--diff` on the module's own sources. The
    `mimus coverage` distinction is documented in
    `docs/explanation/claims.md`.
-5. Semantic tier rescoped to fuzzy-candidate adjudication.
+5. Semantic tier rescoped to fuzzy-candidate adjudication. **Done** —
+   `mimus-check-graph::semantic_candidates` turns the triples the
+   buckets can't settle into the agent's intake list: canon-*differing*
+   subjects (canon-equal is the buckets' own job), the same relation,
+   ≥1 shared canon token (so `auth flow` pairs with `auth service`,
+   `auth` never with `cache`), and different objects. One unordered
+   pair emits once, sorted, with the original spellings + sites.
+   Wiring: `collect` appends one `Behavior` claim per candidate to
+   `scoped` after `run_prose` (which keeps its `triples`, so nothing
+   re-extracts), so the ACP checker receives pre-bucketed pairs
+   instead of scanning every claim — warn tier, advisory. Pairing
+   is grouped by relation with precomputed token sets, so the
+   intake stays a bucket-ish pass, not O(n²) string work.
 6. Docs each phase: `README.md`, `docs/reference/config.md`
    (`[check].graph`, `aliases.toml`), `docs/how-to/ci-gate.md`
    (`--diff` is already shipped + documented), and this ADR's

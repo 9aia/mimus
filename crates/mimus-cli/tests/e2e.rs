@@ -1077,6 +1077,43 @@ fn check_prose_contradictions() {
     assert!(!so.contains("contradiction"), "{so}");
 }
 
+/// ADR-0002 ph5 — the semantic tier's intake is the mechanical
+/// pass's fuzzy residue: two near-duplicate subjects asserting
+/// different objects for one relation become a *candidate* claim
+/// the ACP checker adjudicates. Not a bucket conflict — the canon
+/// subjects differ, so nothing gates.
+#[test]
+fn check_semantic_candidate_intake() {
+    let d = dir("sem-intake");
+    write(&d, "doc.md", "x"); // grounding target for refute evidence
+                              // one queue line per prompt — the numbered verdicts are escaped
+                              // and un-escaped by the stub. Claim 3 is the candidate.
+    let agent = acp_agent(
+        &d,
+        &["1 VERIFIED\\n2 VERIFIED\\n3 REFUTED: doc.md contradicts it"],
+    );
+    cfg(&d, &format!("semantic = true\nacp_cmd = \"{agent}\"\n"));
+    write(
+        &d,
+        "docs/a.md",
+        "The auth flow uses jwt for every request today.\n\n\
+         The auth service uses sessions for every request today.\n",
+    );
+    let o = mimus(&["check", "--all"], &d);
+    let (so, se) = out(&o);
+    assert_eq!(o.status.code(), Some(0), "{so} {se}");
+    // one candidate, right relation, both original spellings, and
+    // the ask the agent answers — warn tier, so the run still exits 0
+    assert!(so.contains("candidate — uses:"), "{so}");
+    assert!(so.contains("The auth service says sessions"), "{so}");
+    assert!(so.contains("The auth flow says jwt"), "{so}");
+    assert!(so.contains("verify which side the code supports"), "{so}");
+    assert!(so.contains("[warn]"), "{so}");
+    // the buckets stayed silent: `auth flow` ≠ `auth`, so this pair
+    // never became a contradiction — only the agent saw it
+    assert!(!so.contains("bucket"), "{so}");
+}
+
 /// ADR-0002 ph3 — `--diff` keeps the contradiction buckets
 /// whole: the unchanged side of a conflict still counts (the
 /// warm cache serves its triples), and unchanged↔unchanged

@@ -394,6 +394,10 @@ fn collect(
     }
     // semantic tier: card prose -> behavior claims -> agent verify.
     // Advisory only (--all or [check].semantic); never gates.
+    // ph5: `semantic_intake` records that the tier is live — the
+    // candidates it adjudicates are built below, off the triples the
+    // mechanical buckets have already extracted.
+    let mut semantic_intake = false;
     if semantic && cfg.check.semantic {
         if let Some(cmd) = &cfg.check.acp_cmd {
             for card in mimus_rules::matching_files(&root, ".kuda/modules/*.yaml")
@@ -409,6 +413,69 @@ fn collect(
             // same ignore list as whole-claim text
             acp.ignore_prefixes = cfg.check.ignore_prefixes.clone();
             checkers.push(Box::new(acp));
+            semantic_intake = true;
+        }
+    }
+    // graph tier (ADR-0002 ph2/ph3) — prose contradiction
+    // buckets: contradiction (doc↔doc) + self-contradiction
+    // (reflexive), both warn tier. Index-free — runs on every
+    // claim set, not just when [check].kuda_index is set.
+    // `[check].aliases` folds differently-spelled subjects into
+    // one bucket.
+    //
+    // ph3: the per-file cache at .mimus/triples.db skips
+    // re-extracting unchanged files; an unwritable .mimus/ just
+    // runs uncached. `in_scope` gates *findings* to the sources
+    // the per-claim checkers saw — under --diff a conflict emits
+    // only when it touches a checked file, but the buckets still
+    // read the full set so the unchanged side of a contradiction
+    // isn't lost.
+    //
+    // It runs before the per-claim checkers because ph5's semantic
+    // intake reuses these triples; the findings are still assembled
+    // in the mechanical order below (checkers, rules, buckets,
+    // index passes) so the report reads the same.
+    let cache = match mimus_check_graph::TriplesCache::open(&root.join(".mimus/triples.db")) {
+        Ok(c) => Some(c),
+        Err(e) => {
+            eprintln!("triples cache: {e}");
+            None
+        }
+    };
+    let checked: std::collections::HashSet<PathBuf> =
+        scoped.iter().map(|c| canon(&c.source)).collect();
+    let aliases: Vec<(String, String)> = cfg.check.aliases.clone().into_iter().collect();
+    let mut prose = mimus_check_graph::ProseContradictionChecker {
+        aliases: aliases.clone(),
+        cache,
+        triples: Vec::new(),
+    };
+    let prose_violations = prose.run_prose(&claims, &|p| checked.contains(&canon(p)));
+    // semantic tier intake (ADR-0002 ph5) — the buckets own
+    // canon-equal subjects; what they can't settle (near-duplicate
+    // subjects, one relation, different objects) becomes one
+    // Behavior claim per pair, appended exactly like card prose:
+    // `scoped` carries it to the ACP checker. Index-free, so
+    // --diff scoping doesn't hide it.
+    if semantic_intake {
+        for c in mimus_check_graph::semantic_candidates(&prose.triples, &aliases) {
+            scoped.push(mimus_core::Claim {
+                kind: ClaimKind::Behavior,
+                text: format!(
+                    "candidate — {}: {} says {} ({}:{}) vs {} says {} ({}:{}); verify which side the code supports",
+                    c.relation,
+                    c.left_subject,
+                    c.left_object,
+                    c.left_source.display(),
+                    c.left_line,
+                    c.right_subject,
+                    c.right_object,
+                    c.right_source.display(),
+                    c.right_line,
+                ),
+                source: c.left_source.clone(),
+                line: c.left_line as u32,
+            });
         }
     }
     let mut violations: Vec<Violation> = mimus_check::run(&checkers, &scoped)
@@ -430,35 +497,7 @@ fn collect(
             }
         }
     }
-    // graph tier (ADR-0002 ph2/ph3) — prose contradiction
-    // buckets: contradiction (doc↔doc) + self-contradiction
-    // (reflexive), both warn tier. Index-free — runs on every
-    // claim set, not just when [check].kuda_index is set.
-    // `[check].aliases` folds differently-spelled subjects into
-    // one bucket.
-    //
-    // ph3: the per-file cache at .mimus/triples.db skips
-    // re-extracting unchanged files; an unwritable .mimus/ just
-    // runs uncached. `in_scope` gates *findings* to the sources
-    // the per-claim checkers saw — under --diff a conflict emits
-    // only when it touches a checked file, but the buckets still
-    // read the full set so the unchanged side of a contradiction
-    // isn't lost.
-    let cache = match mimus_check_graph::TriplesCache::open(&root.join(".mimus/triples.db")) {
-        Ok(c) => Some(c),
-        Err(e) => {
-            eprintln!("triples cache: {e}");
-            None
-        }
-    };
-    let checked: std::collections::HashSet<PathBuf> =
-        scoped.iter().map(|c| canon(&c.source)).collect();
-    let aliases: Vec<(String, String)> = cfg.check.aliases.clone().into_iter().collect();
-    let mut prose = mimus_check_graph::ProseContradictionChecker {
-        aliases: aliases.clone(),
-        cache,
-    };
-    violations.extend(prose.run_prose(&claims, &|p| checked.contains(&canon(p))));
+    violations.extend(prose_violations);
     // graph tier (ADR-0001 ph4 reverse direction) — a module whose
     // own indexed sources changed is "in scope" for --diff; an
     // unscoped run has no scope to narrow.

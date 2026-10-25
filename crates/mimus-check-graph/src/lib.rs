@@ -29,6 +29,12 @@
 //!   version) skips re-extracting unchanged files, and the prose
 //!   pass's `in_scope` gate lets `--diff` keep the buckets whole
 //!   while only reporting conflicts that touch changed files.
+//! - phase 5: the semantic tier is rescoped to *fuzzy-candidate
+//!   adjudication*. `semantic_candidates` turns the prose triples
+//!   the buckets leave unsettled (canon-differing subjects that
+//!   share a token, same relation, different objects) into the
+//!   agent's intake list — pre-filtered, so the agent adjudicates
+//!   pairs instead of scanning every claim.
 //! - `undocumented-fact` (warn, phase 4): reverse coverage — a
 //!   *public* module (one the index records as a dependency target)
 //!   that no claim names is code the docs never assert. Module
@@ -41,6 +47,7 @@
 use mimus_check::GraphChecker;
 use mimus_claims::triples::{
     canon_subject, contradictions_with_aliases, extract_triples, Contradiction, ContradictionKind,
+    Triple,
 };
 use mimus_core::{Claim, ClaimKind, Edge, EdgeKind, Graph, Severity, Violation};
 use rusqlite::{params, Connection, OpenFlags};
@@ -249,6 +256,9 @@ pub struct ProseContradictionChecker {
     /// files' triples from `.mimus/triples.db`; `None` extracts
     /// every run.
     pub cache: Option<TriplesCache>,
+    /// Triples from the last `run_prose` — the semantic tier's
+    /// candidate intake reuses them instead of re-extracting.
+    pub triples: Vec<Triple>,
 }
 
 impl ProseContradictionChecker {
@@ -267,12 +277,159 @@ impl ProseContradictionChecker {
             Some(c) => extract_triples_cached(claims, c),
             None => extract_triples(claims),
         };
-        contradictions_with_aliases(&triples, &self.aliases)
+        // kept for the semantic tier's intake (phase 5) — the agent
+        // gets candidates off the same triples, not a second extract
+        self.triples = triples;
+        contradictions_with_aliases(&self.triples, &self.aliases)
             .iter()
             .filter(|c| c.objects.iter().any(|(_, src, _)| in_scope(src)))
             .map(|c| contradiction_violation(c, claims, in_scope))
             .collect()
     }
+}
+
+/// One fuzzy pair the mechanical buckets can't settle — the
+/// semantic tier's intake list. The bucket pass keeps the
+/// mechanical-grade conflicts (canon-equal subject, different
+/// object) to itself and hands the agent only what needs
+/// understanding: near-duplicate subjects with a shared content
+/// token asserting different objects for the same relation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SemanticCandidate {
+    /// Relation both triples assert (`uses`, `is`, …) — the slot
+    /// the two sides disagree on.
+    pub relation: String,
+    /// Left triple's subject, as spelled at its own site — the
+    /// canonical form is the filter, never the output.
+    pub left_subject: String,
+    /// Left triple's object.
+    pub left_object: String,
+    /// File the left triple was extracted from.
+    pub left_source: PathBuf,
+    /// 1-based line in `left_source`.
+    pub left_line: usize,
+    /// Right triple's subject, as spelled at its own site.
+    pub right_subject: String,
+    /// Right triple's object.
+    pub right_object: String,
+    /// File the right triple was extracted from.
+    pub right_source: PathBuf,
+    /// 1-based line in `right_source`.
+    pub right_line: usize,
+}
+
+/// Triples → the semantic tier's candidate list (ADR-0002 ph5).
+///
+/// The buckets own canon-equal subjects (`contradiction`,
+/// `self-contradiction`); this is the residue they can't decide.
+/// A pair becomes a candidate when all four hold:
+///
+/// - the canonical subjects *differ* — canon-equal is the buckets'
+///   job, and re-emitting it would spend an agent call on a
+///   mechanical conflict;
+/// - both triples assert the same relation — different relations
+///   are different slots, not a disagreement;
+/// - the canonical subjects share ≥1 content token — `auth` pairs
+///   with `auth flow`, never with `cache`. This is the synonym /
+///   near-duplicate heuristic that keeps the intake small;
+/// - the objects differ — agreeing triples are not a question.
+///
+/// Each unordered pair emits once, and the output is sorted on
+/// `(relation, left_subject, right_subject, left_object,
+/// right_object)` so two runs over the same triples print the same
+/// prompt. Original spellings survive into the struct: the agent
+/// needs the real `file:line` site, not the bucket key.
+pub fn semantic_candidates(
+    triples: &[Triple],
+    aliases: &[(String, String)],
+) -> Vec<SemanticCandidate> {
+    let canon: Vec<String> = triples
+        .iter()
+        .map(|t| canon_subject(&t.subject, aliases))
+        .collect();
+    // token sets once per triple — pairing is the hot loop, and a
+    // 10k-claim sweep has no room for re-splitting subjects inside it
+    let toks: Vec<HashSet<&str>> = canon
+        .iter()
+        .map(|c| c.split_whitespace().collect())
+        .collect();
+    // only same-relation triples can disagree about a slot
+    let mut by_rel: HashMap<&str, Vec<usize>> = HashMap::new();
+    for (i, t) in triples.iter().enumerate() {
+        by_rel.entry(t.relation.as_str()).or_default().push(i);
+    }
+    // unordered (subject canon, object) pair sides — one entry per
+    // structural disagreement, however many files spell it
+    let mut seen: HashSet<(String, String, String, String, String)> = HashSet::new();
+    let mut out = Vec::new();
+    for group in by_rel.values() {
+        for x in 0..group.len() {
+            for y in (x + 1)..group.len() {
+                let (i, j) = (group[x], group[y]);
+                let (a, b) = (&triples[i], &triples[j]);
+                if canon[i] == canon[j] || a.object == b.object || toks[i].is_disjoint(&toks[j]) {
+                    continue;
+                }
+                // deterministic side order — the smaller (canon,
+                // object) is "left", so duplicate spellings collapse
+                // onto one candidate instead of two mirrored ones
+                let (l, r) = if (canon[i].as_str(), a.object.as_str())
+                    <= (canon[j].as_str(), b.object.as_str())
+                {
+                    (i, j)
+                } else {
+                    (j, i)
+                };
+                let (lt, rt) = (&triples[l], &triples[r]);
+                let key = (
+                    lt.relation.clone(),
+                    canon[l].clone(),
+                    lt.object.clone(),
+                    canon[r].clone(),
+                    rt.object.clone(),
+                );
+                if !seen.insert(key) {
+                    continue;
+                }
+                out.push(SemanticCandidate {
+                    relation: lt.relation.clone(),
+                    left_subject: lt.subject.clone(),
+                    left_object: lt.object.clone(),
+                    left_source: lt.source.clone(),
+                    left_line: lt.line,
+                    right_subject: rt.subject.clone(),
+                    right_object: rt.object.clone(),
+                    right_source: rt.source.clone(),
+                    right_line: rt.line,
+                });
+            }
+        }
+    }
+    out.sort_by(|a, b| {
+        (
+            &a.relation,
+            &a.left_subject,
+            &a.right_subject,
+            &a.left_object,
+            &a.right_object,
+            &a.left_source,
+            a.left_line,
+            &a.right_source,
+            a.right_line,
+        )
+            .cmp(&(
+                &b.relation,
+                &b.left_subject,
+                &b.right_subject,
+                &b.left_object,
+                &b.right_object,
+                &b.left_source,
+                b.left_line,
+                &b.right_source,
+                b.right_line,
+            ))
+    });
+    out
 }
 
 /// `undocumented-fact` — ADR-0002 phase 4: reverse coverage
@@ -917,6 +1074,7 @@ mod tests {
         let mut chk = ProseContradictionChecker {
             aliases: Vec::new(),
             cache: None,
+            triples: Vec::new(),
         };
         // no scope gate — everything emits, the pre-ph3 behavior
         let all: &dyn Fn(&Path) -> bool = &|_| true;
@@ -975,10 +1133,127 @@ mod tests {
         let mut chk = ProseContradictionChecker {
             aliases: vec![("login flow".to_owned(), "auth".to_owned())],
             cache: None,
+            triples: Vec::new(),
         };
         let v = chk.run_prose(&claims, all);
         assert_eq!(v.len(), 1, "{v:?}");
         assert!(v[0].evidence.contains("auth|uses"), "{}", v[0].evidence);
+        // ph5: the same run leaves its triples on the checker — the
+        // semantic intake reads them instead of re-extracting
+        assert_eq!(chk.triples.len(), 2, "{:?}", chk.triples);
+        assert_eq!(chk.triples[0].object, "jwt");
+    }
+
+    /// ADR-0002 ph5 — the buckets keep canon-equal subjects; the
+    /// semantic intake gets only what they can't settle. Four
+    /// conditions, each observable on its own: canon-differing
+    /// subjects, one relation, ≥1 shared canon token, different
+    /// objects.
+    #[test]
+    fn semantic_candidates_filter_rules() {
+        let t = |subj: &str, rel: &str, obj: &str, src: &str, line: usize| Triple {
+            subject: subj.into(),
+            relation: rel.into(),
+            object: obj.into(),
+            source: PathBuf::from(src),
+            line,
+        };
+        // (a) canon-equal subjects → the buckets' job, no candidate
+        let same = [
+            t("auth", "uses", "jwt", "a.md", 1),
+            t("the auth service", "uses", "sessions", "b.md", 2),
+        ];
+        assert!(semantic_candidates(&same, &[]).is_empty());
+        // (b) shared token, different objects → one candidate with
+        // the original spellings and both sites
+        let pair = [
+            t("auth flow", "uses", "jwt", "a.md", 3),
+            t("auth service", "uses", "sessions", "b.md", 7),
+        ];
+        let c = semantic_candidates(&pair, &[]);
+        assert_eq!(c.len(), 1, "{c:?}");
+        assert_eq!(c[0].relation, "uses");
+        assert_eq!(c[0].left_subject, "auth service");
+        assert_eq!(c[0].left_object, "sessions");
+        assert_eq!(c[0].left_source, PathBuf::from("b.md"));
+        assert_eq!(c[0].left_line, 7);
+        assert_eq!(c[0].right_subject, "auth flow");
+        assert_eq!(c[0].right_object, "jwt");
+        assert_eq!(c[0].right_line, 3);
+        // (c) unrelated subjects → silence, even with different objects
+        let unrelated = [
+            t("auth", "uses", "jwt", "a.md", 1),
+            t("cache", "uses", "redis", "b.md", 2),
+        ];
+        assert!(semantic_candidates(&unrelated, &[]).is_empty());
+        // (d) same object → nothing to adjudicate
+        let agree = [
+            t("auth flow", "uses", "jwt", "a.md", 1),
+            t("auth service", "uses", "jwt", "b.md", 2),
+        ];
+        assert!(semantic_candidates(&agree, &[]).is_empty());
+        // (e) different relations → different slots, not a conflict
+        let rels = [
+            t("auth flow", "uses", "jwt", "a.md", 1),
+            t("auth service", "is", "sessions", "b.md", 2),
+        ];
+        assert!(semantic_candidates(&rels, &[]).is_empty());
+    }
+
+    /// ADR-0002 ph5 — duplicates collapse onto one candidate, the
+    /// output order is fixed, and an alias that folds two spellings
+    /// onto one canon subject removes the pair from the intake.
+    #[test]
+    fn semantic_candidates_dedupe_and_order() {
+        let t = |subj: &str, rel: &str, obj: &str, src: &str, line: usize| Triple {
+            subject: subj.into(),
+            relation: rel.into(),
+            object: obj.into(),
+            source: PathBuf::from(src),
+            line,
+        };
+        // the same disagreement spelled twice → one candidate
+        let dupes = [
+            t("auth service", "uses", "sessions", "b.md", 2),
+            t("auth flow", "uses", "jwt", "a.md", 1),
+            t("auth flow", "uses", "jwt", "c.md", 4),
+        ];
+        let c = semantic_candidates(&dupes, &[]);
+        assert_eq!(c.len(), 1, "{c:?}");
+        assert_eq!(c[0].left_subject, "auth service");
+        assert_eq!(c[0].left_source, PathBuf::from("b.md"));
+        // sorted on (relation, left_subject, right_subject,
+        // left_object, right_object) — not input order
+        let mixed = [
+            t("auth service", "uses", "sessions", "b.md", 2),
+            t("auth flow", "uses", "jwt", "a.md", 1),
+            t("auth cookie", "uses", "tokens", "d.md", 3),
+        ];
+        let c = semantic_candidates(&mixed, &[]);
+        let order: Vec<(&str, &str)> = c
+            .iter()
+            .map(|c| (c.left_subject.as_str(), c.right_subject.as_str()))
+            .collect();
+        assert_eq!(
+            order,
+            [
+                ("auth cookie", "auth flow"),
+                ("auth service", "auth cookie"),
+                ("auth service", "auth flow"),
+            ],
+            "{c:?}"
+        );
+        // without an alias the two spellings share "flow" → one
+        // candidate; the alias folds them onto one canon subject, so
+        // the pair becomes the buckets' problem and the intake is
+        // empty
+        let spellings = [
+            t("login flow", "uses", "jwt", "a.md", 1),
+            t("auth flow", "uses", "sessions", "b.md", 2),
+        ];
+        assert_eq!(semantic_candidates(&spellings, &[]).len(), 1);
+        let aliases = [("login flow".to_owned(), "auth flow".to_owned())];
+        assert!(semantic_candidates(&spellings, &aliases).is_empty());
     }
 
     /// ADR-0002 ph3 — `in_scope` gates *findings*, not the
@@ -1021,6 +1296,7 @@ mod tests {
         let mut chk = ProseContradictionChecker {
             aliases: Vec::new(),
             cache: None,
+            triples: Vec::new(),
         };
         let v = chk.run_prose(&claims, only_a);
         assert_eq!(v.len(), 1, "{v:?}");
@@ -1033,6 +1309,7 @@ mod tests {
         let mut chk = ProseContradictionChecker {
             aliases: Vec::new(),
             cache: Some(TriplesCache::open(&dir.join("triples.db")).unwrap()),
+            triples: Vec::new(),
         };
         for _ in 0..2 {
             let v = chk.run_prose(&claims, only_a);
