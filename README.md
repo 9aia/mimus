@@ -66,6 +66,8 @@ cd your-repo
 mimus init          # mimus.toml + rules/
 mimus check         # mechanical tier; exit 1 on errors
 mimus check --no-cmd    # skip the command checker
+mimus check --diff "origin/main...HEAD"   # only claims in changed
+                          # files — gate a PR on new drift
 mimus fix --dry     # preview dead-path rewrites
 mimus fix           # apply them
 mimus audit         # trust-score .kuda/ cards
