@@ -6,7 +6,12 @@ use std::path::PathBuf;
 use std::process::Command;
 
 fn git(dir: &std::path::Path, args: &[&str]) {
-    let o = Command::new("git").arg("-C").arg(dir).args(args).output().unwrap();
+    let o = Command::new("git")
+        .arg("-C")
+        .arg(dir)
+        .args(args)
+        .output()
+        .unwrap();
     assert!(o.status.success(), "git {}", args.join(" "));
 }
 
@@ -15,7 +20,19 @@ fn repo(name: &str) -> PathBuf {
     let _ = std::fs::remove_dir_all(&d);
     std::fs::create_dir_all(&d).unwrap();
     git(&d, &["init", "-q", "-b", "main"]);
-    git(&d, &["-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init", "--allow-empty"]);
+    git(
+        &d,
+        &[
+            "-c",
+            "user.email=t@t",
+            "-c",
+            "user.name=t",
+            "commit",
+            "-qm",
+            "init",
+            "--allow-empty",
+        ],
+    );
     d
 }
 
@@ -23,7 +40,12 @@ fn repo(name: &str) -> PathBuf {
 fn has_commit_and_tags() {
     let repo = repo("t");
     let v = GitVcs;
-    let o = Command::new("git").arg("-C").arg(&repo).args(["rev-parse", "HEAD"]).output().unwrap();
+    let o = Command::new("git")
+        .arg("-C")
+        .arg(&repo)
+        .args(["rev-parse", "HEAD"])
+        .output()
+        .unwrap();
     let sha = String::from_utf8_lossy(&o.stdout).trim().to_string();
     assert!(v.has_commit(&repo, &sha));
     assert!(!v.has_commit(&repo, "0000000000000000000000000000000000000000"));
@@ -39,7 +61,12 @@ fn has_commit_and_tags() {
 fn worktree_lifecycle() {
     let repo = repo("wt");
     let v = GitVcs;
-    let o = Command::new("git").arg("-C").arg(&repo).args(["rev-parse", "HEAD"]).output().unwrap();
+    let o = Command::new("git")
+        .arg("-C")
+        .arg(&repo)
+        .args(["rev-parse", "HEAD"])
+        .output()
+        .unwrap();
     let sha = String::from_utf8_lossy(&o.stdout).trim().to_string();
     let wt = repo.join("wt-dest");
     assert!(v.worktree_add(&repo, &wt, &sha));

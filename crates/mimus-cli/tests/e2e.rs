@@ -994,7 +994,88 @@ fn check_diff_no_git_binary() {
     assert!(se.contains("git"), "{se}");
 }
 
-// ---------- graph tier (ADR-0002 ph1) ----------
+// ---------- graph tier (ADR-0002) ----------
+
+/// ADR-0002 ph2 — the contradiction pass needs no index: one doc
+/// asserting two objects for the same slot warns reflexively with
+/// both sites; across two docs it's the cross-source class; and
+/// `[check].aliases` folds differently-spelled subjects into one
+/// bucket. Warn tier — never gates.
+#[test]
+fn check_prose_contradictions() {
+    // same doc, two objects for `auth|uses` → self-contradiction
+    let d = dir("contra-refl");
+    cfg(&d, ""); // no kuda_index — the pass runs anyway
+    write(
+        &d,
+        "docs/a.md",
+        "The auth service uses jwt for every request today.\n\n\
+         The auth service uses sessions for every request today.\n",
+    );
+    let o = mimus(&["check"], &d);
+    let (so, _) = out(&o);
+    assert_eq!(o.status.code(), Some(0), "{so}"); // warn never gates
+    assert!(so.contains("[warn]"), "{so}");
+    assert!(so.contains("self-contradiction"), "{so}");
+    assert!(so.contains("auth|uses"), "{so}");
+    assert!(so.contains("jwt"), "{so}");
+    assert!(so.contains("sessions"), "{so}");
+    assert!(so.contains("a.md:1") && so.contains("a.md:3"), "{so}");
+
+    // two docs disagreeing → cross-source contradiction
+    let d = dir("contra-cross");
+    cfg(&d, "");
+    write(
+        &d,
+        "docs/a.md",
+        "The auth service uses jwt for every request today.\n",
+    );
+    write(
+        &d,
+        "docs/b.md",
+        "The auth service uses sessions for every request today.\n",
+    );
+    let o = mimus(&["check"], &d);
+    let (so, _) = out(&o);
+    assert!(so.contains("contradiction"), "{so}");
+    assert!(!so.contains("self-contradiction"), "{so}");
+    assert!(so.contains("a.md:1") && so.contains("b.md:1"), "{so}");
+
+    // differently-spelled subjects stay silent until an alias
+    // folds them into the same bucket
+    let d = dir("contra-alias");
+    cfg(&d, "[check.aliases]\n\"login flow\" = \"auth\"\n");
+    write(
+        &d,
+        "docs/a.md",
+        "The login flow uses jwt for every request today.\n",
+    );
+    write(
+        &d,
+        "docs/b.md",
+        "The auth service uses sessions for every request today.\n",
+    );
+    let o = mimus(&["check"], &d);
+    let (so, _) = out(&o);
+    assert!(so.contains("contradiction"), "{so}");
+    assert!(so.contains("auth|uses"), "{so}");
+    // no aliases → two buckets → silence
+    let d = dir("contra-noalias");
+    cfg(&d, "");
+    write(
+        &d,
+        "docs/a.md",
+        "The login flow uses jwt for every request today.\n",
+    );
+    write(
+        &d,
+        "docs/b.md",
+        "The auth service uses sessions for every request today.\n",
+    );
+    let o = mimus(&["check"], &d);
+    let (so, _) = out(&o);
+    assert!(!so.contains("contradiction"), "{so}");
+}
 
 /// `[check].kuda_index` wires the graph pass: a stale index edge
 /// gates (error), an unsupported doc claim warns.

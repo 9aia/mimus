@@ -15,12 +15,20 @@ struct Fake {
 impl Fake {
     fn new(kinds: &'static [ClaimKind]) -> (Self, Calls) {
         let calls = Calls::default();
-        (Self { kinds, calls: calls.clone() }, calls)
+        (
+            Self {
+                kinds,
+                calls: calls.clone(),
+            },
+            calls,
+        )
     }
 }
 
 impl Checker for Fake {
-    fn handles(&self) -> &[ClaimKind] { self.kinds }
+    fn handles(&self) -> &[ClaimKind] {
+        self.kinds
+    }
     fn check(&self, claim: &Claim) -> Result<Option<Violation>, String> {
         self.calls.lock().unwrap().push(claim.text.clone());
         Ok(claim.text.starts_with("bad").then(|| Violation {
@@ -33,7 +41,12 @@ impl Checker for Fake {
 }
 
 fn claim(kind: ClaimKind, text: &str) -> Claim {
-    Claim { kind, text: text.into(), source: PathBuf::from("d"), line: 1 }
+    Claim {
+        kind,
+        text: text.into(),
+        source: PathBuf::from("d"),
+        line: 1,
+    }
 }
 
 #[test]
@@ -53,14 +66,18 @@ fn routes_to_first_matching_checker() {
     assert_eq!(*calls_a.lock().unwrap(), vec!["bad/path", "fine/path"]);
     assert_eq!(*calls_b.lock().unwrap(), vec!["bad cmd"]);
     // Unhandled kind produced nothing.
-    assert!(!out.iter().any(|r| r.as_ref().unwrap().claim.text.contains("http")));
+    assert!(!out
+        .iter()
+        .any(|r| r.as_ref().unwrap().claim.text.contains("http")));
 }
 
 #[test]
 fn silence_and_errors_propagate() {
     struct Erring;
     impl Checker for Erring {
-        fn handles(&self) -> &[ClaimKind] { &[ClaimKind::Symbol] }
+        fn handles(&self) -> &[ClaimKind] {
+            &[ClaimKind::Symbol]
+        }
         fn check(&self, _c: &Claim) -> Result<Option<Violation>, String> {
             Err("backend down".into())
         }

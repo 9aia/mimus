@@ -1,6 +1,6 @@
 # ADR-0002: Graph tier — bidirectional + reflexive checking at mechanical speed
 
-Status: proposed
+Status: accepted
 
 ## Context
 
@@ -75,7 +75,7 @@ sources ──► extract ──► triples ──► bucket ──► conflicts
 **Subject canonicalization** — buckets key on the normalized
 subject: lowercase, strip stopwords/inflections
 (`auth service`≡`auth`), resolve known aliases from a small
-repo dictionary (`.mimus/aliases.toml`). Aliasing is the
+repo dictionary (`[check.aliases]` in `mimus.toml`). Aliasing is the
 dominant recall risk; normalization is deterministic and
 inspectable — every conflict can name the exact bucket key it
 matched on.
@@ -115,8 +115,9 @@ per-claim (`check(&Claim)`) — contradiction classes are
 Index-backed classes (`stale-reference`, `unsupported-claim`)
 also route per-claim where convenient. Warn-tier by default;
 `stale-reference` is error-tier (mechanical-grade). Wired into
-`mimus check` behind `[check].graph = true` (or when
-`kuda_index` is set).
+`mimus check`: the index-edge classes run when `[check].kuda_index`
+is set; the prose contradiction classes are index-free and run on
+every claim set — no `graph` flag landed.
 
 ## Consequences
 
@@ -149,7 +150,18 @@ findings depend on index freshness (stale index → stale graph —
    sides must resolve to indexed modules — anything fuzzier is
    silence.
 2. Prose triple extraction + contradiction/self-contradiction
-   buckets (docs, comments, cards).
+   buckets (docs, comments, cards). **Done** —
+   `mimus-claims::triples` (`extract_triples` →
+   `contradictions_with_aliases`) wired through
+   `mimus-check-graph::ProseContradictionChecker` in `check`'s
+   pipeline. Both classes are warn-tier; evidence names the bucket
+   key plus every object's `file:line` site, and the violation
+   anchors on the first-seen claim. Index-free, so the pass runs
+   on every claim set — the `kuda_index` gate stays with the
+   index-edge classes only. Subject aliases are a `[check.aliases]`
+   table in `mimus.toml` (`alias = "canonical"`, keys normalized
+   like subjects) rather than a separate `.mimus/aliases.toml` —
+   one config file, no extra loader.
 3. Per-file triples cache + `--diff` interplay.
 4. `undocumented fact` class (reverse coverage — joins the
    existing `mimus coverage` command's direction).

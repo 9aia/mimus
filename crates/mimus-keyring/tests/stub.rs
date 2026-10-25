@@ -17,7 +17,11 @@ fn stub_dir() -> std::path::PathBuf {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(d.join("secret-tool"), std::fs::Permissions::from_mode(0o755)).unwrap();
+        std::fs::set_permissions(
+            d.join("secret-tool"),
+            std::fs::Permissions::from_mode(0o755),
+        )
+        .unwrap();
     }
     d
 }
@@ -35,7 +39,9 @@ fn stubbed_get_and_set_paths() {
         paths.extend(std::env::split_paths(p));
     }
     std::env::set_var("PATH", std::env::join_paths(paths).unwrap());
-    let s = KeyringSecrets { service: "mimus-test".into() };
+    let s = KeyringSecrets {
+        service: "mimus-test".into(),
+    };
 
     // get: success + non-empty stdout → Some
     std::env::set_var("STUB_VAL", "s3cr3t");

@@ -65,7 +65,9 @@ impl Checker for FsChecker {
         if text.contains('*') || text.contains('?') || text.contains('[') {
             let hit = self.bases(claim).iter().any(|b| {
                 let pat = b.join(text).to_string_lossy().into_owned();
-                glob::glob(&pat).map(|mut g| g.next().is_some()).unwrap_or(false)
+                glob::glob(&pat)
+                    .map(|mut g| g.next().is_some())
+                    .unwrap_or(false)
             });
             return Ok(if hit {
                 None
@@ -90,9 +92,7 @@ impl Checker for FsChecker {
         }
         Ok(Some(Violation {
             claim: claim.clone(),
-            evidence: format!(
-                "./{text} does not exist (tried repo root, doc dir, base_dirs)"
-            ),
+            evidence: format!("./{text} does not exist (tried repo root, doc dir, base_dirs)"),
             fix: None,
             severity: Severity::Error,
         }))
@@ -140,7 +140,12 @@ mod tests {
     #[test]
     fn route_shaped_miss_is_silence() {
         let c = FsChecker::new(".");
-        for t in ["application/pdf", "tools/list", "resources/read", "@scope/pkg"] {
+        for t in [
+            "application/pdf",
+            "tools/list",
+            "resources/read",
+            "@scope/pkg",
+        ] {
             assert_eq!(c.check(&claim(t)).unwrap().is_none(), true, "{t}");
         }
     }

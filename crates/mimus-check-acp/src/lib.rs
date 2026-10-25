@@ -60,8 +60,11 @@ fn request_timeout() -> std::time::Duration {
 /// token in the evidence that actually exists under `root`.
 /// A refute without proof is pedantry, not signal (P1).
 fn evidence_grounded(root: &std::path::Path, evidence: &str) -> bool {
-    evidence.split(|c: char| !(c.is_alphanumeric() || c == '_' || c == '/' || c == '.' || c == '-'))
-        .filter(|t| t.contains('/') || t.ends_with(".rs") || t.ends_with(".md") || t.ends_with(".toml"))
+    evidence
+        .split(|c: char| !(c.is_alphanumeric() || c == '_' || c == '/' || c == '.' || c == '-'))
+        .filter(|t| {
+            t.contains('/') || t.ends_with(".rs") || t.ends_with(".md") || t.ends_with(".toml")
+        })
         .map(|t| t.trim_matches(|c: char| c == '.' || c == '/'))
         .any(|t| !t.is_empty() && root.join(t).exists())
 }
@@ -73,9 +76,30 @@ fn evidence_grounded(root: &std::path::Path, evidence: &str) -> bool {
 fn is_code_source(source: &std::path::Path) -> bool {
     matches!(
         source.extension().and_then(|e| e.to_str()),
-        Some("rs" | "py" | "ts" | "tsx" | "js" | "jsx" | "mjs" | "cjs"
-            | "go" | "java" | "kt" | "c" | "h" | "cc" | "cpp" | "hpp"
-            | "rb" | "swift" | "cs" | "php" | "sh" | "bash" | "zsh")
+        Some(
+            "rs" | "py"
+                | "ts"
+                | "tsx"
+                | "js"
+                | "jsx"
+                | "mjs"
+                | "cjs"
+                | "go"
+                | "java"
+                | "kt"
+                | "c"
+                | "h"
+                | "cc"
+                | "cpp"
+                | "hpp"
+                | "rb"
+                | "swift"
+                | "cs"
+                | "php"
+                | "sh"
+                | "bash"
+                | "zsh"
+        )
     )
 }
 
@@ -135,11 +159,7 @@ fn dead_path_token(
 
 /// Verdict line -> Violation. Grounded refutes only — pedantry
 /// without a real citation becomes silence.
-fn refuted_violation(
-    root: &std::path::Path,
-    claim: &Claim,
-    verdict: &str,
-) -> Option<Violation> {
+fn refuted_violation(root: &std::path::Path, claim: &Claim, verdict: &str) -> Option<Violation> {
     let rest = verdict.strip_prefix("REFUTED")?;
     let evidence = rest.trim_start_matches(':').trim().to_owned();
     if evidence.is_empty() || !evidence_grounded(root, &evidence) {
@@ -170,7 +190,12 @@ pub fn probe(cmd: &str, root: &PathBuf) -> Result<String, String> {
 
 /// `mimus fix --semantic` — propose a corrected claim line (P4).
 /// Single prompt, no session state needed beyond connect.
-pub fn propose(cmd: &str, root: &PathBuf, claim_text: &str, evidence: &str) -> Result<String, String> {
+pub fn propose(
+    cmd: &str,
+    root: &PathBuf,
+    claim_text: &str,
+    evidence: &str,
+) -> Result<String, String> {
     let (mut client, sid) = AcpChecker::connect(cmd, root)?;
     let prompt = format!(
         "This claim about the repository is FALSE.\n\
@@ -182,7 +207,11 @@ pub fn propose(cmd: &str, root: &PathBuf, claim_text: &str, evidence: &str) -> R
         "session/prompt",
         json!({"sessionId": sid, "prompt":[{"type":"text","text":prompt}]}),
     )?;
-    let line = prose.lines().map(str::trim).find(|l| !l.is_empty()).unwrap_or("");
+    let line = prose
+        .lines()
+        .map(str::trim)
+        .find(|l| !l.is_empty())
+        .unwrap_or("");
     if line.is_empty() {
         Err("agent proposed nothing".into())
     } else {
@@ -228,9 +257,7 @@ impl AcpChecker {
     fn cache_put(&self, key: String, verdict: String) {
         if let Ok(mut v) = self.verdicts.lock() {
             v.insert(key, verdict);
-            let _ = std::fs::create_dir_all(
-                self.cache_path.parent().unwrap_or(&self.root),
-            );
+            let _ = std::fs::create_dir_all(self.cache_path.parent().unwrap_or(&self.root));
             let _ = std::fs::write(
                 &self.cache_path,
                 serde_json::to_string_pretty(&*v).unwrap_or_default(),
@@ -245,10 +272,7 @@ impl AcpChecker {
             "initialize",
             json!({"protocolVersion":1,"clientCapabilities":{},"clientInfo":{"name":"mimus","version":"0.1.0"}}),
         )?;
-        let (session, _) = client.request(
-            "session/new",
-            json!({"cwd": root, "mcpServers": []}),
-        )?;
+        let (session, _) = client.request("session/new", json!({"cwd": root, "mcpServers": []}))?;
         let sid = session["sessionId"].as_str().unwrap_or("mimus").to_owned();
         Ok((client, sid))
     }
@@ -559,7 +583,9 @@ impl Checker for AcpChecker {
         let numbered: String = pending
             .iter()
             .enumerate()
-            .map(|(i, (_, c))| format!("{}. {}:{}\n{}\n", i + 1, c.source.display(), c.line, c.text))
+            .map(|(i, (_, c))| {
+                format!("{}. {}:{}\n{}\n", i + 1, c.source.display(), c.line, c.text)
+            })
             .collect();
         let prompt = format!(
             "For each numbered claim about this repository, reply on \
@@ -607,23 +633,27 @@ impl Checker for AcpChecker {
         let mut subject: std::collections::HashMap<String, Vec<&Claim>> =
             std::collections::HashMap::new();
         for c in claims {
-            for tok in c.text.split(|ch: char| !(ch.is_alphanumeric() || ch == '_')) {
+            for tok in c
+                .text
+                .split(|ch: char| !(ch.is_alphanumeric() || ch == '_'))
+            {
                 let tok = tok.trim_matches(|ch: char| !ch.is_alphanumeric());
                 // identifier-shaped subjects only — snake_case or
                 // Capitalized, ≥6 chars. Filters natural words so
                 // clusters are genuinely about the same thing.
                 let identish = tok.len() >= 6
                     && (tok.contains('_')
-                        || tok.chars().next().map(|c| c.is_uppercase()).unwrap_or(false));
+                        || tok
+                            .chars()
+                            .next()
+                            .map(|c| c.is_uppercase())
+                            .unwrap_or(false));
                 if identish {
                     subject.entry(tok.to_owned()).or_default().push(c);
                 }
             }
         }
-        let mut clusters: Vec<&Vec<&Claim>> = subject
-            .values()
-            .filter(|v| v.len() >= 2)
-            .collect();
+        let mut clusters: Vec<&Vec<&Claim>> = subject.values().filter(|v| v.len() >= 2).collect();
         clusters.sort_by_key(|v| std::cmp::Reverse(v.len()));
         for cluster in clusters.into_iter().take(8) {
             // dedupe by (source,line) — same claim can share
@@ -640,7 +670,13 @@ impl Checker for AcpChecker {
                 .iter()
                 .enumerate()
                 .map(|(i, c)| {
-                    format!("{}. {}:{} — {}\n", i + 1, c.source.display(), c.line, c.text)
+                    format!(
+                        "{}. {}:{} — {}\n",
+                        i + 1,
+                        c.source.display(),
+                        c.line,
+                        c.text
+                    )
                 })
                 .collect();
             let q = format!(
@@ -654,7 +690,9 @@ impl Checker for AcpChecker {
                 "session/prompt",
                 json!({"sessionId": sid.as_str(),
                        "prompt":[{"type":"text","text":q}]}),
-            ) else { break };
+            ) else {
+                break;
+            };
             for l in ans.lines() {
                 let t = l.trim();
                 if t == "NONE" || t.is_empty() {
@@ -698,11 +736,8 @@ mod tests {
         // line lands a successful send; the receiver swap happens in
         // the quiet window; "b" then lands on a dead channel →
         // is_err → break. No sleeps needed for ordering.
-        let mut client = AcpClient::spawn(
-            "echo a; sleep 1; echo b; sleep 60",
-            &PathBuf::from("."),
-        )
-        .expect("spawn echoer");
+        let mut client = AcpClient::spawn("echo a; sleep 1; echo b; sleep 60", &PathBuf::from("."))
+            .expect("spawn echoer");
         let first = client
             .lines
             .recv_timeout(std::time::Duration::from_secs(5))
@@ -729,8 +764,8 @@ mod tests {
         // Err(e) arm: invalid UTF-8 on stdout → read_line errors →
         // send(Err) → break. recv the Err line so the arm provably
         // ran before the client drops (a bare drop races the pump).
-        let mut client = AcpClient::spawn("printf '\\377'", &PathBuf::from("."))
-            .expect("spawn binary junk");
+        let mut client =
+            AcpClient::spawn("printf '\\377'", &PathBuf::from(".")).expect("spawn binary junk");
         let msg = client
             .lines
             .recv_timeout(std::time::Duration::from_secs(5))
@@ -766,8 +801,8 @@ mod tests {
     /// and `request` propagates the Err.
     #[test]
     fn send_to_closed_stdin_errors() {
-        let mut client = AcpClient::spawn("exec 0<&-; sleep 5", &PathBuf::from("."))
-            .expect("spawn");
+        let mut client =
+            AcpClient::spawn("exec 0<&-; sleep 5", &PathBuf::from(".")).expect("spawn");
         std::thread::sleep(std::time::Duration::from_millis(150));
         assert!(client.send(&json!({"x":1})).is_err());
         assert!(client.request("initialize", json!({})).is_err());
@@ -778,8 +813,7 @@ mod tests {
     /// degrade to no-cache rather than failing.
     #[test]
     fn poisoned_verdicts_lock_skips_prune() {
-        let dir = std::env::temp_dir()
-            .join(format!("mimus-acp-poison-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("mimus-acp-poison-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let c = AcpChecker::new("false", &dir);
@@ -823,8 +857,7 @@ mod tests {
     /// going (to the dead agent, here).
     #[test]
     fn poisoned_session_lock_paths() {
-        let dir = std::env::temp_dir()
-            .join(format!("mimus-acp-poison2-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("mimus-acp-poison2-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let c = AcpChecker::new("false", &dir);
@@ -839,7 +872,7 @@ mod tests {
             line: 1,
         };
         assert!(c.check(&cl).is_err()); // map_err arm — poison surfaces
-        // batch recovers the poisoned guard, then connect fails
+                                        // batch recovers the poisoned guard, then connect fails
         let out = c.check_batch(&[cl.clone(), cl]);
         assert_eq!(out.len(), 1);
         assert!(out[0].is_err());

@@ -53,12 +53,10 @@ pub fn run<'a>(
             }
         }
     }
-    grouped
-        .into_iter()
-        .flat_map(move |(i, cs)| {
-            checkers[i]
-                .check_batch(&cs)
-                .into_iter()
-                .filter_map(|r| r.transpose())
-        })
+    grouped.into_iter().flat_map(move |(i, cs)| {
+        checkers[i]
+            .check_batch(&cs)
+            .into_iter()
+            .filter_map(|r| r.transpose())
+    })
 }

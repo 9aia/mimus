@@ -391,6 +391,15 @@ fn collect(
             }
         }
     }
+    // graph tier (ADR-0002 ph2) — prose contradiction buckets:
+    // contradiction (doc↔doc) + self-contradiction (reflexive),
+    // both warn tier. Index-free — runs on every claim set, not
+    // just when [check].kuda_index is set. `[check].aliases`
+    // folds differently-spelled subjects into one bucket.
+    let prose = mimus_check_graph::ProseContradictionChecker {
+        aliases: cfg.check.aliases.clone().into_iter().collect(),
+    };
+    violations.extend(prose.run_prose(&claims));
     // graph tier (ADR-0002 ph1) — set-level pass over the kuda
     // index: stale-reference (error) + unsupported-claim (warn).
     // Runs whenever [check].kuda_index is set; an unreadable index

@@ -1,7 +1,7 @@
 //! Tests for data-driven convention rules: load, eval, glob.
 
-use mimus_rules::{eval_rule, load_rules, matching_files, RuleDef, RuleMatch};
 use mimus_core::Severity;
+use mimus_rules::{eval_rule, load_rules, matching_files, RuleDef, RuleMatch};
 use std::path::PathBuf;
 
 fn scratch(name: &str) -> PathBuf {
@@ -25,7 +25,9 @@ fn rule() -> RuleDef {
 
 #[test]
 fn load_rules_missing_dir_is_empty() {
-    assert!(load_rules(&scratch("none").join("nope")).unwrap().is_empty());
+    assert!(load_rules(&scratch("none").join("nope"))
+        .unwrap()
+        .is_empty());
 }
 
 #[test]
@@ -42,7 +44,10 @@ fn load_rules_parses_toml_and_skips_other_ext() {
     assert_eq!(rules[0].name, "r");
     assert_eq!(rules[0].severity, Severity::Warn); // default
     let dbg = format!("{:?}", rules[0]);
-    assert!(dbg.contains("RuleDef") && dbg.contains("SourcePattern"), "{dbg}");
+    assert!(
+        dbg.contains("RuleDef") && dbg.contains("SourcePattern"),
+        "{dbg}"
+    );
 }
 
 #[test]
@@ -70,7 +75,11 @@ fn load_rules_unreadable_toml_errors() {
 
 #[test]
 fn eval_source_pattern_flags_matching_lines() {
-    let v = eval_rule(&rule(), PathBuf::from("src/a.rs").as_path(), "ok\n// TODO fix\nfn f(){} // TODO\n");
+    let v = eval_rule(
+        &rule(),
+        PathBuf::from("src/a.rs").as_path(),
+        "ok\n// TODO fix\nfn f(){} // TODO\n",
+    );
     assert_eq!(v.len(), 2);
     assert_eq!(v[0].claim.line, 2);
     assert_eq!(v[0].severity, Severity::Error);
@@ -80,7 +89,9 @@ fn eval_source_pattern_flags_matching_lines() {
 #[test]
 fn eval_bad_regex_is_silence() {
     let mut r = rule();
-    r.match_ = RuleMatch::SourcePattern { pattern: "([unclosed".into() };
+    r.match_ = RuleMatch::SourcePattern {
+        pattern: "([unclosed".into(),
+    };
     assert!(eval_rule(&r, PathBuf::from("x").as_path(), "TODO").is_empty());
 }
 

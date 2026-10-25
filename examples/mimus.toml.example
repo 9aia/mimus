@@ -15,6 +15,8 @@ kuda_index = ".kuda/index.sqlite"   # adapter: mimus-check-symbol — live
 # kinds = ["path", "command"]    # restrict checked claim kinds (empty = all)
 # ignore_prefixes = ["api/"]     # skip claims starting with these
 # binaries = ["bun", "dagger"]   # declared prerequisites — skip the PATH probe
+# [check.aliases]                # subject aliases for the contradiction
+# "auth svc" = "auth"            # buckets — alias = "canonical"
 
 [rules]
 dir = "rules"                    # data-driven convention rules

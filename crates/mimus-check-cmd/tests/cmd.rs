@@ -26,7 +26,18 @@ fn handles_and_default() {
 fn empty_and_builtins_are_silence() {
     let c = CmdChecker::new();
     assert!(c.check(&claim("   ")).unwrap().is_none());
-    for t in ["cd x", "echo hi", "export A=1", "set -e", "if x", "for f", "while x", "test -f a", "true", "false"] {
+    for t in [
+        "cd x",
+        "echo hi",
+        "export A=1",
+        "set -e",
+        "if x",
+        "for f",
+        "while x",
+        "test -f a",
+        "true",
+        "false",
+    ] {
         assert!(c.check(&claim(t)).unwrap().is_none(), "{t}");
     }
     // backtick-wrapped builtin token is trimmed before matching
@@ -37,7 +48,10 @@ fn empty_and_builtins_are_silence() {
 fn declared_binary_skips_probe() {
     let mut c = CmdChecker::new();
     c.declared = vec!["definitely-not-a-real-bin-xyz".into()];
-    assert!(c.check(&claim("definitely-not-a-real-bin-xyz run")).unwrap().is_none());
+    assert!(c
+        .check(&claim("definitely-not-a-real-bin-xyz run"))
+        .unwrap()
+        .is_none());
 }
 
 #[test]
@@ -45,7 +59,10 @@ fn real_and_missing_binaries() {
     let c = CmdChecker::new();
     // `sh` exists on any unix PATH
     assert!(c.check(&claim("sh -c true")).unwrap().is_none());
-    let v = c.check(&claim("definitely-not-a-real-bin-xyz --flag")).unwrap().unwrap();
+    let v = c
+        .check(&claim("definitely-not-a-real-bin-xyz --flag"))
+        .unwrap()
+        .unwrap();
     assert_eq!(v.severity, Severity::Warn);
     assert!(v.evidence.contains("definitely-not-a-real-bin-xyz"));
 }
@@ -56,7 +73,10 @@ fn slash_binary_resolves_as_path() {
     // absolute path that exists
     assert!(c.check(&claim("/bin/sh -c true")).unwrap().is_none());
     // absolute path that doesn't
-    let v = c.check(&claim("/definitely/missing/bin-x run")).unwrap().unwrap();
+    let v = c
+        .check(&claim("/definitely/missing/bin-x run"))
+        .unwrap()
+        .unwrap();
     assert_eq!(v.severity, Severity::Warn);
 }
 

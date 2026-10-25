@@ -16,7 +16,11 @@ fn scratch(name: &str) -> PathBuf {
 fn explicit_path_loads_with_defaults() {
     let p = scratch("ok").join("mimus.toml");
     std::fs::write(&p, "").unwrap();
-    let cfg = TomlSource { path: Some(p.to_string_lossy().into_owned()) }.load().unwrap();
+    let cfg = TomlSource {
+        path: Some(p.to_string_lossy().into_owned()),
+    }
+    .load()
+    .unwrap();
     assert!(cfg.check.mechanical);
     assert!(!cfg.check.semantic);
     assert!(cfg.sources.comments);
@@ -34,7 +38,11 @@ fn overrides_apply() {
          [rules]\ndir = \"my-rules\"\nstrict = true\n\
          [report]\nformat = \"json\"\nmin_confidence = \"all\"\n",
     ).unwrap();
-    let cfg = TomlSource { path: Some(p.to_string_lossy().into_owned()) }.load().unwrap();
+    let cfg = TomlSource {
+        path: Some(p.to_string_lossy().into_owned()),
+    }
+    .load()
+    .unwrap();
     assert!(cfg.check.semantic);
     assert_eq!(cfg.check.kinds.len(), 2);
     assert_eq!(cfg.check.binaries, vec!["bazel"]);
@@ -47,13 +55,25 @@ fn overrides_apply() {
 #[test]
 fn missing_and_malformed_err() {
     let p = scratch("m").join("nope.toml");
-    assert!(TomlSource { path: Some(p.to_string_lossy().into_owned()) }
-        .load().unwrap_err().contains("no mimus.toml"));
+    assert!(TomlSource {
+        path: Some(p.to_string_lossy().into_owned())
+    }
+    .load()
+    .unwrap_err()
+    .contains("no mimus.toml"));
     let p = scratch("b").join("mimus.toml");
     std::fs::write(&p, "[[[").unwrap();
-    assert!(TomlSource { path: Some(p.to_string_lossy().into_owned()) }
-        .load().unwrap_err().contains("parse"));
+    assert!(TomlSource {
+        path: Some(p.to_string_lossy().into_owned())
+    }
+    .load()
+    .unwrap_err()
+    .contains("parse"));
     let p = scratch("u").join("mimus.toml");
     std::fs::write(&p, "bogus = 1").unwrap();
-    assert!(TomlSource { path: Some(p.to_string_lossy().into_owned()) }.load().is_err());
+    assert!(TomlSource {
+        path: Some(p.to_string_lossy().into_owned())
+    }
+    .load()
+    .is_err());
 }

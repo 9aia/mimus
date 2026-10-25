@@ -1,7 +1,8 @@
-//! Graph adapter — set-level checking against the kuda index
-//! (ADR-0002 phase 1). Consumes the index *file format*, not the
-//! kuda crates — the schema is the contract, same as
-//! `mimus-check-symbol`.
+//! Graph adapter — set-level checking (ADR-0002): index-edge
+//! classes against the kuda index (phase 1) plus index-free prose
+//! contradiction buckets (phase 2). Consumes the index *file
+//! format*, not the kuda crates — the schema is the contract,
+//! same as `mimus-check-symbol`.
 //!
 //! Classes:
 //! - `stale-reference` (error): an `imports`/`package-dep`/
@@ -17,8 +18,17 @@
 //!   resolve to indexed modules and the index records no such
 //!   edge. Either side unresolvable → the triple is unproveable →
 //!   silence (evidence-or-silence, ADR-0001).
+//! - `contradiction` / `self-contradiction` (warn, phase 2):
+//!   prose claims reduce to `(subject, relation, object)` triples
+//!   (mimus-claims::triples) and conflicts fall out of the
+//!   `(subject, relation)` bucket — cross-source for doc↔doc,
+//!   reflexive when one file asserts two objects for the same
+//!   slot. No index needed: this pass runs on any claim set.
 
 use mimus_check::GraphChecker;
+use mimus_claims::triples::{
+    contradictions_with_aliases, extract_triples, Contradiction, ContradictionKind,
+};
 use mimus_core::{Claim, ClaimKind, Edge, EdgeKind, Graph, Severity, Violation};
 use rusqlite::{params, Connection, OpenFlags};
 use std::collections::HashSet;
@@ -163,6 +173,66 @@ impl GraphChecker for IndexEdgeChecker {
         stale_references(graph, &mut out);
         unsupported_claims(claims, graph, &mut out);
         out
+    }
+}
+
+/// Prose contradiction pass — ADR-0002 phase 2. The bucket
+/// classes `contradiction` (cross-source, doc↔doc) and
+/// `self-contradiction` (reflexive: one file asserting ≥2 objects
+/// for the same slot). Index-free — prose triples don't need the
+/// kuda index, so this runs on every claim set, not just when
+/// `[check].kuda_index` is configured. Warn tier: extraction is
+/// heuristic, so these report but never gate.
+pub struct ProseContradictionChecker {
+    /// Subject aliases from `[check].aliases` — `(phrase,
+    /// canonical)` pairs resolved at bucket-key time.
+    pub aliases: Vec<(String, String)>,
+}
+
+impl ProseContradictionChecker {
+    /// claims → triples → buckets → warn-tier violations.
+    pub fn run_prose(&self, claims: &[Claim]) -> Vec<Violation> {
+        let triples = extract_triples(claims);
+        contradictions_with_aliases(&triples, &self.aliases)
+            .iter()
+            .map(|c| contradiction_violation(c, claims))
+            .collect()
+    }
+}
+
+/// One contradiction → one warn violation: the class name, the
+/// bucket key it matched on, and every object with its
+/// `file:line` site is the evidence; the anchor claim is the
+/// first-seen site so output points at a real claim.
+fn contradiction_violation(c: &Contradiction, claims: &[Claim]) -> Violation {
+    let class = match c.kind {
+        ContradictionKind::CrossSource => "contradiction",
+        ContradictionKind::Reflexive => "self-contradiction",
+    };
+    let sites = c
+        .objects
+        .iter()
+        .map(|(o, src, line)| format!("`{o}` ({}:{line})", src.display()))
+        .collect::<Vec<_>>()
+        .join(" vs ");
+    // a triple's (source, line) always came from a claim in this
+    // set — the position() fallback is unreachable, just total
+    let i = claims
+        .iter()
+        .position(|k| {
+            k.source == c.objects[0].1
+                && k.line as usize == c.objects[0].2
+                && k.text.contains(c.objects[0].0.as_str())
+        })
+        .unwrap_or_default();
+    Violation {
+        claim: claims[i].clone(),
+        evidence: format!(
+            "{class} — bucket `{}` asserts conflicting objects: {sites}",
+            c.bucket
+        ),
+        fix: Some("reconcile the claims — pick the true object for this slot".into()),
+        severity: Severity::Warn,
     }
 }
 
@@ -628,5 +698,76 @@ mod tests {
         assert_eq!(v.len(), 2);
         assert!(v.iter().any(|v| v.severity == Severity::Error));
         assert!(v.iter().any(|v| v.severity == Severity::Warn));
+    }
+
+    /// run_prose composes extraction → bucketing → violation: the
+    /// reflexive (same-doc) and cross-source classes, warn tier,
+    /// evidence naming the bucket + both sites.
+    #[test]
+    fn prose_contradiction_classes() {
+        let bclaim = |text: &str, src: &str, line: u32| Claim {
+            kind: ClaimKind::Behavior,
+            text: text.into(),
+            source: PathBuf::from(src),
+            line,
+        };
+        let chk = ProseContradictionChecker {
+            aliases: Vec::new(),
+        };
+        // empty in → silence
+        assert!(chk.run_prose(&[]).is_empty());
+        // agreeing claims → silence
+        let claims = [
+            bclaim("auth uses jwt", "a.md", 1),
+            bclaim("the auth service uses jwt", "b.md", 2),
+        ];
+        assert!(chk.run_prose(&claims).is_empty());
+        // same doc, two objects → reflexive warn with both sites
+        let claims = [
+            bclaim("auth uses jwt", "a.md", 1),
+            bclaim("auth uses sessions", "a.md", 5),
+        ];
+        let v = chk.run_prose(&claims);
+        assert_eq!(v.len(), 1, "{v:?}");
+        assert_eq!(v[0].severity, Severity::Warn);
+        // anchored on the first-seen site — the real claim
+        assert_eq!(v[0].claim.text, "auth uses jwt");
+        assert_eq!(v[0].claim.line, 1);
+        let e = &v[0].evidence;
+        assert!(e.contains("self-contradiction"), "{e}");
+        assert!(v[0].evidence.contains("auth|uses"), "{}", v[0].evidence);
+        assert!(v[0].evidence.contains("a.md:1"), "{}", v[0].evidence);
+        assert!(v[0].evidence.contains("a.md:5"), "{}", v[0].evidence);
+        assert!(v[0].fix.is_some());
+        // different files → cross-source
+        let claims = [
+            bclaim("auth uses jwt", "a.md", 1),
+            bclaim("auth uses sessions", "b.md", 2),
+        ];
+        let v = chk.run_prose(&claims);
+        assert_eq!(v.len(), 1, "{v:?}");
+        assert!(v[0].evidence.contains("contradiction —"));
+        assert!(!v[0].evidence.contains("self-contradiction"));
+        // three-way disagreement → one violation, all three sites
+        let claims = [
+            bclaim("auth uses jwt", "a.md", 1),
+            bclaim("auth uses sessions", "a.md", 2),
+            bclaim("auth uses tokens", "b.md", 3),
+        ];
+        let v = chk.run_prose(&claims);
+        assert_eq!(v.len(), 1, "{v:?}");
+        assert!(v[0].evidence.contains("tokens"), "{}", v[0].evidence);
+        // aliases fold differently-spelled subjects into one bucket
+        let claims = [
+            bclaim("login flow uses jwt", "a.md", 1),
+            bclaim("the auth service uses sessions", "b.md", 2),
+        ];
+        assert!(chk.run_prose(&claims).is_empty(), "no aliases → silence");
+        let chk = ProseContradictionChecker {
+            aliases: vec![("login flow".to_owned(), "auth".to_owned())],
+        };
+        let v = chk.run_prose(&claims);
+        assert_eq!(v.len(), 1, "{v:?}");
+        assert!(v[0].evidence.contains("auth|uses"), "{}", v[0].evidence);
     }
 }

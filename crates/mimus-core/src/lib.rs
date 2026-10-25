@@ -6,6 +6,7 @@
 //! never a guess.
 
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 /// A factual assertion extracted from prose, comments, or cards.
@@ -202,6 +203,11 @@ pub struct CheckCfg {
     /// tools the checker's machine lacks).
     #[serde(default)]
     pub binaries: Vec<String>,
+    /// Subject aliases for the contradiction buckets — a
+    /// `[check.aliases]` table mapping `alias = "canonical"`;
+    /// emitted bucket keys name the canonical form (ADR-0002).
+    #[serde(default)]
+    pub aliases: BTreeMap<String, String>,
 }
 
 impl Default for CheckCfg {
@@ -215,6 +221,7 @@ impl Default for CheckCfg {
             kinds: Vec::new(),
             ignore_prefixes: Vec::new(),
             binaries: Vec::new(),
+            aliases: BTreeMap::new(),
         }
     }
 }

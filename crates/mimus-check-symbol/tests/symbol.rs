@@ -28,7 +28,11 @@ fn index(path: &Path, rows: &[&str]) {
             .map(|r| format!("INSERT INTO symbols VALUES({r});"))
             .collect::<String>()
     );
-    let o = Command::new("sqlite3").arg(path).arg(&sql).output().unwrap();
+    let o = Command::new("sqlite3")
+        .arg(path)
+        .arg(&sql)
+        .output()
+        .unwrap();
     assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stderr));
 }
 
@@ -56,12 +60,21 @@ fn all_symbols_and_index_present() {
     assert_eq!(c.handles(), &[ClaimKind::Symbol]);
     let syms = all_symbols(&idx).unwrap();
     assert_eq!(syms.len(), 2);
-    assert!(syms.contains(&("MyFunc".into(), "fn".into(), "src/lib.rs".into(), "mimus".into())));
+    assert!(syms.contains(&(
+        "MyFunc".into(),
+        "fn".into(),
+        "src/lib.rs".into(),
+        "mimus".into()
+    )));
     // all_symbols on an unreadable path errors
     assert!(all_symbols(&dir.join("nope/x.sqlite")).is_err());
     // a db without the symbols table errors on prepare
     let bad = dir.join("bad.sqlite");
-    let o = Command::new("sqlite3").arg(&bad).arg("CREATE TABLE other(x)").output().unwrap();
+    let o = Command::new("sqlite3")
+        .arg(&bad)
+        .arg("CREATE TABLE other(x)")
+        .output()
+        .unwrap();
     assert!(o.status.success());
     assert!(all_symbols(&bad).is_err());
     let _ = std::fs::remove_dir_all(&dir);
@@ -148,7 +161,11 @@ fn unusable_index_errors_per_claim() {
     let dir = tmp("bad");
     std::fs::create_dir_all(&dir).unwrap();
     let idx = dir.join("i.sqlite");
-    let o = Command::new("sqlite3").arg(&idx).arg("CREATE TABLE other(x)").output().unwrap();
+    let o = Command::new("sqlite3")
+        .arg(&idx)
+        .arg("CREATE TABLE other(x)")
+        .output()
+        .unwrap();
     assert!(o.status.success());
     let c = SymbolChecker::new(&idx);
     assert!(c.index_present()); // opens fine…
