@@ -19,6 +19,7 @@ mimus-check.workspace = true
 mimus-check-fs.workspace = true
 mimus-check-cmd.workspace = true
 mimus-check-symbol.workspace = true
+mimus-check-graph.workspace = true
 mimus-check-acp.workspace = true
 mimus-rules.workspace = true
 mimus-config.workspace = true

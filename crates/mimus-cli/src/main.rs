@@ -2,7 +2,7 @@
 //! parses mimus.toml, wires checker adapters, runs subcommands.
 
 use clap::{Parser, Subcommand};
-use mimus_check::Checker;
+use mimus_check::{Checker, GraphChecker};
 use mimus_config::ConfigSource;
 use mimus_config_toml::TomlSource;
 use mimus_core::{ClaimKind, Config, Severity, Violation};
@@ -389,6 +389,18 @@ fn collect(
                     violations.extend(mimus_rules::eval_rule(rule, &f, &text));
                 }
             }
+        }
+    }
+    // graph tier (ADR-0002 ph1) — set-level pass over the kuda
+    // index: stale-reference (error) + unsupported-claim (warn).
+    // Runs whenever [check].kuda_index is set; an unreadable index
+    // warns on stderr, never fails the run.
+    if let Some(idx) = &cfg.check.kuda_index {
+        match mimus_check_graph::load_graph(&root.join(idx)) {
+            Ok(graph) => {
+                violations.extend(mimus_check_graph::IndexEdgeChecker.run_set(&claims, &graph))
+            }
+            Err(e) => eprintln!("graph: {}: {e}", idx.display()),
         }
     }
     Some((root, violations))
@@ -799,6 +811,25 @@ fn doctor(cli: &Cli) -> i32 {
         Err(e) => println!("  config   --  {e}"),
     }
     println!("  adapters    fs, cmd (symbol/llm pending kuda schema + provider)");
+    // index freshness — stale index → stale graph findings
+    // (ADR-0002). Reported when [check].kuda_index is configured.
+    if let Ok(c) = load(cli) {
+        if let Some(idx) = &c.check.kuda_index {
+            match mimus_check_graph::index_age(&root(cli).join(idx)) {
+                Some(age) => {
+                    let h = age.as_secs() / 3600;
+                    // a week-old index is stale enough to warn on
+                    let (state, note) = if h > 24 * 7 {
+                        ("!!", " — stale index? run `kuda sync`")
+                    } else {
+                        ("ok", "")
+                    };
+                    println!("  kuda index {state}  {h}h old{note}");
+                }
+                None => println!("  kuda index --  {} unreadable", idx.display()),
+            }
+        }
+    }
     // P6: live ACP probe — the agent path fails loudly here
     // rather than mid-check.
     if let Ok(c) = load(cli) {

@@ -2,9 +2,10 @@
 //! Impls: `mimus-check-fs` (paths), `mimus-check-cmd`
 //! (commands), `mimus-check-symbol` (kuda index), `check-llm`
 //! (behavior prose — semantic tier, advisory). New checker =
-//! new adapter crate.
+//! new adapter crate. Set-level classes (claim↔index, ADR-0002)
+//! use [`GraphChecker`] instead — impl: `mimus-check-graph`.
 
-use mimus_core::{Claim, ClaimKind, Violation};
+use mimus_core::{Claim, ClaimKind, Graph, Violation};
 
 /// A verifier for some subset of `ClaimKind`s.
 pub trait Checker: Send + Sync {
@@ -21,6 +22,16 @@ pub trait Checker: Send + Sync {
     fn check_batch(&self, claims: &[Claim]) -> Vec<Result<Option<Violation>, String>> {
         claims.iter().map(|c| self.check(c)).collect()
     }
+}
+
+/// Set-level port — compare the *whole claim set* against a Graph
+/// snapshot (ADR-0002). `Checker` is per-claim; contradiction
+/// classes are claim↔claim / claim↔index and can't fold into it.
+/// Impl: `mimus-check-graph` (index-edge classes).
+pub trait GraphChecker: Send + Sync {
+    /// Evidence-or-silence over the full set — a class that can't
+    /// prove a conflict emits nothing.
+    fn run_set(&self, claims: &[Claim], graph: &Graph) -> Vec<Violation>;
 }
 
 /// Route claims to the checkers that handle their kind.

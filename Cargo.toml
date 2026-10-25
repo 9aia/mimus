@@ -8,6 +8,7 @@ members = [
     "crates/mimus-check-fs",
     "crates/mimus-check-cmd",
     "crates/mimus-check-symbol",
+    "crates/mimus-check-graph",
     "crates/mimus-check-acp",
     "crates/mimus-rules",
     "crates/mimus-vcs",
@@ -38,6 +39,7 @@ mimus-check = { path = "crates/mimus-check", version = "0.1.0" }
 mimus-check-fs = { path = "crates/mimus-check-fs", version = "0.1.0" }
 mimus-check-cmd = { path = "crates/mimus-check-cmd", version = "0.1.0" }
 mimus-check-symbol = { path = "crates/mimus-check-symbol", version = "0.1.0" }
+mimus-check-graph = { path = "crates/mimus-check-graph", version = "0.1.0" }
 mimus-check-acp = { path = "crates/mimus-check-acp", version = "0.1.0" }
 mimus-rules = { path = "crates/mimus-rules", version = "0.1.0" }
 mimus-vcs = { path = "crates/mimus-vcs", version = "0.1.0" }

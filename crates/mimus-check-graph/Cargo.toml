@@ -1,0 +1,14 @@
+[package]
+name = "mimus-check-graph"
+description = "Set-level graph adapter — index-edge + doc-edge claims vs the kuda index (ADR-0002)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["verification", "mimus"]
+categories = ["development-tools"]
+
+[dependencies]
+mimus-core.workspace = true
+mimus-check.workspace = true
+rusqlite.workspace = true

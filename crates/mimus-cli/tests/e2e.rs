@@ -993,3 +993,87 @@ fn check_diff_no_git_binary() {
     assert_eq!(o.status.code(), Some(2), "{se}");
     assert!(se.contains("git"), "{se}");
 }
+
+// ---------- graph tier (ADR-0002 ph1) ----------
+
+/// `[check].kuda_index` wires the graph pass: a stale index edge
+/// gates (error), an unsupported doc claim warns.
+#[test]
+fn check_graph_violations() {
+    let d = dir("graph");
+    cfg(&d, "kuda_index = \"idx.sqlite\"\n");
+    sqlite(
+        &d.join("idx.sqlite"),
+        "CREATE TABLE symbols(name TEXT, kind TEXT, file TEXT, line INTEGER, module TEXT);\
+         CREATE TABLE edges(from_mod TEXT, to_mod TEXT, kind TEXT);\
+         INSERT INTO symbols VALUES('F','fn','a.rs',1,'app-cli');\
+         INSERT INTO symbols VALUES('G','fn','b.rs',1,'app-core');\
+         INSERT INTO edges VALUES('app-cli','app-gone','imports');",
+    );
+    // a Behavior claim asserting a missing edge — needs a
+    // multi-word assertion sentence for the extractor
+    write(
+        &d,
+        "docs/a.md",
+        "app-core uses app-cli in every request path today",
+    );
+    let o = mimus(&["check"], &d);
+    let (so, _) = out(&o);
+    assert_eq!(o.status.code(), Some(1), "{so}"); // stale gates
+    assert!(so.contains("app-gone"), "{so}");
+    assert!(so.contains("[error]"), "{so}");
+    assert!(so.contains("app-core"), "{so}");
+    assert!(so.contains("[warn]"), "{so}");
+    // an unreadable index → stderr note, check still completes
+    let d = dir("graph-badidx");
+    cfg(&d, "kuda_index = \"idx.sqlite\"\n");
+    std::fs::write(d.join("idx.sqlite"), "not a database").unwrap();
+    write(&d, "docs/a.md", "nothing claimed here");
+    let o = mimus(&["check"], &d);
+    let (_, se) = out(&o);
+    assert!(se.contains("graph:"), "{se}");
+    assert_eq!(o.status.code(), Some(0));
+}
+
+/// doctor reports index age: fresh → ok, >7d → stale warning,
+/// unreadable → '--'.
+#[test]
+fn doctor_index_age() {
+    let d = dir("doc-idx-ok");
+    cfg(&d, "kuda_index = \"idx.sqlite\"\n");
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    sqlite(
+        &d.join("idx.sqlite"),
+        &format!(
+            "CREATE TABLE meta(k TEXT PRIMARY KEY, v TEXT);\
+                  INSERT INTO meta VALUES('generated_at','{now}');"
+        ),
+    );
+    let o = mimus(&["doctor"], &d);
+    let (so, _) = out(&o);
+    assert!(so.contains("kuda index ok"), "{so}");
+    // stale — generated 10 days ago → '!!' warning
+    let d = dir("doc-idx-stale");
+    cfg(&d, "kuda_index = \"idx.sqlite\"\n");
+    sqlite(
+        &d.join("idx.sqlite"),
+        &format!(
+            "CREATE TABLE meta(k TEXT PRIMARY KEY, v TEXT);\
+                  INSERT INTO meta VALUES('generated_at','{}');",
+            now - 10 * 24 * 3600
+        ),
+    );
+    let o = mimus(&["doctor"], &d);
+    let (so, _) = out(&o);
+    assert!(so.contains("kuda index !!"), "{so}");
+    assert!(so.contains("kuda sync"), "{so}");
+    // configured but unreadable → '--' line
+    let d = dir("doc-idx-bad");
+    cfg(&d, "kuda_index = \".kuda/index.sqlite\"\n");
+    let o = mimus(&["doctor"], &d);
+    let (so, _) = out(&o);
+    assert!(so.contains("kuda index --"), "{so}");
+}

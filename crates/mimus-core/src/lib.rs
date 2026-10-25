@@ -70,6 +70,55 @@ pub enum TrustScore {
     Contradicted,
 }
 
+// ---- graph tier (ADR-0002) ----
+
+/// A module→module edge the code index recorded — `(importer,
+/// relation, target)` is already a triple. Pure data; the
+/// index-read lives in adapter crates (`mimus-check-graph`).
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Edge {
+    /// Importing/declaring module (always an indexed module).
+    pub from: String,
+    /// Target — an indexed module name, or an external dep name
+    /// that resolved to nothing at index time.
+    pub to: String,
+    pub kind: EdgeKind,
+}
+
+/// Edge relation — the kuda index's `edges.kind` strings.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum EdgeKind {
+    /// `import x` / `use x` inside a module's sources.
+    Imports,
+    /// A manifest-declared dependency (Cargo.toml, package.json).
+    PackageDep,
+    /// Workspace membership — unambiguously internal.
+    WorkspaceMember,
+    /// Call-graph edge — a different relation entirely; satisfies
+    /// no import/dep claim and isn't staleness-checked.
+    Calls,
+    /// A kind this mimus doesn't know — never flagged, still
+    /// checked for a missing source module.
+    Other,
+}
+
+/// A structural snapshot of the indexed code: edges plus the
+/// module/symbol sets they resolve against. Set-level classes
+/// (stale-reference, unsupported-claim) compare claims to this —
+/// see `mimus_check::GraphChecker`.
+#[derive(Debug, Default)]
+pub struct Graph {
+    pub edges: Vec<Edge>,
+    /// Indexed module names (kuda: `DISTINCT module FROM symbols`).
+    pub modules: std::collections::HashSet<String>,
+    /// Indexed symbol names — the phase-2+ surface (per-file
+    /// triples, undocumented fact).
+    pub symbols: std::collections::HashSet<String>,
+    /// Provenance — the index file this snapshot was read from.
+    /// Violations sourced from the graph point here.
+    pub index: PathBuf,
+}
+
 // ---- mimus.toml config model ----
 
 #[derive(Debug, Deserialize, Clone)]

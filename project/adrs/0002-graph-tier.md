@@ -131,7 +131,18 @@ findings depend on index freshness (stale index → stale graph —
 
 1. `mimus-check-graph`: triples from kuda index edges only —
    `stale-reference` + `unsupported claim` classes, smallest real
-   win on TS/Python monorepos.
+   win on TS/Python monorepos. **Done** — gated on
+   `[check].kuda_index` being set (no separate `graph` flag);
+   `mimus doctor` reports index age (`meta.generated_at`, mtime
+   fallback, `!!` over 7 days). Phase-1 detail: a missing edge
+   target flags only when *internal-shaped* — it shares the
+   repo's own naming family (`@scope/` or a ≥3-char prefix
+   segment carried by ≥2 indexed modules), since external deps
+   are also absent from the module set; `workspace-member`
+   targets flag unconditionally. The unsupported-claim matcher
+   is token-level: `X imports|depends on|requires|uses Y`, both
+   sides must resolve to indexed modules — anything fuzzier is
+   silence.
 2. Prose triple extraction + contradiction/self-contradiction
    buckets (docs, comments, cards).
 3. Per-file triples cache + `--diff` interplay.
