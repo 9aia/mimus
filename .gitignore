@@ -7,3 +7,6 @@ docs/
 .kuda/index.sqlite
 .kuda/meta.json
 .mimus/
+
+# myco worktree mount point (created by `myco init`)
+project/
