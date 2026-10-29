@@ -24,4 +24,5 @@
 ## Release
 
 - T-018 crates.io release — scripts/release.sh publishes the crate graph in dep order; needs a dry-run pass + tags
-- T-019 AcpChecker: batch claims per prompt (e.g. 5/session/prompt) + optional inter-request delay — 46 back-to-back prompts is rude to the provider and hits rate limits
+- T-019 AcpChecker: batch claims per prompt (e.g. 5/session/prompt)
+  - T-020 optional inter-request delay — 46 back-to-back prompts is
