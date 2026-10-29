@@ -1,11 +1,11 @@
 +++
-id = "ADR-0004"
-title = "ADR-0001: Tiered memory artifacts + ports/adapters topology"
+id = "ADR-0003"
+title = "ADR-0003: Tiered memory artifacts + ports/adapters topology"
 status = "open"
 priority = "medium"
 +++
 
-# ADR-0001: Tiered memory artifacts + ports/adapters topology
+# ADR-0003: Tiered memory artifacts + ports/adapters topology
 
 Status: proposed
 
