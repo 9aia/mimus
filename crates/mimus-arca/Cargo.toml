@@ -1,0 +1,13 @@
+[package]
+name = "mimus-arca"
+description = "Secret adapter: arca vaults via the arca CLI"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["verification", "mimus"]
+categories = ["development-tools"]
+
+[dependencies]
+mimus-secret.workspace = true
+serde_json.workspace = true

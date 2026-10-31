@@ -11,6 +11,12 @@ pub struct DotenvSecrets {
 }
 
 impl Secrets for DotenvSecrets {
+    fn name(&self) -> &str {
+        "dotenv"
+    }
+    fn available(&self) -> bool {
+        self.path.exists()
+    }
     fn get(&self, name: &str) -> Option<String> {
         let f = std::fs::read_to_string(&self.path).ok()?;
         f.lines().find_map(|l| {

@@ -967,7 +967,37 @@ fn doctor(cli: &Cli) -> i32 {
             }
         }
     }
+    // secrets stores — availability probes only. Doctor never
+    // `get`s: a probe that materialized a value would hit arca's
+    // audit wire (and a keyring's unlock prompt).
+    let chain = secrets();
+    let stores: Vec<String> = chain
+        .stores()
+        .iter()
+        .map(|s| format!("{}{}", s.name(), if s.available() { "" } else { "(--)" }))
+        .collect();
+    println!("  secrets    {}", stores.join(" → "));
     0
+}
+
+/// The secrets chain — env → arca → keyring → env-file. arca
+/// vaults are the canonical store post-migration; keyring and the
+/// `~/.config/mimus/env` file are legacy read-throughs kept
+/// during the transition. Writes land in arca (`env` refuses
+/// `set`, arca is the first writable store). The llm adapter
+/// (semantic tier) resolves provider keys through this.
+fn secrets() -> mimus_secret::Chain {
+    mimus_secret::Chain::new(vec![
+        Box::new(mimus_secret::EnvSecrets),
+        Box::new(mimus_arca::ArcaSecrets::default()),
+        Box::new(mimus_keyring::KeyringSecrets::default()),
+        Box::new(mimus_dotenv::DotenvSecrets {
+            path: std::env::var("HOME")
+                .map(PathBuf::from)
+                .unwrap_or_else(|_| PathBuf::from("."))
+                .join(".config/mimus/env"),
+        }),
+    ])
 }
 
 #[cfg(test)]

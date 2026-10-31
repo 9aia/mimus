@@ -268,6 +268,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "clap-markdown",
+ "mimus-arca",
  "mimus-check",
  "mimus-check-acp",
  "mimus-check-cmd",
@@ -278,10 +279,21 @@ dependencies = [
  "mimus-config",
  "mimus-config-toml",
  "mimus-core",
+ "mimus-dotenv",
+ "mimus-keyring",
  "mimus-rules",
+ "mimus-secret",
  "serde_json",
  "serde_yaml",
  "toml",
+]
+
+[[package]]
+name = "mimus-arca"
+version = "0.1.0"
+dependencies = [
+ "mimus-secret",
+ "serde_json",
 ]
 
 [[package]]

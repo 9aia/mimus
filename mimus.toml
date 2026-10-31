@@ -1,6 +1,7 @@
 # mimus.toml — per-repo critic config. Secrets (LLM provider
-# keys) resolve via env var -> OS keyring -> ~/.config/mimus/env;
-# never this file.
+# keys) resolve via env var -> arca vault -> OS keyring ->
+# ~/.config/mimus/env (legacy read-throughs during the arca
+# migration; writes land in the vault). Never this file.
 
 [sources]
 docs = ["README.md", "docs/**/*.md", "AGENTS.md", "project/**/*.md"]

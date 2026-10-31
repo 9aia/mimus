@@ -20,6 +20,17 @@ impl Default for KeyringSecrets {
 }
 
 impl Secrets for KeyringSecrets {
+    fn name(&self) -> &str {
+        "keyring"
+    }
+    fn available(&self) -> bool {
+        Command::new("secret-tool")
+            .arg("--version")
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .is_ok()
+    }
     fn get(&self, name: &str) -> Option<String> {
         let o = Command::new("secret-tool")
             .args(["lookup", "service", &self.service, "name", name])

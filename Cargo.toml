@@ -16,6 +16,7 @@ members = [
     "crates/mimus-secret",
     "crates/mimus-keyring",
     "crates/mimus-dotenv",
+    "crates/mimus-arca",
     "crates/mimus-config",
     "crates/mimus-config-toml",
 ]
@@ -47,6 +48,7 @@ mimus-git = { path = "crates/mimus-git", version = "0.1.0" }
 mimus-secret = { path = "crates/mimus-secret", version = "0.1.0" }
 mimus-keyring = { path = "crates/mimus-keyring", version = "0.1.0" }
 mimus-dotenv = { path = "crates/mimus-dotenv", version = "0.1.0" }
+mimus-arca = { path = "crates/mimus-arca", version = "0.1.0" }
 mimus-config = { path = "crates/mimus-config", version = "0.1.0" }
 mimus-config-toml = { path = "crates/mimus-config-toml", version = "0.1.0" }
 serde = { version = "1", features = ["derive"] }
