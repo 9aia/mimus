@@ -3,7 +3,7 @@
 ## Core model
 
 - [ ] T-001 mimus-core — Claim / Violation / Evidence / TrustScore; claim taxonomy (path | command | symbol | count | link | behavior) decides which checker verifies it (ADR-0001).
-- [ ] T-021 secrets: env → arca → legacy chain — mimus-arca adapter + composition (arca P5 migration) · status:claimed · owner:devin · created:2026-10-31
+- [ ] T-021 secrets: env → arca → legacy chain — mimus-arca adapter + composition (arca P5 migration) · status:in-progress · owner:devin · created:2026-10-31
 
 ## Checkers (ports + first adapters)
 
