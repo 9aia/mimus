@@ -3,6 +3,7 @@
 ## Core model
 
 - [ ] T-001 mimus-core — Claim / Violation / Evidence / TrustScore; claim taxonomy (path | command | symbol | count | link | behavior) decides which checker verifies it (ADR-0001).
+- [ ] T-022 presentation deck — pending: run via ~/.9aia-pres pipeline (pres kick mimus or supervisor); agent writes presentation/ on branch presentation/initial, slidev build verify, push; open PR manually (agent token cannot create PRs); status board: ~/.9aia-pres/STATUS.md · created:2026-11-02
 
 ## Checkers (ports + first adapters)
 
