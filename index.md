@@ -4,7 +4,7 @@ layout: home
 hero:
   name: mimus
   text: spots the cuckoo eggs in your repo
-  tagline: claim verification — docs-as-tests, memory audit
+  tagline: Verification engine — proofs over what agents claim
   actions:
     - theme: brand
       text: Getting Started
