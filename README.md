@@ -1,6 +1,6 @@
 # mimus
 
-*Spots the cuckoo eggs in your repo.*
+*Verification engine — proofs over what agents claim.*
 
 A critic for repos and agent memory. Extracts claims from docs,
 comments, and index cards; verifies them against the code —

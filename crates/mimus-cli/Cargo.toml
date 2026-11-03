@@ -1,6 +1,6 @@
 [package]
 name = "mimus"
-description = "mimus — spots the cuckoo eggs in your repo: claim verification CLI"
+description = "mimus — verification engine: proofs over what agents claim"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
