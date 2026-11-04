@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["extract","extract_comments"]};
+window.SIDEBAR_ITEMS = {"fn":["extract","extract_comments"],"mod":["triples"]};

@@ -2,7 +2,7 @@
 
 > spots the cuckoo eggs in your repo
 
-claim verification — docs-as-tests, memory audit
+Verification engine — proofs over what agents claim
 
 ## Table of Contents
 

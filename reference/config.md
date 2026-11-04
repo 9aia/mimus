@@ -32,6 +32,7 @@ url: /mimus/reference/config.md
 | `kinds` | `Vec<ClaimKind>` | optional | Only check claims of these kinds (empty = all). |
 | `ignore_prefixes` | `list` | optional | Skip claims whose text starts with any of these prefixes. |
 | `binaries` | `list` | optional | Tool prerequisites the repo declares — commands invoking these skip the PATH probe (docs may legitimately require tools the checker's machine lacks). |
+| `aliases` | `table` | optional | Subject aliases for the contradiction buckets — a `[check.aliases]` table mapping `alias = "canonical"`; emitted bucket keys name the canonical form (ADR-0002). |
 
 ## `[rules]`
 

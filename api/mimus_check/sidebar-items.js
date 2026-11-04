@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["run"],"trait":["Checker"]};
+window.SIDEBAR_ITEMS = {"fn":["run"],"trait":["Checker","GraphChecker"]};

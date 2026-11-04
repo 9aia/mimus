@@ -405,6 +405,7 @@ Verify claims. Mechanical tier by default
 
 * `--all` — Include the semantic tier (advisory only, never gates)
 * `--no-cmd` — Skip command claims — the PATH probe is machine-dependent
+* `--diff <SPEC>` — Only check claims in files matching `git diff` SPEC — e.g. `--diff origin/main...HEAD` gates a PR on new drift
 
 ## `mimus fix`
 
@@ -490,6 +491,7 @@ url: /mimus/reference/config.md
 | `kinds` | `Vec<ClaimKind>` | optional | Only check claims of these kinds (empty = all). |
 | `ignore_prefixes` | `list` | optional | Skip claims whose text starts with any of these prefixes. |
 | `binaries` | `list` | optional | Tool prerequisites the repo declares — commands invoking these skip the PATH probe (docs may legitimately require tools the checker's machine lacks). |
+| `aliases` | `table` | optional | Subject aliases for the contradiction buckets — a `[check.aliases]` table mapping `alias = "canonical"`; emitted bucket keys name the canonical form (ADR-0002). |
 
 ## `[rules]`
 
@@ -619,10 +621,12 @@ documented at source (doc comments).
 * [mimus-config](/mimus/api/mimus_config/index.html) — port
 * [mimus-secret](/mimus/api/mimus_secret/index.html) — port
 * [mimus-vcs](/mimus/api/mimus_vcs/index.html) — port
+* [mimus-arca](/mimus/api/mimus_arca/index.html) — impl
 * [mimus-check](/mimus/api/mimus_check/index.html) — impl
 * [mimus-check-acp](/mimus/api/mimus_check_acp/index.html) — impl
 * [mimus-check-cmd](/mimus/api/mimus_check_cmd/index.html) — impl
 * [mimus-check-fs](/mimus/api/mimus_check_fs/index.html) — impl
+* [mimus-check-graph](/mimus/api/mimus_check_graph/index.html) — impl
 * [mimus-check-symbol](/mimus/api/mimus_check_symbol/index.html) — impl
 * [mimus-claims](/mimus/api/mimus_claims/index.html) — impl
 * [mimus-config-toml](/mimus/api/mimus_config_toml/index.html) — impl

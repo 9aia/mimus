@@ -10,10 +10,12 @@ documented at source (doc comments).
 * [mimus-config](/mimus/api/mimus_config/index.html) — port
 * [mimus-secret](/mimus/api/mimus_secret/index.html) — port
 * [mimus-vcs](/mimus/api/mimus_vcs/index.html) — port
+* [mimus-arca](/mimus/api/mimus_arca/index.html) — impl
 * [mimus-check](/mimus/api/mimus_check/index.html) — impl
 * [mimus-check-acp](/mimus/api/mimus_check_acp/index.html) — impl
 * [mimus-check-cmd](/mimus/api/mimus_check_cmd/index.html) — impl
 * [mimus-check-fs](/mimus/api/mimus_check_fs/index.html) — impl
+* [mimus-check-graph](/mimus/api/mimus_check_graph/index.html) — impl
 * [mimus-check-symbol](/mimus/api/mimus_check_symbol/index.html) — impl
 * [mimus-claims](/mimus/api/mimus_claims/index.html) — impl
 * [mimus-config-toml](/mimus/api/mimus_config_toml/index.html) — impl

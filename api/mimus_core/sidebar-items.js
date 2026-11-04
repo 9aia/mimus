@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ClaimKind","Severity","TrustScore"],"struct":["CheckCfg","Claim","Config","ReportCfg","RulesCfg","SourcesCfg","Violation"]};
+window.SIDEBAR_ITEMS = {"enum":["ClaimKind","EdgeKind","Severity","TrustScore"],"struct":["CheckCfg","Claim","Config","Edge","Graph","ReportCfg","RulesCfg","SourcesCfg","Violation"]};

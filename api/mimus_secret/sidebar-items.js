@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":["Secrets"]};
+window.SIDEBAR_ITEMS = {"struct":["Chain","EnvSecrets"],"trait":["Secrets"]};

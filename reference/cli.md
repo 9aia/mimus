@@ -57,6 +57,7 @@ Verify claims. Mechanical tier by default
 
 * `--all` — Include the semantic tier (advisory only, never gates)
 * `--no-cmd` — Skip command claims — the PATH probe is machine-dependent
+* `--diff <SPEC>` — Only check claims in files matching `git diff` SPEC — e.g. `--diff origin/main...HEAD` gates a PR on new drift
 
 ## `mimus fix`
 
