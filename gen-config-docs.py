@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Generate docs/reference/config.md from config-struct doc comments
 — the structs across core + adapter crates are the source of truth."""
-import pathlib, re, sys
+import os, pathlib, re, sys
 
-ROOT = pathlib.Path(__file__).parent / ".."
+ROOT = pathlib.Path(
+    os.environ.get("MIMUS_ROOT") or pathlib.Path(__file__).parent / "..")
 OUT  = pathlib.Path(__file__).parent / "reference" / "config.md"
 
 # file → {struct: section title}; order preserved
@@ -21,7 +22,8 @@ STRUCTS = [n for names in SRCS.values() for n in names]
 
 SIMPLE = {"String": "string", "PathBuf": "path", "bool": "bool",
           "u16": "int", "usize": "int", "Vec<String>": "list",
-          "QueuePolicy": '"latest" | "all"'}
+          "QueuePolicy": '"latest" | "all"',
+          "BTreeMap<String, String>": "table"}
 
 def fields(name):
     m = re.search(rf"pub struct {name} \{{(.*?)\n\}}", SRC[name], re.S)
@@ -29,7 +31,7 @@ def fields(name):
     rows = []
     for fm in re.finditer(
             r"((?:\s*(?:///|#\[)[^\n]*\n)+)\s*"
-            r"pub (\w+): ([^,\n]+),?", m.group(1)):
+            r"pub (\w+): (.+?),?\s*$", m.group(1), re.M):
         prelude = fm.group(1)
         doc = " ".join(l.split("///", 1)[1].strip()
                        for l in prelude.splitlines() if "///" in l)
