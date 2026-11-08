@@ -1,44 +1,267 @@
 name: mimus
 path: Cargo.toml
-purpose: '*Spots the cuckoo eggs in your repo.*'
+purpose: '*Verification engine — proofs over what agents claim.*'
 api:
-- name: mimus
-  kind: module
-  file: Cargo.toml
-  line: 1
+- name: ACP_STUB
+  kind: const
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 661
   module: mimus
-- name: mimus
-  kind: module
-  file: crates/mimus-cli/Cargo.toml
-  line: 1
+- name: Cli
+  kind: type
+  file: crates/mimus-cli/src/main.rs
+  line: 19
   module: mimus
+- name: Cmd
+  kind: type
+  file: crates/mimus-cli/src/main.rs
+  line: 34
+  module: mimus
+- name: EXAMPLE_TOML
+  kind: const
+  file: crates/mimus-cli/src/main.rs
+  line: 11
+  module: mimus
+- name: GENERIC
+  kind: const
+  file: crates/mimus-cli/src/main.rs
+  line: 247
+  module: mimus
+- name: Mimus
+  kind: type
+  file: modules/dagger/dagger/src/mimus/main.py
+  line: 102
+  module: mimus
+- name: acp_agent
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 711
+  module: mimus
+- name: acp_agent_victim
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 715
+  module: mimus
+- name: audit
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 811
+  module: mimus
+- name: audit_scores_cards
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 481
+  module: mimus
+- name: canon
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 565
+  module: mimus
+- name: card_prose_claims
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 601
+  module: mimus
+- name: cfg
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 31
+  module: mimus
+- name: check
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 586
+  module: mimus
+- name: check_all_runs_semantic_tier
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 761
+  module: mimus
+- name: check_all_without_acp_cmd
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 733
+  module: mimus
+- name: check_bad_rules_toml_skipped
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 751
+  module: mimus
+- name: check_comment_claims_and_noise
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 198
+  module: mimus
+- name: check_diff_bad_spec
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 962
+  module: mimus
+- name: check_diff_no_git_binary
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 981
+  module: mimus
+- name: check_diff_prose_warm_cache
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 1123
+  module: mimus
+- name: check_diff_requires_git_repo
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 950
+  module: mimus
+- name: check_diff_scopes_to_changed_files
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 905
+  module: mimus
+- name: check_doc_noise_pruning
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 245
+  module: mimus
+- name: check_flags_dead_path
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 70
+  module: mimus
+- name: check_graph_undocumented_fact
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 1270
+  module: mimus
+- name: check_graph_violations
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 1230
+  module: mimus
+- name: check_json_and_clean
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 109
+  module: mimus
+- name: check_kinds_and_prefix_filters
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 137
+  module: mimus
+- name: check_prose_contradictions
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 1005
+  module: mimus
+- name: check_rules_eval
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 311
+  module: mimus
+- name: check_semantic_candidate_intake
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 1086
+  module: mimus
+- name: check_symbol_checker
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 276
+  module: mimus
+- name: check_warns_and_no_cmd
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 159
+  module: mimus
+- name: claims_dump
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 303
+  module: mimus
+- name: claims_dump_with_cards
+  kind: function
+  file: crates/mimus-cli/tests/e2e.rs
+  line: 353
+  module: mimus
+- name: collect
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 336
+  module: mimus
+- name: cov_tests
+  kind: module
+  file: crates/mimus-cli/src/main.rs
+  line: 1049
+  module: mimus
+- name: coverage
+  kind: function
+  file: crates/mimus-cli/src/main.rs
+  line: 212
+  module: mimus
+- name: coverage_gate
+  kind: function
+  file: modules/dagger/dagger/src/mimus/main.py
+  line: 398
+  module: mimus
+api_omitted: 49
 deps:
+- dagger-io
 - clap
 - clap-markdown
 - mimus-check
 - mimus-check-acp
 - mimus-check-cmd
 - mimus-check-fs
+- mimus-check-graph
 - mimus-check-symbol
 - mimus-claims
 - mimus-config
 - mimus-config-toml
 - mimus-core
+- mimus-cuora
+- mimus-dotenv
+- mimus-keyring
 - mimus-rules
+- mimus-secret
 - serde_json
 - serde_yaml
 - toml
+- clap
+- mimus-check
+- mimus-config
+- mimus-config-toml
+- mimus-core
+- asyncio
+- typing
+- dagger
 notes: ''
 verify:
 - Cargo.toml
 - crates/mimus-cli/Cargo.toml
+- crates/mimus-cli/src/main.rs
+- crates/mimus-cli/tests/e2e.rs
+- modules/dagger/dagger/pyproject.toml
+- modules/dagger/dagger/src/mimus/__init__.py
+- modules/dagger/dagger/src/mimus/main.py
+- modules/dagger/tests/test_self_patch.py
 provenance:
   files:
   - Cargo.toml
   - crates/mimus-cli/Cargo.toml
+  - crates/mimus-cli/src/main.rs
+  - crates/mimus-cli/tests/e2e.rs
+  - modules/dagger/dagger/pyproject.toml
+  - modules/dagger/dagger/src/mimus/__init__.py
+  - modules/dagger/dagger/src/mimus/main.py
+  - modules/dagger/tests/test_self_patch.py
   hashes:
-  - dd6320097d8a5d5011182a0dfa6d5321edfcaa1c
-  - 27c0b54f3d12a0c83916fae649c6fab4ca18e4db
-  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
-  generated_at: '1792310965'
-  generator: kuda-template/0.1.0
+  - 60e5851c02268f7b6bc2586e3205a5d3b6a28fa9
+  - b3c23a867986b81f68986db9d3547701583e3e76
+  - 281ee049a8e12defd36affd17d1a92ea1319f852
+  - 874f375dedab9bc6436a93187767cea9bcb77d6a
+  - 6391d6a9586b1a42d2e3b1270cd9a441f321af68
+  - 4093067c2bfef36b97a7be4448a54a5439d61d91
+  - 912bc128df92503a9353c765bd892d9ec84c537e
+  - d515a59e736b23d553075159e989585bba9ca252
+  commit_sha: 2d42434814785226bba68e3068d3c2426b141e99
+  generated_at: '1794114021'
+  generator: kuda-template/0.1.2

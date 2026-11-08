@@ -2,22 +2,42 @@ name: mimus-keyring
 path: crates/mimus-keyring/Cargo.toml
 purpose: 'Secret adapter: OS keyring via secret-tool (libsecret)'
 api:
-- name: mimus-keyring
-  kind: module
-  file: crates/mimus-keyring/Cargo.toml
-  line: 1
+- name: ENV_LOCK
+  kind: const
+  file: crates/mimus-keyring/tests/stub.rs
+  line: 30
   module: mimus-keyring
 - name: KeyringSecrets
   kind: type
   file: crates/mimus-keyring/src/lib.rs
   line: 9
   module: mimus-keyring
+- name: available
+  kind: function
+  file: crates/mimus-keyring/src/lib.rs
+  line: 26
+  module: mimus-keyring
 - name: default
   kind: function
   file: crates/mimus-keyring/src/lib.rs
   line: 15
   module: mimus-keyring
+- name: default_service_and_missing_lookup
+  kind: function
+  file: crates/mimus-keyring/tests/keyring.rs
+  line: 5
+  module: mimus-keyring
 - name: get
+  kind: function
+  file: crates/mimus-keyring/src/lib.rs
+  line: 34
+  module: mimus-keyring
+- name: mimus-keyring
+  kind: module
+  file: crates/mimus-keyring/Cargo.toml
+  line: 1
+  module: mimus-keyring
+- name: name
   kind: function
   file: crates/mimus-keyring/src/lib.rs
   line: 23
@@ -25,31 +45,43 @@ api:
 - name: set
   kind: function
   file: crates/mimus-keyring/src/lib.rs
+  line: 44
+  module: mimus-keyring
+- name: set_epipe_on_dead_stdin
+  kind: function
+  file: crates/mimus-keyring/tests/stub.rs
+  line: 84
+  module: mimus-keyring
+- name: stub_dir
+  kind: function
+  file: crates/mimus-keyring/tests/stub.rs
+  line: 8
+  module: mimus-keyring
+- name: stubbed_get_and_set_paths
+  kind: function
+  file: crates/mimus-keyring/tests/stub.rs
   line: 33
   module: mimus-keyring
 deps:
 - mimus-secret
-- mimus_secret
+- mimus-secret
 notes: ''
 verify:
 - crates/mimus-keyring/Cargo.toml
 - crates/mimus-keyring/src/lib.rs
-- crates/mimus-keyring/src/lib.rs
-- crates/mimus-keyring/src/lib.rs
-- crates/mimus-keyring/src/lib.rs
+- crates/mimus-keyring/tests/keyring.rs
+- crates/mimus-keyring/tests/stub.rs
 provenance:
   files:
   - crates/mimus-keyring/Cargo.toml
   - crates/mimus-keyring/src/lib.rs
-  - crates/mimus-keyring/src/lib.rs
-  - crates/mimus-keyring/src/lib.rs
-  - crates/mimus-keyring/src/lib.rs
+  - crates/mimus-keyring/tests/keyring.rs
+  - crates/mimus-keyring/tests/stub.rs
   hashes:
   - ab61c787206bd76c1f9937084c108473b6ece3fc
-  - 418e6920f4ee57190ff3fcbacce821d132d23205
-  - 418e6920f4ee57190ff3fcbacce821d132d23205
-  - 418e6920f4ee57190ff3fcbacce821d132d23205
-  - 418e6920f4ee57190ff3fcbacce821d132d23205
-  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
-  generated_at: '1792310965'
-  generator: kuda-template/0.1.0
+  - 315a28f715ccc28ba115053f53b96b49ffb8d4e3
+  - 68f73604c7b2c0cac21c9055e05a8ea3afc516fa
+  - 7349677e6e485c80472a90d397fcdc747afe1833
+  commit_sha: 2d42434814785226bba68e3068d3c2426b141e99
+  generated_at: '1794114021'
+  generator: kuda-template/0.1.2

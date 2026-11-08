@@ -2,57 +2,141 @@ name: mimus-check-fs
 path: crates/mimus-check-fs/Cargo.toml
 purpose: 'Check adapter: path claims -> filesystem'
 api:
+- name: FsChecker
+  kind: type
+  file: crates/mimus-check-fs/src/lib.rs
+  line: 12
+  module: mimus-check-fs
+- name: base_dirs_resolve
+  kind: function
+  file: crates/mimus-check-fs/src/lib.rs
+  line: 173
+  module: mimus-check-fs
+- name: bases
+  kind: function
+  file: crates/mimus-check-fs/src/lib.rs
+  line: 28
+  module: mimus-check-fs
+- name: check
+  kind: function
+  file: crates/mimus-check-fs/src/lib.rs
+  line: 45
+  module: mimus-check-fs
+- name: claim
+  kind: function
+  file: crates/mimus-check-fs/src/lib.rs
+  line: 123
+  module: mimus-check-fs
+- name: claim
+  kind: function
+  file: crates/mimus-check-fs/tests/fs.rs
+  line: 9
+  module: mimus-check-fs
+- name: doc_relative_resolves
+  kind: function
+  file: crates/mimus-check-fs/src/lib.rs
+  line: 163
+  module: mimus-check-fs
+- name: env_and_placeholder_are_silence
+  kind: function
+  file: crates/mimus-check-fs/tests/fs.rs
+  line: 29
+  module: mimus-check-fs
+- name: glob_claims_verify_by_expansion
+  kind: function
+  file: crates/mimus-check-fs/tests/fs.rs
+  line: 38
+  module: mimus-check-fs
+- name: glob_metachars_and_glob_errors
+  kind: function
+  file: crates/mimus-check-fs/tests/fs.rs
+  line: 56
+  module: mimus-check-fs
+- name: handles
+  kind: function
+  file: crates/mimus-check-fs/src/lib.rs
+  line: 41
+  module: mimus-check-fs
+- name: http_and_empty_are_silence
+  kind: function
+  file: crates/mimus-check-fs/tests/fs.rs
+  line: 19
+  module: mimus-check-fs
+- name: leading_slash_and_route_claims_are_silence
+  kind: function
+  file: crates/mimus-check-fs/tests/fs.rs
+  line: 86
+  module: mimus-check-fs
+- name: leading_slash_is_silence
+  kind: function
+  file: crates/mimus-check-fs/src/lib.rs
+  line: 133
+  module: mimus-check-fs
 - name: mimus-check-fs
   kind: module
   file: crates/mimus-check-fs/Cargo.toml
   line: 1
   module: mimus-check-fs
-- name: FsChecker
-  kind: type
-  file: crates/mimus-check-fs/src/lib.rs
-  line: 9
-  module: mimus-check-fs
 - name: new
   kind: function
   file: crates/mimus-check-fs/src/lib.rs
-  line: 14
+  line: 19
   module: mimus-check-fs
-- name: handles
+- name: real_dead_path_still_flags
   kind: function
   file: crates/mimus-check-fs/src/lib.rs
-  line: 20
+  line: 154
   module: mimus-check-fs
-- name: check
+- name: route_guard_case_and_arity
+  kind: function
+  file: crates/mimus-check-fs/tests/fs.rs
+  line: 69
+  module: mimus-check-fs
+- name: route_shaped
   kind: function
   file: crates/mimus-check-fs/src/lib.rs
-  line: 24
+  line: 105
+  module: mimus-check-fs
+- name: route_shaped_miss_is_silence
+  kind: function
+  file: crates/mimus-check-fs/src/lib.rs
+  line: 141
+  module: mimus-check-fs
+- name: source_without_parent_dir
+  kind: function
+  file: crates/mimus-check-fs/tests/fs.rs
+  line: 99
+  module: mimus-check-fs
+- name: tests
+  kind: module
+  file: crates/mimus-check-fs/src/lib.rs
+  line: 120
+  module: mimus-check-fs
+- name: trailing_slash_and_backticks_trimmed
+  kind: function
+  file: crates/mimus-check-fs/tests/fs.rs
+  line: 108
   module: mimus-check-fs
 deps:
 - glob
 - mimus-check
 - mimus-core
-- mimus_check
-- mimus_core
+- mimus-check
+- mimus-core
 notes: ''
 verify:
 - crates/mimus-check-fs/Cargo.toml
 - crates/mimus-check-fs/src/lib.rs
-- crates/mimus-check-fs/src/lib.rs
-- crates/mimus-check-fs/src/lib.rs
-- crates/mimus-check-fs/src/lib.rs
+- crates/mimus-check-fs/tests/fs.rs
 provenance:
   files:
   - crates/mimus-check-fs/Cargo.toml
   - crates/mimus-check-fs/src/lib.rs
-  - crates/mimus-check-fs/src/lib.rs
-  - crates/mimus-check-fs/src/lib.rs
-  - crates/mimus-check-fs/src/lib.rs
+  - crates/mimus-check-fs/tests/fs.rs
   hashes:
   - f2b819a109e334b4179687e87314f73ecb9b5341
-  - 227abf8da2ffe29c9ef3dcb93b0a45bd44aa57cf
-  - 227abf8da2ffe29c9ef3dcb93b0a45bd44aa57cf
-  - 227abf8da2ffe29c9ef3dcb93b0a45bd44aa57cf
-  - 227abf8da2ffe29c9ef3dcb93b0a45bd44aa57cf
-  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
-  generated_at: '1792310965'
-  generator: kuda-template/0.1.0
+  - df5ddf54f52ceed94e252150c25e17d20ec25696
+  - 9c70924485550d2cb149988e024460909099e1c7
+  commit_sha: 2d42434814785226bba68e3068d3c2426b141e99
+  generated_at: '1794114021'
+  generator: kuda-template/0.1.2

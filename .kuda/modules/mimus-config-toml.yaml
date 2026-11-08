@@ -2,74 +2,98 @@ name: mimus-config-toml
 path: crates/mimus-config-toml/Cargo.toml
 purpose: 'Config adapter: mimus.toml file (explicit path, env, ./, ~/.config)'
 api:
-- name: mimus-config-toml
-  kind: module
-  file: crates/mimus-config-toml/Cargo.toml
-  line: 1
-  module: mimus-config-toml
-- name: tmp
-  kind: function
-  file: crates/mimus-config-toml/tests/load.rs
-  line: 4
-  module: mimus-config-toml
 - name: CFG
   kind: const
   file: crates/mimus-config-toml/tests/load.rs
-  line: 8
+  line: 12
   module: mimus-config-toml
-- name: loads_via_env_var
-  kind: function
+- name: ENV_LOCK
+  kind: const
   file: crates/mimus-config-toml/tests/load.rs
-  line: 18
-  module: mimus-config-toml
-- name: explicit_path_and_missing_error
-  kind: function
-  file: crates/mimus-config-toml/tests/load.rs
-  line: 34
+  line: 6
   module: mimus-config-toml
 - name: TomlSource
   kind: type
   file: crates/mimus-config-toml/src/lib.rs
   line: 7
   module: mimus-config-toml
+- name: explicit_path_and_missing_error
+  kind: function
+  file: crates/mimus-config-toml/tests/load.rs
+  line: 73
+  module: mimus-config-toml
+- name: explicit_path_loads_with_defaults
+  kind: function
+  file: crates/mimus-config-toml/tests/toml.rs
+  line: 16
+  module: mimus-config-toml
+- name: home_unset_falls_back_to_dot
+  kind: function
+  file: crates/mimus-config-toml/tests/load.rs
+  line: 39
+  module: mimus-config-toml
 - name: load
   kind: function
   file: crates/mimus-config-toml/src/lib.rs
   line: 13
   module: mimus-config-toml
+- name: loads_via_env_var
+  kind: function
+  file: crates/mimus-config-toml/tests/load.rs
+  line: 22
+  module: mimus-config-toml
+- name: mimus-config-toml
+  kind: module
+  file: crates/mimus-config-toml/Cargo.toml
+  line: 1
+  module: mimus-config-toml
+- name: missing_and_malformed_err
+  kind: function
+  file: crates/mimus-config-toml/tests/toml.rs
+  line: 56
+  module: mimus-config-toml
+- name: overrides_apply
+  kind: function
+  file: crates/mimus-config-toml/tests/toml.rs
+  line: 32
+  module: mimus-config-toml
+- name: scratch
+  kind: function
+  file: crates/mimus-config-toml/tests/toml.rs
+  line: 8
+  module: mimus-config-toml
+- name: tmp
+  kind: function
+  file: crates/mimus-config-toml/tests/load.rs
+  line: 8
+  module: mimus-config-toml
+- name: unreadable_candidate_errors
+  kind: function
+  file: crates/mimus-config-toml/tests/load.rs
+  line: 57
+  module: mimus-config-toml
 deps:
 - mimus-config
 - mimus-core
 - toml
-- mimus_config
-- mimus_config_toml
-- mimus_config
+- mimus-config
 notes: ''
 verify:
 - crates/mimus-config-toml/Cargo.toml
-- crates/mimus-config-toml/tests/load.rs
-- crates/mimus-config-toml/tests/load.rs
-- crates/mimus-config-toml/tests/load.rs
-- crates/mimus-config-toml/tests/load.rs
 - crates/mimus-config-toml/src/lib.rs
-- crates/mimus-config-toml/src/lib.rs
+- crates/mimus-config-toml/tests/load.rs
+- crates/mimus-config-toml/tests/toml.rs
 provenance:
   files:
   - crates/mimus-config-toml/Cargo.toml
-  - crates/mimus-config-toml/tests/load.rs
-  - crates/mimus-config-toml/tests/load.rs
-  - crates/mimus-config-toml/tests/load.rs
-  - crates/mimus-config-toml/tests/load.rs
   - crates/mimus-config-toml/src/lib.rs
-  - crates/mimus-config-toml/src/lib.rs
+  - crates/mimus-config-toml/tests/load.rs
+  - crates/mimus-config-toml/tests/toml.rs
   hashes:
   - 47f21a9cf176c7708d2a879eff9f464589ceb363
-  - 85e779dae9b49918b6567c32e8b2ef0a87cef4af
-  - 85e779dae9b49918b6567c32e8b2ef0a87cef4af
-  - 85e779dae9b49918b6567c32e8b2ef0a87cef4af
-  - 85e779dae9b49918b6567c32e8b2ef0a87cef4af
   - df0435c4e074ab77e947823692b3c00b93fcbfcf
-  - df0435c4e074ab77e947823692b3c00b93fcbfcf
-  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
-  generated_at: '1792310965'
-  generator: kuda-template/0.1.0
+  - d5c1042019481b803e501e28aab573f2da5fbe87
+  - 62b53e921a963f429668d8132350f35235eb686b
+  commit_sha: 2d42434814785226bba68e3068d3c2426b141e99
+  generated_at: '1794114021'
+  generator: kuda-template/0.1.2

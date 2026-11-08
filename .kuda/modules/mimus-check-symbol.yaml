@@ -2,19 +2,49 @@ name: mimus-check-symbol
 path: crates/mimus-check-symbol/Cargo.toml
 purpose: 'Check adapter: symbol claims -> kuda index (stub)'
 api:
-- name: mimus-check-symbol
-  kind: module
-  file: crates/mimus-check-symbol/Cargo.toml
-  line: 1
+- name: Hit
+  kind: type
+  file: crates/mimus-check-symbol/src/lib.rs
+  line: 55
   module: mimus-check-symbol
 - name: SymbolChecker
   kind: type
   file: crates/mimus-check-symbol/src/lib.rs
   line: 19
   module: mimus-check-symbol
-- name: new
+- name: all_symbols
   kind: function
   file: crates/mimus-check-symbol/src/lib.rs
+  line: 38
+  module: mimus-check-symbol
+- name: all_symbols_and_index_present
+  kind: function
+  file: crates/mimus-check-symbol/tests/symbol.rs
+  line: 47
+  module: mimus-check-symbol
+- name: bare_ident_found_and_absent
+  kind: function
+  file: crates/mimus-check-symbol/tests/symbol.rs
+  line: 84
+  module: mimus-check-symbol
+- name: check
+  kind: function
+  file: crates/mimus-check-symbol/src/lib.rs
+  line: 67
+  module: mimus-check-symbol
+- name: claim
+  kind: function
+  file: crates/mimus-check-symbol/tests/symbol.rs
+  line: 14
+  module: mimus-check-symbol
+- name: handles
+  kind: function
+  file: crates/mimus-check-symbol/src/lib.rs
+  line: 62
+  module: mimus-check-symbol
+- name: index
+  kind: function
+  file: crates/mimus-check-symbol/tests/symbol.rs
   line: 24
   module: mimus-check-symbol
 - name: index_present
@@ -22,54 +52,72 @@ api:
   file: crates/mimus-check-symbol/src/lib.rs
   line: 30
   module: mimus-check-symbol
-- name: Hit
-  kind: type
-  file: crates/mimus-check-symbol/src/lib.rs
-  line: 35
+- name: mimus-check-symbol
+  kind: module
+  file: crates/mimus-check-symbol/Cargo.toml
+  line: 1
   module: mimus-check-symbol
-- name: handles
+- name: namespaced_paths
+  kind: function
+  file: crates/mimus-check-symbol/tests/symbol.rs
+  line: 100
+  module: mimus-check-symbol
+- name: new
   kind: function
   file: crates/mimus-check-symbol/src/lib.rs
-  line: 42
+  line: 24
   module: mimus-check-symbol
-- name: check
+- name: no_index_is_silence
+  kind: function
+  file: crates/mimus-check-symbol/tests/symbol.rs
+  line: 40
+  module: mimus-check-symbol
+- name: null_columns_error_row_decoding
+  kind: function
+  file: crates/mimus-check-symbol/tests/symbol.rs
+  line: 126
+  module: mimus-check-symbol
+- name: poisoned_conn_lock_errors
   kind: function
   file: crates/mimus-check-symbol/src/lib.rs
-  line: 46
+  line: 142
+  module: mimus-check-symbol
+- name: tests
+  kind: module
+  file: crates/mimus-check-symbol/src/lib.rs
+  line: 136
+  module: mimus-check-symbol
+- name: tmp
+  kind: function
+  file: crates/mimus-check-symbol/tests/symbol.rs
+  line: 10
+  module: mimus-check-symbol
+- name: unusable_index_errors_per_claim
+  kind: function
+  file: crates/mimus-check-symbol/tests/symbol.rs
+  line: 160
   module: mimus-check-symbol
 deps:
 - mimus-check
 - mimus-core
 - rusqlite
-- mimus_check
-- mimus_core
+- mimus-check
+- mimus-core
 - rusqlite
 notes: ''
 verify:
 - crates/mimus-check-symbol/Cargo.toml
 - crates/mimus-check-symbol/src/lib.rs
-- crates/mimus-check-symbol/src/lib.rs
-- crates/mimus-check-symbol/src/lib.rs
-- crates/mimus-check-symbol/src/lib.rs
-- crates/mimus-check-symbol/src/lib.rs
-- crates/mimus-check-symbol/src/lib.rs
+- crates/mimus-check-symbol/tests/symbol.rs
 provenance:
   files:
   - crates/mimus-check-symbol/Cargo.toml
   - crates/mimus-check-symbol/src/lib.rs
-  - crates/mimus-check-symbol/src/lib.rs
-  - crates/mimus-check-symbol/src/lib.rs
-  - crates/mimus-check-symbol/src/lib.rs
-  - crates/mimus-check-symbol/src/lib.rs
-  - crates/mimus-check-symbol/src/lib.rs
+  - crates/mimus-check-symbol/tests/symbol.rs
   hashes:
   - 9fbf6254aae6add24670adaa8808b5c101844e2c
-  - 6bcf02653c3f1dfe2aee2a5f4e9c3fee72ba3706
-  - 6bcf02653c3f1dfe2aee2a5f4e9c3fee72ba3706
-  - 6bcf02653c3f1dfe2aee2a5f4e9c3fee72ba3706
-  - 6bcf02653c3f1dfe2aee2a5f4e9c3fee72ba3706
-  - 6bcf02653c3f1dfe2aee2a5f4e9c3fee72ba3706
-  - 6bcf02653c3f1dfe2aee2a5f4e9c3fee72ba3706
-  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
-  generated_at: '1792310965'
-  generator: kuda-template/0.1.0
+  - c6d26ec25860b7c81816b5baf8fe0d804650d932
+  - ec0d279882c280e35f7978e3ff87452f170f61b4
+  commit_sha: 2d42434814785226bba68e3068d3c2426b141e99
+  generated_at: '1794114021'
+  generator: kuda-template/0.1.2

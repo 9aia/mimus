@@ -2,72 +2,96 @@ name: mimus-dotenv
 path: crates/mimus-dotenv/Cargo.toml
 purpose: 'Secret adapter: KEY=VAL env file (chmod 600)'
 api:
+- name: DotenvSecrets
+  kind: type
+  file: crates/mimus-dotenv/src/lib.rs
+  line: 9
+  module: mimus-dotenv
+- name: available
+  kind: function
+  file: crates/mimus-dotenv/src/lib.rs
+  line: 17
+  module: mimus-dotenv
+- name: creates_missing_parent_dirs
+  kind: function
+  file: crates/mimus-dotenv/tests/store.rs
+  line: 24
+  module: mimus-dotenv
+- name: get
+  kind: function
+  file: crates/mimus-dotenv/src/lib.rs
+  line: 20
+  module: mimus-dotenv
+- name: get_reads_and_misses
+  kind: function
+  file: crates/mimus-dotenv/tests/dotenv.rs
+  line: 15
+  module: mimus-dotenv
 - name: mimus-dotenv
   kind: module
   file: crates/mimus-dotenv/Cargo.toml
   line: 1
   module: mimus-dotenv
-- name: tmp
+- name: name
+  kind: function
+  file: crates/mimus-dotenv/src/lib.rs
+  line: 14
+  module: mimus-dotenv
+- name: perms_600
   kind: function
   file: crates/mimus-dotenv/tests/store.rs
-  line: 4
+  line: 52
+  module: mimus-dotenv
+- name: scratch
+  kind: function
+  file: crates/mimus-dotenv/tests/dotenv.rs
+  line: 7
+  module: mimus-dotenv
+- name: set
+  kind: function
+  file: crates/mimus-dotenv/src/lib.rs
+  line: 27
+  module: mimus-dotenv
+- name: set_creates_updates_and_chmods
+  kind: function
+  file: crates/mimus-dotenv/tests/dotenv.rs
+  line: 33
   module: mimus-dotenv
 - name: set_get_update
   kind: function
   file: crates/mimus-dotenv/tests/store.rs
   line: 9
   module: mimus-dotenv
-- name: perms_600
+- name: set_without_parent_dir_errors
   kind: function
   file: crates/mimus-dotenv/tests/store.rs
-  line: 25
+  line: 33
   module: mimus-dotenv
-- name: DotenvSecrets
-  kind: type
-  file: crates/mimus-dotenv/src/lib.rs
-  line: 9
-  module: mimus-dotenv
-- name: get
+- name: tmp
   kind: function
-  file: crates/mimus-dotenv/src/lib.rs
-  line: 14
-  module: mimus-dotenv
-- name: set
-  kind: function
-  file: crates/mimus-dotenv/src/lib.rs
-  line: 21
+  file: crates/mimus-dotenv/tests/store.rs
+  line: 4
   module: mimus-dotenv
 deps:
 - mimus-secret
-- mimus_dotenv
-- mimus_secret
-- mimus_secret
+- mimus-secret
 notes: ''
 verify:
 - crates/mimus-dotenv/Cargo.toml
-- crates/mimus-dotenv/tests/store.rs
-- crates/mimus-dotenv/tests/store.rs
-- crates/mimus-dotenv/tests/store.rs
 - crates/mimus-dotenv/src/lib.rs
-- crates/mimus-dotenv/src/lib.rs
-- crates/mimus-dotenv/src/lib.rs
+- crates/mimus-dotenv/tests/dotenv.rs
+- crates/mimus-dotenv/tests/store.rs
 provenance:
   files:
   - crates/mimus-dotenv/Cargo.toml
-  - crates/mimus-dotenv/tests/store.rs
-  - crates/mimus-dotenv/tests/store.rs
-  - crates/mimus-dotenv/tests/store.rs
   - crates/mimus-dotenv/src/lib.rs
-  - crates/mimus-dotenv/src/lib.rs
-  - crates/mimus-dotenv/src/lib.rs
+  - crates/mimus-dotenv/tests/dotenv.rs
+  - crates/mimus-dotenv/tests/store.rs
   hashes:
   - 26c064bafcb0a94b0c50dd4538bd8e2cd8963000
-  - 719060f5a90ada40a4b96a353f6b27be1a2cbeaf
-  - 719060f5a90ada40a4b96a353f6b27be1a2cbeaf
-  - 719060f5a90ada40a4b96a353f6b27be1a2cbeaf
-  - f94d46cdf76ee3de44514c82d852bccd0b347adc
-  - f94d46cdf76ee3de44514c82d852bccd0b347adc
-  - f94d46cdf76ee3de44514c82d852bccd0b347adc
-  commit_sha: a9d78c97588b11e7beb4b36c5cf8960888fe1ddc
-  generated_at: '1792310965'
-  generator: kuda-template/0.1.0
+  - 4ff16e17cbe68c287bbec5198cfda4f15de67f8b
+  - 4562cd3667947f2cca27de09b5530b6171c01c05
+  - 2cac076b79bba9f5747dae931cee2c6a45529e01
+  commit_sha: 2d42434814785226bba68e3068d3c2426b141e99
+  generated_at: '1794114021'
+  generator: kuda-template/0.1.2

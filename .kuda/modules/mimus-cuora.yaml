@@ -1,0 +1,105 @@
+name: mimus-cuora
+path: crates/mimus-cuora/Cargo.toml
+purpose: 'Secret adapter: cuora vaults via the cuora CLI'
+api:
+- name: CuoraSecrets
+  kind: type
+  file: crates/mimus-cuora/src/lib.rs
+  line: 14
+  module: mimus-cuora
+- name: ENV_LOCK
+  kind: const
+  file: crates/mimus-cuora/tests/cuora.rs
+  line: 33
+  module: mimus-cuora
+- name: available
+  kind: function
+  file: crates/mimus-cuora/src/lib.rs
+  line: 60
+  module: mimus-cuora
+- name: cmd
+  kind: function
+  file: crates/mimus-cuora/src/lib.rs
+  line: 40
+  module: mimus-cuora
+- name: default
+  kind: function
+  file: crates/mimus-cuora/src/lib.rs
+  line: 26
+  module: mimus-cuora
+- name: get
+  kind: function
+  file: crates/mimus-cuora/src/lib.rs
+  line: 70
+  module: mimus-cuora
+- name: get_hit_miss_and_failure
+  kind: function
+  file: crates/mimus-cuora/tests/cuora.rs
+  line: 47
+  module: mimus-cuora
+- name: mimus-cuora
+  kind: module
+  file: crates/mimus-cuora/Cargo.toml
+  line: 1
+  module: mimus-cuora
+- name: missing_binary_misses_everything
+  kind: function
+  file: crates/mimus-cuora/tests/cuora.rs
+  line: 79
+  module: mimus-cuora
+- name: name
+  kind: function
+  file: crates/mimus-cuora/src/lib.rs
+  line: 56
+  module: mimus-cuora
+- name: ref_shape_and_invocation
+  kind: function
+  file: crates/mimus-cuora/tests/cuora.rs
+  line: 92
+  module: mimus-cuora
+- name: rref
+  kind: function
+  file: crates/mimus-cuora/src/lib.rs
+  line: 36
+  module: mimus-cuora
+- name: set
+  kind: function
+  file: crates/mimus-cuora/src/lib.rs
+  line: 91
+  module: mimus-cuora
+- name: set_pipes_stdin_never_argv
+  kind: function
+  file: crates/mimus-cuora/tests/cuora.rs
+  line: 64
+  module: mimus-cuora
+- name: stub_dir
+  kind: function
+  file: crates/mimus-cuora/tests/cuora.rs
+  line: 8
+  module: mimus-cuora
+- name: stubbed
+  kind: function
+  file: crates/mimus-cuora/tests/cuora.rs
+  line: 35
+  module: mimus-cuora
+deps:
+- mimus-secret
+- serde_json
+- mimus-secret
+notes: ''
+verify:
+- crates/mimus-cuora/Cargo.toml
+- crates/mimus-cuora/src/lib.rs
+- crates/mimus-cuora/tests/cuora.rs
+provenance:
+  files:
+  - crates/mimus-cuora/Cargo.toml
+  - crates/mimus-cuora/src/lib.rs
+  - crates/mimus-cuora/tests/cuora.rs
+  hashes:
+  - 94d066567a24f6079f354756c22fa86264002c21
+  - b26783a55a1ab750899c73094a31e59e7ab48855
+  - 33663c4c18f058d8b97521bb462175196ed88822
+  commit_sha: 2d42434814785226bba68e3068d3c2426b141e99
+  generated_at: '1794114021'
+  generator: kuda-template/0.1.2
