@@ -1,6 +1,6 @@
 # mimus.toml — per-repo critic config. Secrets (LLM provider
-# keys) resolve via env var -> arca vault -> OS keyring ->
-# ~/.config/mimus/env (legacy read-throughs during the arca
+# keys) resolve via env var -> cuora vault -> OS keyring ->
+# ~/.config/mimus/env (legacy read-throughs during the cuora
 # migration; writes land in the vault). Never this file.
 
 [sources]

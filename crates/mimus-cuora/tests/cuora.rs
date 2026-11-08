@@ -1,17 +1,17 @@
-//! ArcaSecrets through a PATH-stubbed `arca` — the real binary
+//! CuoraSecrets through a PATH-stubbed `cuora` — the real binary
 //! needs an identity + vault; the stub exercises get/set/miss/
 //! failure paths and proves stdin-only writes.
 
-use mimus_arca::ArcaSecrets;
+use mimus_cuora::CuoraSecrets;
 use mimus_secret::Secrets;
 
 fn stub_dir() -> std::path::PathBuf {
-    let d = std::env::temp_dir().join(format!("mimus-arca-{}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("mimus-cuora-{}", std::process::id()));
     std::fs::create_dir_all(&d).unwrap();
     // get → {"value":"$STUB_VAL"}; put → stdin tee'd to $STUB_OUT;
     // anything else (--version) → exit $STUB_EXIT.
     std::fs::write(
-        d.join("arca"),
+        d.join("cuora"),
         "#!/bin/sh\n\
          [ -n \"$STUB_ARGV\" ] && printf '%s\\n' \"$*\" >>\"$STUB_ARGV\"\n\
          for a in \"$@\"; do\n\
@@ -24,7 +24,7 @@ fn stub_dir() -> std::path::PathBuf {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(d.join("arca"), std::fs::Permissions::from_mode(0o755)).unwrap();
+        std::fs::set_permissions(d.join("cuora"), std::fs::Permissions::from_mode(0o755)).unwrap();
     }
     d
 }
@@ -32,7 +32,7 @@ fn stub_dir() -> std::path::PathBuf {
 /// env mutation serializes within this binary (cargo test threads).
 static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
-fn stubbed() -> (std::path::PathBuf, ArcaSecrets) {
+fn stubbed() -> (std::path::PathBuf, CuoraSecrets) {
     let d = stub_dir();
     let old = std::env::var_os("PATH");
     let mut paths = vec![d.clone()];
@@ -40,7 +40,7 @@ fn stubbed() -> (std::path::PathBuf, ArcaSecrets) {
         paths.extend(std::env::split_paths(p));
     }
     std::env::set_var("PATH", std::env::join_paths(paths).unwrap());
-    (d, ArcaSecrets::default())
+    (d, CuoraSecrets::default())
 }
 
 #[test]
@@ -77,9 +77,9 @@ fn set_pipes_stdin_never_argv() {
 
 #[test]
 fn missing_binary_misses_everything() {
-    let s = ArcaSecrets {
-        bin: "arca-definitely-not-on-path".into(),
-        ..ArcaSecrets::default()
+    let s = CuoraSecrets {
+        bin: "cuora-definitely-not-on-path".into(),
+        ..CuoraSecrets::default()
     };
     assert!(!s.available());
     assert_eq!(s.get("ANYTHING"), None);
@@ -99,12 +99,12 @@ fn ref_shape_and_invocation() {
     s.set("OPENAI_API_KEY", "sk-fake").unwrap();
     let logged = std::fs::read_to_string(&argv).unwrap();
     assert!(
-        logged.contains("get arca://mimus/ANTHROPIC_API_KEY"),
-        "get invokes `arca get arca://mimus/<NAME>` — got: {logged}"
+        logged.contains("get cuora://mimus/ANTHROPIC_API_KEY"),
+        "get invokes `cuora get cuora://mimus/<NAME>` — got: {logged}"
     );
     assert!(
-        logged.contains("put arca://mimus/OPENAI_API_KEY"),
-        "put invokes `arca put arca://mimus/<NAME>` — got: {logged}"
+        logged.contains("put cuora://mimus/OPENAI_API_KEY"),
+        "put invokes `cuora put cuora://mimus/<NAME>` — got: {logged}"
     );
     assert!(
         !logged.contains("sk-fake"),

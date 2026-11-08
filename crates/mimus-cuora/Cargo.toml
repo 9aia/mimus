@@ -1,6 +1,6 @@
 [package]
-name = "mimus-arca"
-description = "Secret adapter: arca vaults via the arca CLI"
+name = "mimus-cuora"
+description = "Secret adapter: cuora vaults via the cuora CLI"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

@@ -1,6 +1,6 @@
 //! Secret port — named-secret resolution from a backing store.
 //! Impls: `mimus-keyring` (OS keyring), `mimus-dotenv` (KEY=VAL
-//! file), `mimus-arca` (arca vaults via the `arca` CLI),
+//! file), `mimus-cuora` (cuora vaults via the `cuora` CLI),
 //! [`EnvSecrets`] (process env — always first in the chain).
 
 use std::io;
@@ -47,10 +47,10 @@ impl Secrets for EnvSecrets {
 /// binary's root (mimus-cli `secrets()`); the chain itself just
 /// walks the order it's given.
 ///
-/// Target order (arca migration): `env → arca → keyring → dotenv`
-/// — arca vaults are the canonical store; keyring and the env
+/// Target order (cuora migration): `env → cuora → keyring → dotenv`
+/// — cuora vaults are the canonical store; keyring and the env
 /// file are legacy read-throughs kept during the transition.
-/// Writes land in arca because `env` refuses `set`.
+/// Writes land in cuora because `env` refuses `set`.
 pub struct Chain {
     stores: Vec<Box<dyn Secrets>>,
 }
@@ -148,7 +148,7 @@ mod tests {
             Box::new(Stub {
                 hits: &[],
                 writable: true,
-                nm: "arca",
+                nm: "cuora",
             }),
             Box::new(Stub {
                 hits: &[],
@@ -156,7 +156,7 @@ mod tests {
                 nm: "dotenv",
             }),
         ]);
-        c.set("K", "v").unwrap(); // env refuses → arca accepts
+        c.set("K", "v").unwrap(); // env refuses → cuora accepts
         let c = Chain::new(vec![Box::new(EnvSecrets)]);
         assert!(c.set("K", "v").is_err());
     }

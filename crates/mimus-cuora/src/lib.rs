@@ -1,48 +1,49 @@
-//! Arca adapter of `Secrets` — resolves names through the `arca`
+//! Cuora adapter of `Secrets` — resolves names through the `cuora`
 //! CLI, never by linking vault internals: env vars stay the
-//! interface (arca ADR-0001). `get` → `arca get arca://{ns}/{name}
-//! --json`; `set` → `arca put` with the value on **stdin** (never
-//! argv — arca's own rule: args land in history and `/proc`).
+//! interface (cuora ADR-0001). `get` → `cuora get cuora://{ns}/{name}
+//! --json`; `set` → `cuora put` with the value on **stdin** (never
+//! argv — cuora's own rule: args land in history and `/proc`).
 //!
-//! arca's audit ndjson rides the inherited stderr through to the
+//! cuora's audit ndjson rides the inherited stderr through to the
 //! caller — every mimus lookup is a materialization on the wire.
 
 use mimus_secret::Secrets;
 use std::io::{Read, Write};
 use std::process::{Command, Stdio};
 
-pub struct ArcaSecrets {
-    /// The arca binary — default `arca` (PATH resolution).
+pub struct CuoraSecrets {
+    /// The cuora binary — default `cuora` (PATH resolution).
     pub bin: String,
     /// Ref namespace: `get("ANTHROPIC_API_KEY")` resolves
-    /// `arca://{ns}/ANTHROPIC_API_KEY`.
+    /// `cuora://{ns}/ANTHROPIC_API_KEY`.
     pub ns: String,
-    /// Env context forwarded as `--env`; None = arca's own
-    /// resolution (`ARCA_ENV` → `dev`).
+    /// Env context forwarded as `--env`; None = cuora's own
+    /// resolution (`CUORA_ENV` → `dev`).
     pub env: Option<String>,
 }
 
-impl Default for ArcaSecrets {
+impl Default for CuoraSecrets {
     fn default() -> Self {
         Self {
-            bin: "arca".into(),
+            bin: "cuora".into(),
             ns: "mimus".into(),
             env: None,
         }
     }
 }
 
-impl ArcaSecrets {
+impl CuoraSecrets {
     fn rref(&self, name: &str) -> String {
-        format!("arca://{}/{name}", self.ns)
+        format!("cuora://{}/{name}", self.ns)
     }
 
     fn cmd(&self) -> Command {
         let mut c = Command::new(&self.bin);
-        // Attribution for arca's audit events — a claimed label,
+        // Attribution for cuora's audit events — a claimed label,
         // not identity (spoofable, like every local actor claim).
-        if std::env::var_os("ARCA_ACTOR").is_none() {
-            c.env("ARCA_ACTOR", "mimus");
+        // Honor a pre-rename ARCA_ACTOR export too.
+        if std::env::var_os("CUORA_ACTOR").is_none() && std::env::var_os("ARCA_ACTOR").is_none() {
+            c.env("CUORA_ACTOR", "mimus");
         }
         if let Some(e) = &self.env {
             c.args(["--env", e]);
@@ -51,9 +52,9 @@ impl ArcaSecrets {
     }
 }
 
-impl Secrets for ArcaSecrets {
+impl Secrets for CuoraSecrets {
     fn name(&self) -> &str {
-        "arca"
+        "cuora"
     }
 
     fn available(&self) -> bool {
@@ -98,7 +99,7 @@ impl Secrets for ArcaSecrets {
         if child.wait().map(|s| s.success()).unwrap_or(false) {
             Ok(())
         } else {
-            Err(std::io::Error::other("arca put failed"))
+            Err(std::io::Error::other("cuora put failed"))
         }
     }
 }
