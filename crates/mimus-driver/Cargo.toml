@@ -1,0 +1,27 @@
+[package]
+name = "mimus-driver"
+description = "tamias-driver-mimus — pavo view driver over a repo's mimus critic state (violations, rules, card audit)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["verification", "mimus"]
+categories = ["development-tools"]
+
+[[bin]]
+name = "tamias-driver-mimus"
+path = "src/main.rs"
+
+[dependencies]
+mimus-core.workspace = true
+mimus-config.workspace = true
+mimus-config-toml.workspace = true
+mimus-rules.workspace = true
+mimus-check-graph.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml.workspace = true
+# The public wire contract — sibling-checkout path dep until
+# pavo-protocol is published (the whole 9aia org lives side-by-side
+# under one parent dir; `version` is the crates.io fallback).
+pavo-protocol = { path = "../../../pavo/crates/pavo-protocol", version = "0.1.0" }
