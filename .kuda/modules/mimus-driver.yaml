@@ -72,6 +72,11 @@ api:
   file: crates/mimus-driver/src/main.rs
   line: 48
   module: mimus-driver
+- name: driver_passes_pavo_conformance
+  kind: function
+  file: crates/mimus-driver/tests/conformance.rs
+  line: 12
+  module: mimus-driver
 - name: err
   kind: function
   file: crates/mimus-driver/src/views.rs
@@ -197,12 +202,7 @@ api:
   file: crates/mimus-driver/src/views.rs
   line: 118
   module: mimus-driver
-- name: summary
-  kind: function
-  file: crates/mimus-driver/src/views.rs
-  line: 300
-  module: mimus-driver
-api_omitted: 7
+api_omitted: 8
 deps:
 - mimus-check-graph
 - mimus-config
@@ -213,6 +213,7 @@ deps:
 - serde
 - serde_json
 - serde_yaml
+- pavo-testkit
 - mimus-config
 - mimus-core
 - serde_json
@@ -223,17 +224,20 @@ verify:
 - crates/mimus-driver/src/data.rs
 - crates/mimus-driver/src/main.rs
 - crates/mimus-driver/src/views.rs
+- crates/mimus-driver/tests/conformance.rs
 provenance:
   files:
   - crates/mimus-driver/Cargo.toml
   - crates/mimus-driver/src/data.rs
   - crates/mimus-driver/src/main.rs
   - crates/mimus-driver/src/views.rs
+  - crates/mimus-driver/tests/conformance.rs
   hashes:
-  - 1ba7f205d8bad348239b46dc61ba11a30107ea64
+  - 600026493be46e5efac8f5e315e9273145d53c77
   - fdd21cd9f7f42b4fb147cc99de5e83f5f1fea3e6
   - 3b096384a5b0ebc98ef589dcb3b87d60607bb995
   - 7a0c0880536d69a3afc4b12c54f3dddf0da0e94a
-  commit_sha: fc24c704dc875dd188ed6741ae4e4ea54a03e833
-  generated_at: '1794170830'
+  - a0cd119f99326dcfc9ecc2dcec69161c4c06ad5c
+  commit_sha: b4a986950f67e5c66c508c9f0f1f28d1b3e680d0
+  generated_at: '1794178583'
   generator: kuda-template/0.1.2
