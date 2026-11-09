@@ -21,12 +21,14 @@ mimus-check-graph.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_yaml.workspace = true
-# The public wire contract — sibling-checkout path dep until
-# pavo-protocol is published (the whole 9aia org lives side-by-side
-# under one parent dir; `version` is the crates.io fallback).
-pavo-protocol = { path = "../../../pavo/crates/pavo-protocol", version = "0.1.0" }
+# pavo driver-authoring kit — ndjson serve loop + manifest/ViewNode
+# builders over pavo-protocol types. Git deps, not path: a fresh
+# mimus clone has no sibling ../pavo checkout and CI must still
+# resolve (same convention as myco/kuda/cuora/sturn drivers).
+pavo-driver-kit = { git = "https://github.com/9aia/pavo", version = "0.1.0" }
+pavo-protocol = { git = "https://github.com/9aia/pavo", version = "0.1.0" }
 
 [dev-dependencies]
 # Conformance gate — `cargo test` runs pavo's wire-contract suite
 # against this crate's own `tamias-driver-mimus serve` binary.
-pavo-testkit = { path = "../../../pavo/crates/pavo-testkit" }
+pavo-testkit = { git = "https://github.com/9aia/pavo" }

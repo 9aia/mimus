@@ -9,7 +9,8 @@
 //! - `serve` — ndjson JSON-RPC on stdio: `{"op":"manifest"}`,
 //!   `{"op":"views"}`, `{"op":"view","view":…,"params":{…}}`,
 //!   `{"op":"query","query":…,"params":{…}}` →
-//!   `{"ok":true,"result":…}` / `{"ok":false,"error":…}`.
+//!   `{"ok":true,"result":…}` / `{"ok":false,"error":…}`. The loop
+//!   itself is `pavo-driver-kit`'s [`kit::serve_stdio`].
 //!
 //! Which repo: each `view`/`query` resolves its own target —
 //! `params.dir`/`params.root`/`params.repo`/`params.config` →
@@ -27,25 +28,29 @@
 mod data;
 mod views;
 
-use std::io::{BufRead, Write};
+use pavo_driver_kit as kit;
+use pavo_protocol::wire::{Request, Response, ViewSummary};
+use serde_json::{json, Value};
 
-use pavo_protocol::wire::{self, Request, Response, ViewSummary};
-
-fn manifest_json() -> serde_json::Value {
-    serde_json::to_value(views::manifest()).unwrap_or(serde_json::Value::Null)
+fn manifest_json() -> String {
+    kit::manifest_json(&views::manifest())
 }
 
-fn capabilities_json() -> serde_json::Value {
+fn capabilities_json() -> Value {
     let m = views::manifest();
-    serde_json::json!({
-        "capabilities": m.capabilities,
-        "verbs": m.verbs,
-        "views": m.views.len(),
-    })
+    // The kit's shape plus the view count every sibling driver
+    // advertises.
+    let mut v = kit::capabilities_value(&m);
+    v["views"] = json!(m.views.len());
+    v
 }
 
-/// Dispatch one parsed request to its response.
-fn dispatch(req: Request) -> Response {
+/// One parsed wire [`Request`] → response. The kit's serve loop owns
+/// the ndjson plumbing and turns parse failures into `ok:false`;
+/// ops this driver doesn't implement (`render`, `submit`, `jobs`,
+/// `notifications`) get the same `ok:false` convention every
+/// non-provider driver answers.
+fn dispatch(req: &Request) -> Response {
     match req {
         Request::Manifest => Response::ok_typed(&views::manifest()),
         Request::Views => {
@@ -53,7 +58,7 @@ fn dispatch(req: Request) -> Response {
                 views::specs().iter().map(ViewSummary::from).collect();
             Response::ok_typed(&summaries)
         }
-        Request::View { view, params } => match views::view_result(&view, &params) {
+        Request::View { view, params } => match views::view_result(view, params) {
             Ok(result) => Response::ok_typed(&result),
             Err(e) => Response::err(e),
         },
@@ -62,13 +67,13 @@ fn dispatch(req: Request) -> Response {
             // `ok:true` — degraded snapshots travel as
             // `{"error": …}` data (the marker renderers understand),
             // matching the reference drivers' contract.
-            if !views::known_query(&query) {
+            if !views::known_query(query) {
                 return Response::err(format!("unknown query: {query}"));
             }
-            let snap = data::load(&params);
-            let payload = views::query_data(&query, &params, &snap);
-            Response::ok_typed(&wire::QueryResult {
-                query,
+            let snap = data::load(params);
+            let payload = views::query_data(query, params, &snap);
+            Response::ok_typed(&pavo_protocol::wire::QueryResult {
+                query: query.clone(),
                 data: payload,
             })
         }
@@ -78,43 +83,26 @@ fn dispatch(req: Request) -> Response {
         Request::Render { kind, .. } => Response::err(format!(
             "tamias-driver-mimus claims no renderers (kind '{kind}')"
         )),
+        // The protocol grew `submit`/`jobs`/`notifications` ops after
+        // this driver was written; mimus is read-only with no feeds,
+        // so they answer `ok:false` like any unsupported op.
+        Request::Submit { .. } | Request::Jobs | Request::Notifications => {
+            Response::err("tamias-driver-mimus implements no submit/jobs/notifications ops")
+        }
     }
 }
 
 fn serve() -> i32 {
-    let stdin = std::io::stdin();
-    let stdout = std::io::stdout();
-    let mut out = stdout.lock();
-    for line in stdin.lock().lines() {
-        let Ok(line) = line else { break };
-        if line.trim().is_empty() {
-            continue;
-        }
-        let response = match wire::parse_request(&line) {
-            Ok(req) => dispatch(req),
-            // Malformed JSON or an unknown op — the conformance
-            // contract wants `ok:false`, never a dropped line.
-            Err(e) => Response::err(e.to_string()),
-        };
-        let Ok(text) = wire::response_line(&response) else {
-            continue;
-        };
-        if writeln!(out, "{text}").is_err() || out.flush().is_err() {
-            break; // host went away — exit quietly
-        }
-    }
+    // The kit owns the ndjson loop — stdin EOF and a dead client
+    // both end it quietly, and either way the driver exits 0.
+    let _ = kit::serve_stdio(dispatch);
     0
 }
 
 fn main() {
     let mut args = std::env::args().skip(1);
     match args.next().as_deref() {
-        Some("manifest") => {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&manifest_json()).unwrap_or_default()
-            );
-        }
+        Some("manifest") => println!("{}", manifest_json()),
         Some("capabilities") => {
             println!(
                 "{}",

@@ -5,12 +5,12 @@ api:
 - name: CardRow
   kind: type
   file: crates/mimus-driver/src/views.rs
-  line: 407
+  line: 355
   module: mimus-driver
 - name: Pending
   kind: type
   file: crates/mimus-driver/src/views.rs
-  line: 455
+  line: 403
   module: mimus-driver
 - name: Snapshot
   kind: type
@@ -20,42 +20,37 @@ api:
 - name: audit_cards
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 451
+  line: 399
   module: mimus-driver
 - name: audit_rows
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 517
+  line: 465
   module: mimus-driver
 - name: audit_summary
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 534
+  line: 482
   module: mimus-driver
 - name: binding
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 88
-  module: mimus-driver
-- name: bound
-  kind: function
-  file: crates/mimus-driver/src/views.rs
-  line: 41
+  line: 55
   module: mimus-driver
 - name: capabilities_json
   kind: function
   file: crates/mimus-driver/src/main.rs
-  line: 38
+  line: 39
   module: mimus-driver
 - name: col
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 49
+  line: 32
   module: mimus-driver
 - name: data
   kind: module
   file: crates/mimus-driver/src/main.rs
-  line: 27
+  line: 28
   module: mimus-driver
 - name: default
   kind: function
@@ -65,12 +60,12 @@ api:
 - name: degraded_snapshot_still_answers_in_process_queries
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 667
+  line: 615
   module: mimus-driver
 - name: dispatch
   kind: function
   file: crates/mimus-driver/src/main.rs
-  line: 48
+  line: 53
   module: mimus-driver
 - name: driver_passes_pavo_conformance
   kind: function
@@ -80,12 +75,12 @@ api:
 - name: err
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 293
+  line: 241
   module: mimus-driver
 - name: every_binding_is_a_known_query
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 651
+  line: 599
   module: mimus-driver
 - name: find_config
   kind: function
@@ -100,27 +95,27 @@ api:
 - name: fmt_age
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 282
+  line: 230
   module: mimus-driver
 - name: fmt_age_scales
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 660
+  line: 608
   module: mimus-driver
 - name: hash_objects
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 418
+  line: 366
   module: mimus-driver
 - name: known_query
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 251
+  line: 199
   module: mimus-driver
 - name: kv
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 57
+  line: 36
   module: mimus-driver
 - name: load
   kind: function
@@ -130,27 +125,27 @@ api:
 - name: main
   kind: function
   file: crates/mimus-driver/src/main.rs
-  line: 109
+  line: 102
   module: mimus-driver
 - name: manifest
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 209
+  line: 177
   module: mimus-driver
 - name: manifest_advertises_pavo_and_lists_every_view
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 624
+  line: 572
   module: mimus-driver
 - name: manifest_json
   kind: function
   file: crates/mimus-driver/src/main.rs
-  line: 34
+  line: 35
   module: mimus-driver
 - name: md
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 81
+  line: 51
   module: mimus-driver
 - name: mimus-driver
   kind: module
@@ -165,7 +160,7 @@ api:
 - name: param
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 276
+  line: 224
   module: mimus-driver
 - name: parse_config
   kind: function
@@ -175,40 +170,46 @@ api:
 - name: query_data
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 261
+  line: 209
   module: mimus-driver
 - name: rules_rows
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 549
+  line: 497
   module: mimus-driver
 - name: rules_summary
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 581
+  line: 529
   module: mimus-driver
 - name: serve
   kind: function
   file: crates/mimus-driver/src/main.rs
-  line: 84
+  line: 95
+  module: mimus-driver
+- name: slot
+  kind: function
+  file: crates/mimus-driver/src/views.rs
+  line: 170
   module: mimus-driver
 - name: spec
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 96
+  line: 59
   module: mimus-driver
 - name: specs
   kind: function
   file: crates/mimus-driver/src/views.rs
-  line: 118
+  line: 78
   module: mimus-driver
-api_omitted: 8
+api_omitted: 7
 deps:
 - mimus-check-graph
 - mimus-config
 - mimus-config-toml
 - mimus-core
 - mimus-rules
+- pavo-driver-kit
 - pavo-protocol
 - serde
 - serde_json
@@ -233,11 +234,11 @@ provenance:
   - crates/mimus-driver/src/views.rs
   - crates/mimus-driver/tests/conformance.rs
   hashes:
-  - 600026493be46e5efac8f5e315e9273145d53c77
+  - d9f8bb794d6db123f755165d30a8ddb59a6910fb
   - fdd21cd9f7f42b4fb147cc99de5e83f5f1fea3e6
-  - 3b096384a5b0ebc98ef589dcb3b87d60607bb995
-  - 7a0c0880536d69a3afc4b12c54f3dddf0da0e94a
+  - 7fcbcb3e70a8fb69d2071df1766d84a7b20c4437
+  - c580c971b3c9dd67e3e34991c3fc4a6bf3675ec6
   - a0cd119f99326dcfc9ecc2dcec69161c4c06ad5c
-  commit_sha: b4a986950f67e5c66c508c9f0f1f28d1b3e680d0
-  generated_at: '1794178583'
+  commit_sha: 3361dbcd1b8a085f86aa1b947e2db6a4d4a5d948
+  generated_at: '1794246593'
   generator: kuda-template/0.1.2

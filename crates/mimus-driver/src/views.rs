@@ -21,76 +21,39 @@
 //! history — there is no `mimus:verdicts`/`mimus:history` view to
 //! build. `mimus:status` says so.
 
-use pavo_protocol::{
-    ColumnNode, Contributes, Contribution, DriverManifest, KvNode, MarkdownNode, NodeBase,
-    QueryBinding, TableColumn, TableNode, ViewNode, ViewSpec,
-};
+use pavo_driver_kit as kit;
+use pavo_protocol::{Contribution, DriverManifest, QueryBinding, ViewNode, ViewSpec};
 use serde_json::{json, Map, Value};
 
 use crate::data::Snapshot;
 
 // ---------------------------------------------------------------- helpers
 
-fn titled(title: &str) -> NodeBase {
-    NodeBase {
-        title: Some(title.to_string()),
-        ..NodeBase::default()
-    }
-}
-
-fn bound(title: &str, query: &str) -> NodeBase {
-    NodeBase {
-        title: Some(title.to_string()),
-        query: Some(query.to_string()),
-        ..NodeBase::default()
-    }
-}
-
 fn col(title: &str, children: Vec<ViewNode>) -> ViewNode {
-    ViewNode::Column(ColumnNode {
-        base: titled(title),
-        children,
-        gap: None,
-    })
+    kit::column(kit::base().title(title), children)
 }
 
 fn kv(title: &str, query: &str) -> ViewNode {
-    ViewNode::Kv(KvNode {
-        base: bound(title, query),
-        pairs: Vec::new(),
-    })
+    kit::kv(kit::base().title(title).query(query), Vec::new())
 }
 
 fn table(title: &str, query: &str, columns: &[(&str, &str)]) -> ViewNode {
-    ViewNode::Table(TableNode {
-        base: bound(title, query),
-        columns: columns
+    kit::sortable_table(
+        kit::base().title(title).query(query),
+        columns
             .iter()
-            .map(|(key, t)| TableColumn {
-                key: (*key).to_string(),
-                title: (*t).to_string(),
-                align: None,
-                width: None,
-            })
+            .map(|(key, t)| kit::table_column(key, t))
             .collect(),
-        rows: Vec::new(),
-        sortable: true,
-    })
+        Vec::new(),
+    )
 }
 
 fn md(title: &str, text: &str) -> ViewNode {
-    ViewNode::Markdown(MarkdownNode {
-        base: titled(title),
-        text: text.to_string(),
-    })
+    kit::markdown(kit::base().title(title), text)
 }
 
 fn binding(name: &str) -> QueryBinding {
-    QueryBinding {
-        name: name.to_string(),
-        op: "query".to_string(),
-        params: Map::new(),
-    }
+    kit::binding(name, "query")
 }
 
 fn spec(
@@ -101,14 +64,11 @@ fn spec(
     queries: &[&str],
     root: ViewNode,
 ) -> ViewSpec {
-    ViewSpec {
-        id: id.to_string(),
-        title: title.to_string(),
-        route: route.to_string(),
-        description: Some(description.to_string()),
-        queries: queries.iter().map(|q| binding(q)).collect(),
-        root,
+    let mut v = kit::view(id, title, route, root).description(description);
+    for q in queries {
+        v = v.query(binding(q));
     }
+    v.build()
 }
 
 // ---------------------------------------------------------------- manifest
@@ -205,43 +165,31 @@ pub fn specs() -> Vec<ViewSpec> {
     ]
 }
 
+/// A contributes-slot entry with an explicit priority (the kit's
+/// [`kit::contribution`] defaults to 100; these slots order lower).
+fn slot(id: &str, title: &str, route: &str, priority: i32) -> Contribution {
+    let mut c = kit::contribution(id, title, route);
+    c.priority = priority;
+    c
+}
+
 /// The `manifest` op result.
 pub fn manifest() -> DriverManifest {
-    DriverManifest {
-        name: "mimus".to_string(),
-        title: "Mimus".to_string(),
-        icon: Some("🐦".to_string()),
-        version: env!("CARGO_PKG_VERSION").to_string(),
-        verbs: vec!["manifest".to_string(), "serve".to_string()],
-        capabilities: vec!["pavo".to_string()],
-        contributes: Contributes {
-            navbar: vec![Contribution {
-                id: "violations".to_string(),
-                title: "Mimus".to_string(),
-                route: "/mimus/violations".to_string(),
-                priority: 30,
-                icon: None,
-            }],
-            dashboard: vec![Contribution {
-                id: "status".to_string(),
-                title: "Mimus status".to_string(),
-                route: "/mimus/status".to_string(),
-                priority: 40,
-                icon: None,
-            }],
-            statusbar: vec![Contribution {
-                id: "violations".to_string(),
-                title: "Mimus violations".to_string(),
-                route: "/mimus/violations".to_string(),
-                priority: 50,
-                icon: None,
-            }],
-            routes: Vec::new(),
-            extra: Default::default(),
-        },
-        views: specs(),
-        renderers: Vec::new(),
+    let mut m = kit::Manifest::new("mimus", "Mimus")
+        .version(env!("CARGO_PKG_VERSION"))
+        .icon("🐦");
+    for s in specs() {
+        m = m.view(s);
     }
+    m.navbar(slot("violations", "Mimus", "/mimus/violations", 30))
+        .dashboard(slot("status", "Mimus status", "/mimus/status", 40))
+        .statusbar(slot(
+            "violations",
+            "Mimus violations",
+            "/mimus/violations",
+            50,
+        ))
+        .build()
 }
 
 // ---------------------------------------------------------------- queries
