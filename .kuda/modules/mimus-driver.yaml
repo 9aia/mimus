@@ -1,21 +1,56 @@
 name: mimus-driver
 path: crates/mimus-driver/Cargo.toml
-purpose: tamias-driver-mimus — pavo view driver over a repo's mimus critic state (violations, rules, card audit)
+purpose: tamias-driver-mimus — pavo view driver over a repo's mimus critic state (violations, rules, card audit) plus engine ops dispatching to the mimus lib
 api:
 - name: CardRow
   kind: type
   file: crates/mimus-driver/src/views.rs
   line: 355
   module: mimus-driver
+- name: Engine
+  kind: type
+  file: crates/mimus-driver/src/surface.rs
+  line: 20
+  module: mimus-driver
 - name: Pending
   kind: type
   file: crates/mimus-driver/src/views.rs
   line: 403
   module: mimus-driver
+- name: READ_ONLY
+  kind: const
+  file: crates/mimus-driver/src/ops.rs
+  line: 40
+  module: mimus-driver
+- name: SKIP_PARAMS
+  kind: const
+  file: crates/mimus-driver/src/ops.rs
+  line: 35
+  module: mimus-driver
+- name: SURFACES
+  kind: const
+  file: crates/mimus-driver/src/ops.rs
+  line: 31
+  module: mimus-driver
 - name: Snapshot
   kind: type
   file: crates/mimus-driver/src/data.rs
   line: 48
+  module: mimus-driver
+- name: argv
+  kind: function
+  file: crates/mimus-driver/src/ops.rs
+  line: 179
+  module: mimus-driver
+- name: argv_maps_params_to_mimus_flags
+  kind: function
+  file: crates/mimus-driver/src/ops.rs
+  line: 334
+  module: mimus-driver
+- name: argv_omits_config_when_unresolved
+  kind: function
+  file: crates/mimus-driver/src/ops.rs
+  line: 355
   module: mimus-driver
 - name: audit_cards
   kind: function
@@ -40,7 +75,7 @@ api:
 - name: capabilities_json
   kind: function
   file: crates/mimus-driver/src/main.rs
-  line: 39
+  line: 57
   module: mimus-driver
 - name: col
   kind: function
@@ -50,7 +85,7 @@ api:
 - name: data
   kind: module
   file: crates/mimus-driver/src/main.rs
-  line: 28
+  line: 47
   module: mimus-driver
 - name: default
   kind: function
@@ -65,7 +100,7 @@ api:
 - name: dispatch
   kind: function
   file: crates/mimus-driver/src/main.rs
-  line: 53
+  line: 71
   module: mimus-driver
 - name: driver_passes_pavo_conformance
   kind: function
@@ -107,6 +142,11 @@ api:
   file: crates/mimus-driver/src/views.rs
   line: 366
   module: mimus-driver
+- name: kind
+  kind: function
+  file: crates/mimus-driver/src/ops.rs
+  line: 90
+  module: mimus-driver
 - name: known_query
   kind: function
   file: crates/mimus-driver/src/views.rs
@@ -120,12 +160,17 @@ api:
 - name: load
   kind: function
   file: crates/mimus-driver/src/data.rs
-  line: 133
+  line: 157
   module: mimus-driver
 - name: main
   kind: function
   file: crates/mimus-driver/src/main.rs
-  line: 102
+  line: 129
+  module: mimus-driver
+- name: manifest
+  kind: function
+  file: crates/mimus-driver/src/ops.rs
+  line: 122
   module: mimus-driver
 - name: manifest
   kind: function
@@ -137,10 +182,10 @@ api:
   file: crates/mimus-driver/src/views.rs
   line: 572
   module: mimus-driver
-- name: manifest_json
+- name: manifest_lists_every_leaf_as_cli_query
   kind: function
-  file: crates/mimus-driver/src/main.rs
-  line: 35
+  file: crates/mimus-driver/src/ops.rs
+  line: 299
   module: mimus-driver
 - name: md
   kind: function
@@ -152,58 +197,15 @@ api:
   file: crates/mimus-driver/Cargo.toml
   line: 1
   module: mimus-driver
-- name: overrides
+- name: op
   kind: function
-  file: crates/mimus-driver/src/data.rs
-  line: 78
+  file: crates/mimus-driver/src/surface.rs
+  line: 25
   module: mimus-driver
-- name: param
-  kind: function
-  file: crates/mimus-driver/src/views.rs
-  line: 224
-  module: mimus-driver
-- name: parse_config
-  kind: function
-  file: crates/mimus-driver/src/data.rs
-  line: 110
-  module: mimus-driver
-- name: query_data
-  kind: function
-  file: crates/mimus-driver/src/views.rs
-  line: 209
-  module: mimus-driver
-- name: rules_rows
-  kind: function
-  file: crates/mimus-driver/src/views.rs
-  line: 497
-  module: mimus-driver
-- name: rules_summary
-  kind: function
-  file: crates/mimus-driver/src/views.rs
-  line: 529
-  module: mimus-driver
-- name: serve
-  kind: function
-  file: crates/mimus-driver/src/main.rs
-  line: 95
-  module: mimus-driver
-- name: slot
-  kind: function
-  file: crates/mimus-driver/src/views.rs
-  line: 170
-  module: mimus-driver
-- name: spec
-  kind: function
-  file: crates/mimus-driver/src/views.rs
-  line: 59
-  module: mimus-driver
-- name: specs
-  kind: function
-  file: crates/mimus-driver/src/views.rs
-  line: 78
-  module: mimus-driver
-api_omitted: 7
+api_omitted: 33
 deps:
+- clap
+- mimus
 - mimus-check-graph
 - mimus-config
 - mimus-config-toml
@@ -215,15 +217,18 @@ deps:
 - serde_json
 - serde_yaml
 - pavo-testkit
+- clap
+- serde_json
 - mimus-config
 - mimus-core
-- serde_json
 - pavo_protocol
 notes: ''
 verify:
 - crates/mimus-driver/Cargo.toml
 - crates/mimus-driver/src/data.rs
 - crates/mimus-driver/src/main.rs
+- crates/mimus-driver/src/ops.rs
+- crates/mimus-driver/src/surface.rs
 - crates/mimus-driver/src/views.rs
 - crates/mimus-driver/tests/conformance.rs
 provenance:
@@ -231,14 +236,18 @@ provenance:
   - crates/mimus-driver/Cargo.toml
   - crates/mimus-driver/src/data.rs
   - crates/mimus-driver/src/main.rs
+  - crates/mimus-driver/src/ops.rs
+  - crates/mimus-driver/src/surface.rs
   - crates/mimus-driver/src/views.rs
   - crates/mimus-driver/tests/conformance.rs
   hashes:
-  - d9f8bb794d6db123f755165d30a8ddb59a6910fb
-  - fdd21cd9f7f42b4fb147cc99de5e83f5f1fea3e6
-  - 7fcbcb3e70a8fb69d2071df1766d84a7b20c4437
+  - 31ce564c2265b717f2c11e5a650f0002e7f0527e
+  - cc4885ee1f57deabd6499fb0d57a7e8e5a84ad46
+  - 61266e10fe1f13b5e09067e77cba5e3ad6bd9721
+  - f2c1aa6e5988724e620bfd42c1cd2c28c209565c
+  - 55749ca1d5c581df3984012424b0e4c92f3f45e5
   - c580c971b3c9dd67e3e34991c3fc4a6bf3675ec6
   - a0cd119f99326dcfc9ecc2dcec69161c4c06ad5c
-  commit_sha: 3361dbcd1b8a085f86aa1b947e2db6a4d4a5d948
-  generated_at: '1794246593'
+  commit_sha: 1b6e167593770d57a9d4b7113b199d98ec4795a6
+  generated_at: '1794290822'
   generator: kuda-template/0.1.2

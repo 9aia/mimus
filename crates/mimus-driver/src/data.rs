@@ -127,6 +127,30 @@ fn find_mimus() -> Option<PathBuf> {
     None
 }
 
+/// `(dir, config)` for an engine-op child — the resolution `load`
+/// uses, minus the snapshot: `dir` is the cwd the re-exec'd `run`
+/// inherits (config's parent, else the search dir), `config` is
+/// the `mimus.toml` the child gets as an absolute `--config`.
+/// `None` config leaves the child's own search in charge.
+pub fn resolve(params: &Map<String, Value>) -> (PathBuf, Option<String>) {
+    let (param_dir, param_config) = overrides(params);
+    let search_dir = param_dir.unwrap_or_else(|| PathBuf::from("."));
+    let found = find_config(param_config, &search_dir);
+    let dir = found
+        .as_ref()
+        .and_then(|p| p.parent())
+        .filter(|p| !p.as_os_str().is_empty())
+        .map(Path::to_path_buf)
+        .unwrap_or(search_dir);
+    let dir = std::fs::canonicalize(&dir).unwrap_or(dir);
+    let config = found.map(|p| {
+        std::fs::canonicalize(&p)
+            .map(|a| a.to_string_lossy().into_owned())
+            .unwrap_or_else(|_| p.display().to_string())
+    });
+    (dir, config)
+}
+
 /// Resolve + load. `params` are the wire op's caller params —
 /// `dir`/`root`/`repo`/`config` steer resolution, the rest pass
 /// through to the query resolvers untouched.

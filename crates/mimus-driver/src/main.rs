@@ -6,35 +6,53 @@
 //! - `manifest` — print the [`DriverManifest`] JSON (discovery
 //!   probe; never touches repo state).
 //! - `capabilities` — `{"capabilities": ["pavo"], "verbs": […]}`.
+//! - `ops` — the engine ops manifest: every `mimus` CLI verb as a
+//!   `cli.<verb>` wire query, derived from the engine's own clap
+//!   tree ([`mimus::command`]).
+//! - `run <argv>` — engine passthrough: `tamias-driver-mimus run
+//!   audit` ≡ `mimus audit`. Also the child side of `cli.*` wire
+//!   queries (`ops::run_verb` re-execs this same verb so engine
+//!   output never touches the serve stream).
 //! - `serve` — ndjson JSON-RPC on stdio: `{"op":"manifest"}`,
 //!   `{"op":"views"}`, `{"op":"view","view":…,"params":{…}}`,
 //!   `{"op":"query","query":…,"params":{…}}` →
-//!   `{"ok":true,"result":…}` / `{"ok":false,"error":…}`. The loop
-//!   itself is `pavo-driver-kit`'s [`kit::serve_stdio`].
+//!   `{"ok":true,"result":…}` / `{"ok":false,"error":…}`.
+//!   `query:"ops"` answers the ops manifest; `query:"cli.<verb>"`
+//!   runs the engine op.
+//!
+//! Optional surfaces: features `cli`/`mcp` embed
+//! pavo-driver-kit's surface layer — `cli <op> [args]` is a
+//! generated CLI over the ops manifest, `mcp` serves the ops as
+//! MCP tools on stdio. Both are equivalent to the standalone
+//! `tamias-driver-cli`/`tamias-driver-mcp` surface drivers, minus
+//! the PATH/discovery hop.
 //!
 //! Which repo: each `view`/`query` resolves its own target —
 //! `params.dir`/`params.root`/`params.repo`/`params.config` →
 //! `$MIMUS_CONFIG` → `<dir>/mimus.toml` → `~/.config/mimus/mimus.toml`,
 //! exactly the `mimus` CLI's config search; the repo root is the
-//! config's parent dir. See `data.rs` for the exact order.
-//! `manifest`/`views` are repo-free so pavo can enumerate drivers
-//! anywhere.
+//! config's parent dir. See `data.rs` for the exact order. Engine
+//! ops are the exception by design: `cli.<verb>` re-execs `run` in
+//! the resolved dir and lets `mimus::dispatch` own the outcome —
+//! writes keep the engine's own semantics (config search,
+//! `.mimus/` cache, claim rewrites). `manifest`/`views` are
+//! repo-free so pavo can enumerate drivers anywhere.
 //!
-//! The driver is **read-only**: it reads `mimus.toml`, `rules/*.toml`,
-//! and `.kuda` card provenance in-process, and shells out to
-//! `mimus report --format json` for the violations view — mimus owns
-//! the check pipeline; the driver only ever reads its output.
+//! The view side is **read-only**: it reads `mimus.toml`,
+//! `rules/*.toml`, and `.kuda` card provenance in-process, and
+//! shells out to `mimus report --format json` for the violations
+//! view — mimus owns the check pipeline; the driver only ever
+//! reads its output.
 
 mod data;
+mod ops;
+#[cfg(any(feature = "cli", feature = "mcp"))]
+mod surface;
 mod views;
 
 use pavo_driver_kit as kit;
 use pavo_protocol::wire::{Request, Response, ViewSummary};
 use serde_json::{json, Value};
-
-fn manifest_json() -> String {
-    kit::manifest_json(&views::manifest())
-}
 
 fn capabilities_json() -> Value {
     let m = views::manifest();
@@ -63,19 +81,27 @@ fn dispatch(req: &Request) -> Response {
             Err(e) => Response::err(e),
         },
         Request::Query { query, params } => {
-            // Unknown names fail the op; everything else answers
-            // `ok:true` — degraded snapshots travel as
-            // `{"error": …}` data (the marker renderers understand),
-            // matching the reference drivers' contract.
-            if !views::known_query(query) {
-                return Response::err(format!("unknown query: {query}"));
+            // `ops` and `cli.<verb>` are engine ops; everything
+            // else is a view query — unknown names fail the op,
+            // degraded snapshots travel as `{"error": …}` data
+            // (the marker renderers understand).
+            if query == "ops" {
+                Response::ok_typed(&pavo_protocol::wire::QueryResult {
+                    query: query.clone(),
+                    data: ops::manifest(),
+                })
+            } else if let Some(v) = ops::op_of(query) {
+                ops::run_verb(&v, params)
+            } else if views::known_query(query) {
+                let snap = data::load(params);
+                let payload = views::query_data(query, params, &snap);
+                Response::ok_typed(&pavo_protocol::wire::QueryResult {
+                    query: query.clone(),
+                    data: payload,
+                })
+            } else {
+                Response::err(format!("unknown query: {query}"))
             }
-            let snap = data::load(params);
-            let payload = views::query_data(query, params, &snap);
-            Response::ok_typed(&pavo_protocol::wire::QueryResult {
-                query: query.clone(),
-                data: payload,
-            })
         }
         // `render` — this driver ships no renderer plugins; hosts
         // only call it for kinds the manifest claims, so answering
@@ -84,8 +110,9 @@ fn dispatch(req: &Request) -> Response {
             "tamias-driver-mimus claims no renderers (kind '{kind}')"
         )),
         // The protocol grew `submit`/`jobs`/`notifications` ops after
-        // this driver was written; mimus is read-only with no feeds,
-        // so they answer `ok:false` like any unsupported op.
+        // this driver was written; mutations go through `cli.<verb>`,
+        // never `submit`, so they answer `ok:false` like any
+        // unsupported op.
         Request::Submit { .. } | Request::Jobs | Request::Notifications => {
             Response::err("tamias-driver-mimus implements no submit/jobs/notifications ops")
         }
@@ -100,19 +127,62 @@ fn serve() -> i32 {
 }
 
 fn main() {
-    let mut args = std::env::args().skip(1);
-    match args.next().as_deref() {
-        Some("manifest") => println!("{}", manifest_json()),
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let code = match args.first().map(String::as_str) {
+        Some("manifest") => {
+            println!("{}", kit::manifest_json(&views::manifest()));
+            0
+        }
         Some("capabilities") => {
             println!(
                 "{}",
                 serde_json::to_string_pretty(&capabilities_json()).unwrap_or_default()
             );
+            0
         }
-        Some("serve") => std::process::exit(serve()),
+        Some("ops") => {
+            println!("{}", ops::manifest());
+            0
+        }
+        // Engine passthrough — `tamias-driver-mimus run audit` is
+        // `mimus audit`. Also the child side of `cli.*` wire
+        // queries (ops::run_verb re-execs this same verb).
+        Some("run") => {
+            let argv = std::iter::once("mimus".to_string()).chain(args.iter().skip(1).cloned());
+            std::process::exit(mimus::run_from(argv));
+        }
+        // Embedded surface verbs (feature-gated, optional): the
+        // pavo-driver-kit surface layer renders this driver's own
+        // ops manifest — `cli` = generated clap CLI (op →
+        // subcommand), `mcp` = ops → MCP tools over stdio. The
+        // standalone tamias-driver-cli/-mcp binaries do the same
+        // over process dispatch; these verbs need nothing on PATH.
+        #[cfg(feature = "cli")]
+        Some("cli") => {
+            let m = kit::surface::OpsManifest::from_value(&ops::manifest()).unwrap_or_default();
+            let argv: Vec<String> = std::iter::once("mimus".to_string())
+                .chain(args.iter().skip(1).cloned())
+                .collect();
+            kit::surface::cli::run("mimus", &m, &argv, &mut surface::Engine)
+        }
+        #[cfg(feature = "mcp")]
+        Some("mcp") => {
+            let m = kit::surface::OpsManifest::from_value(&ops::manifest()).unwrap_or_default();
+            match kit::surface::mcp::serve_stdio(&m, &mut surface::Engine) {
+                Ok(()) => 0,
+                Err(e) => {
+                    eprintln!("tamias-driver-mimus mcp: {e}");
+                    1
+                }
+            }
+        }
+        Some("serve") | None => serve(),
         _ => {
-            eprintln!("usage: tamias-driver-mimus manifest|capabilities|serve");
-            std::process::exit(1);
+            eprintln!(
+                "usage: tamias-driver-mimus manifest|capabilities|ops|run <argv>|serve\n       (feature `cli` adds `cli <op> [args]`; feature `mcp` adds `mcp`)"
+            );
+            1
         }
-    }
+    };
+    std::process::exit(code);
 }

@@ -9,23 +9,23 @@ api:
   module: mimus
 - name: Cli
   kind: type
-  file: crates/mimus-cli/src/main.rs
-  line: 19
+  file: crates/mimus-cli/src/lib.rs
+  line: 27
   module: mimus
 - name: Cmd
   kind: type
-  file: crates/mimus-cli/src/main.rs
-  line: 34
+  file: crates/mimus-cli/src/lib.rs
+  line: 42
   module: mimus
 - name: EXAMPLE_TOML
   kind: const
-  file: crates/mimus-cli/src/main.rs
-  line: 11
+  file: crates/mimus-cli/src/lib.rs
+  line: 19
   module: mimus
 - name: GENERIC
   kind: const
-  file: crates/mimus-cli/src/main.rs
-  line: 247
+  file: crates/mimus-cli/src/lib.rs
+  line: 294
   module: mimus
 - name: Mimus
   kind: type
@@ -44,8 +44,8 @@ api:
   module: mimus
 - name: audit
   kind: function
-  file: crates/mimus-cli/src/main.rs
-  line: 811
+  file: crates/mimus-cli/src/lib.rs
+  line: 858
   module: mimus
 - name: audit_scores_cards
   kind: function
@@ -54,13 +54,13 @@ api:
   module: mimus
 - name: canon
   kind: function
-  file: crates/mimus-cli/src/main.rs
-  line: 565
+  file: crates/mimus-cli/src/lib.rs
+  line: 612
   module: mimus
 - name: card_prose_claims
   kind: function
-  file: crates/mimus-cli/src/main.rs
-  line: 601
+  file: crates/mimus-cli/src/lib.rs
+  line: 648
   module: mimus
 - name: cfg
   kind: function
@@ -69,8 +69,8 @@ api:
   module: mimus
 - name: check
   kind: function
-  file: crates/mimus-cli/src/main.rs
-  line: 586
+  file: crates/mimus-cli/src/lib.rs
+  line: 633
   module: mimus
 - name: check_all_runs_semantic_tier
   kind: function
@@ -174,8 +174,8 @@ api:
   module: mimus
 - name: claims_dump
   kind: function
-  file: crates/mimus-cli/src/main.rs
-  line: 303
+  file: crates/mimus-cli/src/lib.rs
+  line: 350
   module: mimus
 - name: claims_dump_with_cards
   kind: function
@@ -184,25 +184,25 @@ api:
   module: mimus
 - name: collect
   kind: function
-  file: crates/mimus-cli/src/main.rs
-  line: 336
+  file: crates/mimus-cli/src/lib.rs
+  line: 383
+  module: mimus
+- name: command
+  kind: function
+  file: crates/mimus-cli/src/lib.rs
+  line: 109
   module: mimus
 - name: cov_tests
   kind: module
-  file: crates/mimus-cli/src/main.rs
-  line: 1049
+  file: crates/mimus-cli/src/lib.rs
+  line: 1096
   module: mimus
 - name: coverage
   kind: function
-  file: crates/mimus-cli/src/main.rs
-  line: 212
+  file: crates/mimus-cli/src/lib.rs
+  line: 259
   module: mimus
-- name: coverage_gate
-  kind: function
-  file: modules/dagger/dagger/src/mimus/main.py
-  line: 398
-  module: mimus
-api_omitted: 49
+api_omitted: 55
 deps:
 - dagger-io
 - clap
@@ -237,6 +237,7 @@ notes: ''
 verify:
 - Cargo.toml
 - crates/mimus-cli/Cargo.toml
+- crates/mimus-cli/src/lib.rs
 - crates/mimus-cli/src/main.rs
 - crates/mimus-cli/tests/e2e.rs
 - modules/dagger/dagger/pyproject.toml
@@ -247,6 +248,7 @@ provenance:
   files:
   - Cargo.toml
   - crates/mimus-cli/Cargo.toml
+  - crates/mimus-cli/src/lib.rs
   - crates/mimus-cli/src/main.rs
   - crates/mimus-cli/tests/e2e.rs
   - modules/dagger/dagger/pyproject.toml
@@ -254,14 +256,15 @@ provenance:
   - modules/dagger/dagger/src/mimus/main.py
   - modules/dagger/tests/test_self_patch.py
   hashes:
-  - 9eb0291698b89cc849065d03162fdfd26ff50fc3
-  - b3c23a867986b81f68986db9d3547701583e3e76
-  - 281ee049a8e12defd36affd17d1a92ea1319f852
+  - 63034b6f2147188dfeeac79a594f419ccc97adab
+  - ee7efd21a03f14188cdfd534c2af3a046196aba1
+  - a84cb01d6adb62f856f8a2c1fae6193ca0cc8896
+  - e1575f1cd039e7d7df8ff90c20a93bde52f78da7
   - 874f375dedab9bc6436a93187767cea9bcb77d6a
   - 6391d6a9586b1a42d2e3b1270cd9a441f321af68
   - 4093067c2bfef36b97a7be4448a54a5439d61d91
   - 912bc128df92503a9353c765bd892d9ec84c537e
   - d515a59e736b23d553075159e989585bba9ca252
-  commit_sha: fc24c704dc875dd188ed6741ae4e4ea54a03e833
-  generated_at: '1794170830'
+  commit_sha: 1b6e167593770d57a9d4b7113b199d98ec4795a6
+  generated_at: '1794290822'
   generator: kuda-template/0.1.2

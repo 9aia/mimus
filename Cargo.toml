@@ -35,6 +35,7 @@ inherits = "release"
 lto = "thin"
 
 [workspace.dependencies]
+mimus = { path = "crates/mimus-cli", version = "0.1.0" }
 mimus-core = { path = "crates/mimus-core", version = "0.1.0" }
 mimus-claims = { path = "crates/mimus-claims", version = "0.1.0" }
 mimus-check = { path = "crates/mimus-check", version = "0.1.0" }

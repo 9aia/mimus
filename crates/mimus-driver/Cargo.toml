@@ -1,6 +1,6 @@
 [package]
 name = "mimus-driver"
-description = "tamias-driver-mimus — pavo view driver over a repo's mimus critic state (violations, rules, card audit)"
+description = "tamias-driver-mimus — pavo view driver over a repo's mimus critic state (violations, rules, card audit) plus engine ops dispatching to the mimus lib"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -12,12 +12,24 @@ categories = ["development-tools"]
 name = "tamias-driver-mimus"
 path = "src/main.rs"
 
+[features]
+# Embedded surfaces (pavo-driver-kit's surface layer) — optional,
+# acyclic: the driver gains `cli`/`mcp` argv verbs that serve its own
+# ops manifest; the standalone tamias-driver-cli/-mcp binaries front
+# the same ops without any feature. default = view driver + `run`
+# passthrough only.
+default = []
+cli = ["pavo-driver-kit/cli"]
+mcp = ["pavo-driver-kit/mcp"]
+
 [dependencies]
+mimus.workspace = true
 mimus-core.workspace = true
 mimus-config.workspace = true
 mimus-config-toml.workspace = true
 mimus-rules.workspace = true
 mimus-check-graph.workspace = true
+clap.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_yaml.workspace = true

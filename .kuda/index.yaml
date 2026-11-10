@@ -1,7 +1,8 @@
 name: mimus
-root: /home/luis/GitHub/9aia/mimus
+root: /home/luis/GitHub/9aia/workspace/repos/mimus
 purpose: '*Verification engine — proofs over what agents claim.*'
 modules:
+- docs
 - mimus
 - mimus-check
 - mimus-check-acp
@@ -21,11 +22,12 @@ modules:
 - mimus-rules
 - mimus-secret
 - mimus-vcs
+- project
 commands:
 - cargo check
 - cargo test --workspace
-tree_digest: 7a65856e88e77d8114007b70bdeda7480f3fa619
-files_total: 67
+tree_digest: 9b293686652d0268f53e5093604098aa3ac7a003
+files_total: 98
 provenance:
   files:
   - Cargo.toml
@@ -51,7 +53,7 @@ provenance:
   - crates/mimus-vcs/Cargo.toml
   - modules/dagger/dagger/pyproject.toml
   hashes:
-  - 9eb0291698b89cc849065d03162fdfd26ff50fc3
+  - 63034b6f2147188dfeeac79a594f419ccc97adab
   - 6093a3f27d4d34ee522c4bfab7bf0cc5bc76d8ca
   - e7348ffc0841bbee8073e26c5481cd858fd776ba
   - 41c8b740933ac566f68b8bf5cd4b76a56ce4dfd5
@@ -60,19 +62,19 @@ provenance:
   - 957284426c7b88c9e03b893454e121d04c21539e
   - 9fbf6254aae6add24670adaa8808b5c101844e2c
   - 21e63d1417ba1bcba2262e855cb130e8e90f2151
-  - b3c23a867986b81f68986db9d3547701583e3e76
+  - ee7efd21a03f14188cdfd534c2af3a046196aba1
   - 2b57fc93873c3fa45b96c90218c20d4a3c9927f1
   - 47f21a9cf176c7708d2a879eff9f464589ceb363
   - 6b7185a94a97d0e4ebf63efd7a95dd2800f0bc41
   - 94d066567a24f6079f354756c22fa86264002c21
   - 26c064bafcb0a94b0c50dd4538bd8e2cd8963000
-  - 1ba7f205d8bad348239b46dc61ba11a30107ea64
+  - 31ce564c2265b717f2c11e5a650f0002e7f0527e
   - f902acdf6baa0db069e7f6a4cf2a486d7907347c
   - ab61c787206bd76c1f9937084c108473b6ece3fc
   - b1cf727ea9ec71dccd378bea295d8def00f34840
   - e19d2f415bf9c2b1602d12c39402b368e2e0565d
   - 81d7057c56b51400c3eaf54edd1c6fc0ec685b1c
   - 6391d6a9586b1a42d2e3b1270cd9a441f321af68
-  commit_sha: fc24c704dc875dd188ed6741ae4e4ea54a03e833
-  generated_at: '1794170830'
+  commit_sha: 1b6e167593770d57a9d4b7113b199d98ec4795a6
+  generated_at: '1794290822'
   generator: kuda/0.1.0

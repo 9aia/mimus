@@ -1,0 +1,133 @@
+name: docs
+path: docs/package.json
+purpose: documentation corpus — pages as records, backticked refs as edges
+api:
+- name: Command-Line Help for `mimus`
+  kind: record
+  file: docs/reference/cli.md
+  line: 1
+  module: docs
+- name: Config — `mimus.toml`
+  kind: record
+  file: docs/reference/config.md
+  line: 1
+  module: docs
+- name: Crate API
+  kind: record
+  file: docs/reference/crate-api.md
+  line: 1
+  module: docs
+- name: 'Explanation: architecture'
+  kind: record
+  file: docs/explanation/architecture.md
+  line: 1
+  module: docs
+- name: 'Explanation: claims, tiers, and the evidence bar'
+  kind: record
+  file: docs/explanation/claims.md
+  line: 1
+  module: docs
+- name: Getting started
+  kind: record
+  file: docs/getting-started.md
+  line: 1
+  module: docs
+- name: 'How-to: audit kuda memory'
+  kind: record
+  file: docs/how-to/kuda-audit.md
+  line: 1
+  module: docs
+- name: 'How-to: author rules'
+  kind: record
+  file: docs/how-to/rules-authoring.md
+  line: 1
+  module: docs
+- name: 'How-to: gate CI on docs'
+  kind: record
+  file: docs/how-to/ci-gate.md
+  line: 1
+  module: docs
+- name: 'How-to: multi-repo checking'
+  kind: record
+  file: docs/how-to/multi-repo.md
+  line: 1
+  module: docs
+- name: 'Reference: violation format'
+  kind: record
+  file: docs/reference/violations.md
+  line: 1
+  module: docs
+- name: The release model
+  kind: record
+  file: docs/explanation/release-model.md
+  line: 1
+  module: docs
+- name: 'Tutorial: your first audit'
+  kind: record
+  file: docs/tutorials/first-run.md
+  line: 1
+  module: docs
+- name: mimus vs the alternatives
+  kind: record
+  file: docs/comparison.md
+  line: 1
+  module: docs
+deps: []
+notes: ''
+verify:
+- docs/package.json
+- docs/comparison.md
+- docs/explanation/architecture.md
+- docs/explanation/claims.md
+- docs/explanation/release-model.md
+- docs/gen-api-index.py
+- docs/gen-config-docs.py
+- docs/gen-crate-map.py
+- docs/getting-started.md
+- docs/how-to/ci-gate.md
+provenance:
+  files:
+  - docs/comparison.md
+  - docs/explanation/architecture.md
+  - docs/explanation/claims.md
+  - docs/explanation/release-model.md
+  - docs/gen-api-index.py
+  - docs/gen-config-docs.py
+  - docs/gen-crate-map.py
+  - docs/getting-started.md
+  - docs/how-to/ci-gate.md
+  - docs/how-to/kuda-audit.md
+  - docs/how-to/multi-repo.md
+  - docs/how-to/rules-authoring.md
+  - docs/index.md
+  - docs/package.json
+  - docs/public/api/static.files/SourceSerif4-LICENSE-a2cfd9d5.md
+  - docs/reference/cli.md
+  - docs/reference/config.md
+  - docs/reference/crate-api.md
+  - docs/reference/violations.md
+  - docs/tutorials/first-run.md
+  hashes:
+  - c6fc0201555b57e16708f350e5b4cd7dc16dbd19
+  - ef1df4687aa158f0ca5ae150992176749a136017
+  - f36bd667851683ea8afab22a43c11c7488e6f331
+  - cb1d8f8cb8c6dae52931dd24ff15436f6e04d368
+  - 017f6fd87e86f8234928388956319d98fda7c65a
+  - 10d8d771944d0bd9339d438914a2eda4e6adfd8e
+  - 51ae74d14952f77be7691915d2c56921b5816c96
+  - f2422405516070122f974450ec7fb652c908911a
+  - 67955e33201c8ad72a7d2db868e4adc8510f21a8
+  - 829ebc202da56067116747c11f53ac23d1c467f2
+  - 2b50fb2fc116944dd519d432799800cd78ec7eb1
+  - 29da6f345e3f4efa87571a997f9d0408038f5208
+  - 9cedaad7f217e33c53bce7d5653ec072c59e537c
+  - 805cb3042fc1706f7666af5d2685042db9be858d
+  - 175fa4f47aecdc02e902d243a1c29914eb2ee258
+  - 38ba76e566156b2797acb143389eb9d109001c69
+  - 837a54738ea29a432818106def632b5d691ae92a
+  - 96d4eda7f6366183a3d72a703d7b9db26728a979
+  - 8346ae98e09ff76ed27f0fd4d85f1d03eb893984
+  - 5b0ad76344a8cebdb4eeeda5a903c40aecd9ba53
+  commit_sha: 1b6e167593770d57a9d4b7113b199d98ec4795a6
+  generated_at: '1794290822'
+  generator: kuda-template/0.1.2
