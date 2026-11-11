@@ -2,7 +2,7 @@
 id = "ADR-0002"
 title = "ADR-0002: Graph tier — bidirectional + reflexive checking at mechanical speed"
 status = "open"
-priority = "medium"
+priority = "med"
 +++
 
 # ADR-0002: Graph tier — bidirectional + reflexive checking at mechanical speed

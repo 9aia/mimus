@@ -2,7 +2,7 @@
 id = "ADR-0003"
 title = "ADR-0003: Tiered memory artifacts + ports/adapters topology"
 status = "open"
-priority = "medium"
+priority = "med"
 +++
 
 # ADR-0003: Tiered memory artifacts + ports/adapters topology
