@@ -11,8 +11,6 @@ members = [
     "crates/mimus-check-graph",
     "crates/mimus-check-acp",
     "crates/mimus-rules",
-    "crates/mimus-vcs",
-    "crates/mimus-git",
     "crates/mimus-secret",
     "crates/mimus-keyring",
     "crates/mimus-dotenv",
@@ -45,8 +43,6 @@ mimus-check-symbol = { path = "crates/mimus-check-symbol", version = "0.1.0" }
 mimus-check-graph = { path = "crates/mimus-check-graph", version = "0.1.0" }
 mimus-check-acp = { path = "crates/mimus-check-acp", version = "0.1.0" }
 mimus-rules = { path = "crates/mimus-rules", version = "0.1.0" }
-mimus-vcs = { path = "crates/mimus-vcs", version = "0.1.0" }
-mimus-git = { path = "crates/mimus-git", version = "0.1.0" }
 mimus-secret = { path = "crates/mimus-secret", version = "0.1.0" }
 mimus-keyring = { path = "crates/mimus-keyring", version = "0.1.0" }
 mimus-dotenv = { path = "crates/mimus-dotenv", version = "0.1.0" }

@@ -447,13 +447,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mimus-git"
-version = "0.1.0"
-dependencies = [
- "mimus-vcs",
-]
-
-[[package]]
 name = "mimus-keyring"
 version = "0.1.0"
 dependencies = [
@@ -473,10 +466,6 @@ dependencies = [
 
 [[package]]
 name = "mimus-secret"
-version = "0.1.0"
-
-[[package]]
-name = "mimus-vcs"
 version = "0.1.0"
 
 [[package]]
