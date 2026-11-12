@@ -10,7 +10,7 @@ api:
 - name: Engine
   kind: type
   file: crates/mimus-driver/src/surface.rs
-  line: 20
+  line: 19
   module: mimus-driver
 - name: Pending
   kind: type
@@ -75,7 +75,7 @@ api:
 - name: capabilities_json
   kind: function
   file: crates/mimus-driver/src/main.rs
-  line: 57
+  line: 63
   module: mimus-driver
 - name: col
   kind: function
@@ -85,7 +85,7 @@ api:
 - name: data
   kind: module
   file: crates/mimus-driver/src/main.rs
-  line: 47
+  line: 53
   module: mimus-driver
 - name: default
   kind: function
@@ -100,12 +100,17 @@ api:
 - name: dispatch
   kind: function
   file: crates/mimus-driver/src/main.rs
-  line: 71
+  line: 77
   module: mimus-driver
 - name: driver_passes_pavo_conformance
   kind: function
   file: crates/mimus-driver/tests/conformance.rs
   line: 12
+  module: mimus-driver
+- name: engine_argv
+  kind: function
+  file: crates/mimus-driver/src/main.rs
+  line: 207
   module: mimus-driver
 - name: err
   kind: function
@@ -165,7 +170,7 @@ api:
 - name: main
   kind: function
   file: crates/mimus-driver/src/main.rs
-  line: 129
+  line: 135
   module: mimus-driver
 - name: manifest
   kind: function
@@ -197,12 +202,7 @@ api:
   file: crates/mimus-driver/Cargo.toml
   line: 1
   module: mimus-driver
-- name: op
-  kind: function
-  file: crates/mimus-driver/src/surface.rs
-  line: 25
-  module: mimus-driver
-api_omitted: 33
+api_omitted: 34
 deps:
 - clap
 - mimus
@@ -240,13 +240,13 @@ provenance:
   - crates/mimus-driver/src/views.rs
   - crates/mimus-driver/tests/conformance.rs
   hashes:
-  - 1105394764467416129af290b4067dc9af6cdf66
+  - f32bb89f678ecd2527e2d9d3c985fd7e6aaade48
   - c0e7f01667852e3ab8ad3465e785b1898c4b8985
-  - 61266e10fe1f13b5e09067e77cba5e3ad6bd9721
-  - f2c1aa6e5988724e620bfd42c1cd2c28c209565c
-  - 55749ca1d5c581df3984012424b0e4c92f3f45e5
+  - 8319982bc38d92530c413078baaba060c9b0fed8
+  - 01d425e94abd1ee91a5dc2e7a8729e134761b1f4
+  - eb47bef3e49d310bfcb4ba48653f9bb842c2c059
   - c580c971b3c9dd67e3e34991c3fc4a6bf3675ec6
   - a0cd119f99326dcfc9ecc2dcec69161c4c06ad5c
-  commit_sha: a9c9dd8500e573e7bc44acb336da724f7150cdc7
-  generated_at: '1794490051'
+  commit_sha: 85e861cd0952a7fb8548630161d60dcc9930385d
+  generated_at: '1794523135'
   generator: kuda-template/0.1.4

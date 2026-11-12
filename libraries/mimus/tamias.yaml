@@ -1,0 +1,32 @@
+# mimus — the verification engine as a tamias package (the P-021
+# replication of the sturn T-012 pattern: a real product CLI riding
+# `bins[]`, no hand-rolled shim).
+#
+# `scripts/pack.sh` release-builds `tamias-driver-mimus` into
+# `drivers/bin/<host-triple>/` (gitignored — a build artifact) and
+# this manifest ships it as a bundled driver. `tamias install
+# ./libraries/mimus` (or the packed `.tgz` / a registry ref)
+# registers the driver into `<tamias-home>/drivers/` and deploys the
+# `mimus` bin below by default.
+#
+# The `mimus` shim is a generated script → `tamias bin exec` →
+# `tamias-driver-mimus cli --dir <pkg> --name mimus <argv>` → the
+# mimus engine lib's `run_from` in-process with inherited stdio.
+# That is full argv parity with the `mimus` binary: `--help`/
+# `--version`, the `--config` global before the verb, every bounded
+# verb (`init`/`check`/`fix`/`report`/`audit`/`doctor`/`claims`/
+# `coverage`/`gen-cli-docs`), and stdin-bound verbs stream
+# end-to-end. No `tools/bin/` payload bin: the verbs ride the same
+# shim.
+name: mimus
+version: "0.1.0"
+type: files
+description: >-
+  Verification engine — proofs over agent claims (mechanical
+  checkers over mimus.toml/rules + kuda card audit). Every verb
+  rides the tamias-driver-mimus engine passthrough.
+
+bins:
+  - name: mimus
+    shim: cli
+    driver: mimus

@@ -59,6 +59,15 @@ cargo install --git https://github.com/9aia/mimus mimus
 # cargo install --git https://github.com/9aia/mimus --rev <sha> mimus
 ```
 
+The `mimus` command also ships as a tamias pack (`libraries/mimus`) —
+a generated `bins[]` shim → `tamias-driver-mimus cli` → the engine
+lib's `run_from` with inherited stdio (`scripts/pack.sh` stages the
+driver under `drivers/bin/<triple>/`). With `tamias` installed:
+
+```sh
+tamias install --allow-drivers ./libraries/mimus   # deploys `mimus`
+```
+
 ## Quickstart
 
 ```sh

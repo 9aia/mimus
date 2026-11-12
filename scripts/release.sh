@@ -7,12 +7,13 @@
 #
 # crates.io publish is retired: org policy keeps every repo but tamias
 # off crates.io, and the mimus crates are internal lib-only engines
-# behind `tamias-driver-mimus` — there is no tamias pack yet and no
-# cargo-installed `mimus` binary on a registry; installs pin a git
-# rev (`cargo install --git https://github.com/9aia/mimus mimus`,
-# see README). A release is therefore one workspace version bump + a
-# `mimus-v<ver>` tag. Binary dist (cargo-dist + gh release upload)
-# is out of scope.
+# behind `tamias-driver-mimus` — the `mimus` command ships as the
+# `libraries/mimus` tamias pack (`bins[]` shim → driver `cli`
+# passthrough; `scripts/pack.sh` stages it), and git-rev installs
+# stay available (`cargo install --git https://github.com/9aia/mimus
+# mimus`, see README). A release is therefore one workspace version
+# bump + a `mimus-v<ver>` tag. Binary dist (cargo-dist + gh release
+# upload) is out of scope.
 # Needs: `cargo-edit` (cargo set-version).
 set -euo pipefail
 # worktree-local env (gitignored) — kept for parity with the other
@@ -55,4 +56,4 @@ git tag "mimus-v${ver}"
 git push -q origin HEAD:main --tags
 
 echo "released: mimus ${ver} (tag mimus-v${ver})"
-echo "next: no tamias pack yet — install stays 'cargo install --git https://github.com/9aia/mimus mimus'"
+echo "next: pack the tamias bundle — scripts/pack.sh then 'tamias install --allow-drivers ./libraries/mimus' (git-rev install: cargo install --git https://github.com/9aia/mimus mimus)"
