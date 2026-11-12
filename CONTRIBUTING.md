@@ -32,10 +32,15 @@ violations, evidence); ports are crates: `mimus-check`,
 
 ## Releasing
 
-Seed once with `mimus deploy release` (publishes workspace crates,
-tags `{repo}-v{ver}`). Afterwards `scripts/release.sh` runs on each
-`main` push via mimus's own dogfood loop — bump, publish, tag, dist
-binaries. See `docs/explanation/release-model.md`.
+`scripts/release.sh` is run manually by an operator on `main`
+(releases are operator-run) — one workspace version bump
+(`cargo set-version --workspace`), a regen of the generated docs
+references, and a `mimus-v<ver>` tag. There is **no crates.io
+publish**: org policy keeps every repo but tamias off crates.io,
+and the mimus crates are internal lib-only engines behind
+`tamias-driver-mimus`. There is no tamias pack yet either —
+installs stay `cargo install --git` pinning a rev (see README).
+See `docs/explanation/release-model.md`.
 
 ## Docs
 
