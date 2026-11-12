@@ -109,7 +109,7 @@ provenance:
   - docs/tutorials/first-run.md
   hashes:
   - c6fc0201555b57e16708f350e5b4cd7dc16dbd19
-  - ef1df4687aa158f0ca5ae150992176749a136017
+  - 8b0fedfcf9eb3b447def35fc4f40b907ff783554
   - f36bd667851683ea8afab22a43c11c7488e6f331
   - cb1d8f8cb8c6dae52931dd24ff15436f6e04d368
   - 017f6fd87e86f8234928388956319d98fda7c65a
@@ -125,9 +125,9 @@ provenance:
   - 175fa4f47aecdc02e902d243a1c29914eb2ee258
   - 38ba76e566156b2797acb143389eb9d109001c69
   - 837a54738ea29a432818106def632b5d691ae92a
-  - 96d4eda7f6366183a3d72a703d7b9db26728a979
+  - 71723a349ad2dfd9ea7edb947f4f01964965a2fd
   - 8346ae98e09ff76ed27f0fd4d85f1d03eb893984
   - 5b0ad76344a8cebdb4eeeda5a903c40aecd9ba53
-  commit_sha: 1b6e167593770d57a9d4b7113b199d98ec4795a6
-  generated_at: '1794290822'
-  generator: kuda-template/0.1.2
+  commit_sha: a9c9dd8500e573e7bc44acb336da724f7150cdc7
+  generated_at: '1794490051'
+  generator: kuda-template/0.1.4

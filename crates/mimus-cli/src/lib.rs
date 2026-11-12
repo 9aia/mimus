@@ -12,7 +12,7 @@
 use clap::{Parser, Subcommand};
 use mimus_check::{Checker, GraphChecker};
 use mimus_config::ConfigSource;
-use mimus_config_toml::TomlSource;
+use mimus_config::FileSource;
 use mimus_core::{ClaimKind, Config, Severity, Violation};
 use std::path::{Path, PathBuf};
 
@@ -174,7 +174,7 @@ fn init(cli: &Cli) -> i32 {
 }
 
 fn load(cli: &Cli) -> Result<Config, String> {
-    TomlSource {
+    FileSource {
         path: cli.config.clone(),
     }
     .load()

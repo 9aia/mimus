@@ -126,7 +126,7 @@ pub struct Graph {
 
 // ---- mimus.toml config model ----
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     #[serde(default)]
@@ -139,7 +139,7 @@ pub struct Config {
     pub report: ReportCfg,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct SourcesCfg {
     /// Doc glob patterns mined for claims.
@@ -175,7 +175,7 @@ fn default_cards_glob() -> String {
     ".kuda/modules/*.yaml".into()
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct CheckCfg {
     /// Mechanical tier — deterministic, CI-gateable.
@@ -234,7 +234,7 @@ fn default_true() -> bool {
     true
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct RulesCfg {
     /// Dir of *.toml rule files.
@@ -258,7 +258,7 @@ fn default_rules_dir() -> PathBuf {
     "rules".into()
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ReportCfg {
     /// "human" | "json".

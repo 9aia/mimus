@@ -12,22 +12,19 @@ modules:
 - mimus-check-symbol
 - mimus-claims
 - mimus-config
-- mimus-config-toml
 - mimus-core
 - mimus-cuora
 - mimus-dotenv
 - mimus-driver
-- mimus-git
 - mimus-keyring
 - mimus-rules
 - mimus-secret
-- mimus-vcs
 - project
 commands:
 - cargo check
 - cargo test --workspace
-tree_digest: 9b293686652d0268f53e5093604098aa3ac7a003
-files_total: 98
+tree_digest: f4058269e8f727b78e44db41cbfac70bad17b839
+files_total: 89
 provenance:
   files:
   - Cargo.toml
@@ -41,19 +38,16 @@ provenance:
   - crates/mimus-claims/Cargo.toml
   - crates/mimus-cli/Cargo.toml
   - crates/mimus-config/Cargo.toml
-  - crates/mimus-config-toml/Cargo.toml
   - crates/mimus-core/Cargo.toml
   - crates/mimus-cuora/Cargo.toml
   - crates/mimus-dotenv/Cargo.toml
   - crates/mimus-driver/Cargo.toml
-  - crates/mimus-git/Cargo.toml
   - crates/mimus-keyring/Cargo.toml
   - crates/mimus-rules/Cargo.toml
   - crates/mimus-secret/Cargo.toml
-  - crates/mimus-vcs/Cargo.toml
   - modules/dagger/dagger/pyproject.toml
   hashes:
-  - 63034b6f2147188dfeeac79a594f419ccc97adab
+  - 91e8218c3869e721b99a5bbcc2075ed3f021f254
   - 6093a3f27d4d34ee522c4bfab7bf0cc5bc76d8ca
   - e7348ffc0841bbee8073e26c5481cd858fd776ba
   - 41c8b740933ac566f68b8bf5cd4b76a56ce4dfd5
@@ -62,19 +56,16 @@ provenance:
   - 957284426c7b88c9e03b893454e121d04c21539e
   - 9fbf6254aae6add24670adaa8808b5c101844e2c
   - 21e63d1417ba1bcba2262e855cb130e8e90f2151
-  - ee7efd21a03f14188cdfd534c2af3a046196aba1
-  - 2b57fc93873c3fa45b96c90218c20d4a3c9927f1
-  - 47f21a9cf176c7708d2a879eff9f464589ceb363
+  - 996ba373898417d99f51ba02790333e95aec843b
+  - f0959201dd8a0504d04fe9631fa407b96e30c9ed
   - 6b7185a94a97d0e4ebf63efd7a95dd2800f0bc41
   - 94d066567a24f6079f354756c22fa86264002c21
   - 26c064bafcb0a94b0c50dd4538bd8e2cd8963000
-  - 31ce564c2265b717f2c11e5a650f0002e7f0527e
-  - f902acdf6baa0db069e7f6a4cf2a486d7907347c
+  - 1105394764467416129af290b4067dc9af6cdf66
   - ab61c787206bd76c1f9937084c108473b6ece3fc
   - b1cf727ea9ec71dccd378bea295d8def00f34840
   - e19d2f415bf9c2b1602d12c39402b368e2e0565d
-  - 81d7057c56b51400c3eaf54edd1c6fc0ec685b1c
   - 6391d6a9586b1a42d2e3b1270cd9a441f321af68
-  commit_sha: 1b6e167593770d57a9d4b7113b199d98ec4795a6
-  generated_at: '1794290822'
+  commit_sha: a9c9dd8500e573e7bc44acb336da724f7150cdc7
+  generated_at: '1794490051'
   generator: kuda/0.1.0

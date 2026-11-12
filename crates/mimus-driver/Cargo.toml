@@ -26,7 +26,6 @@ mcp = ["pavo-driver-kit/mcp"]
 mimus.workspace = true
 mimus-core.workspace = true
 mimus-config.workspace = true
-mimus-config-toml.workspace = true
 mimus-rules.workspace = true
 mimus-check-graph.workspace = true
 clap.workspace = true

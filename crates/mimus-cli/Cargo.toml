@@ -23,7 +23,6 @@ mimus-check-graph.workspace = true
 mimus-check-acp.workspace = true
 mimus-rules.workspace = true
 mimus-config.workspace = true
-mimus-config-toml.workspace = true
 mimus-secret.workspace = true
 mimus-keyring.workspace = true
 mimus-dotenv.workspace = true

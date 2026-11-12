@@ -11,8 +11,8 @@
 //! So this driver's "snapshot" is resolution, not loading:
 //!
 //! - `mimus:status`, `mimus:rules`, `mimus:audit` read in-process —
-//!   config via `mimus-config-toml` (the same `TomlSource` the CLI
-//!   uses), rules via `mimus-rules::load_rules`, card trust scores
+//!   config via `mimus-config`'s `FileSource` (the same source the
+//!   CLI uses), rules via `mimus-rules::load_rules`, card trust scores
 //!   via the same `.kuda/modules/*.yaml` provenance-hash walk
 //!   `mimus audit` performs.
 //! - `mimus:violations` is the expensive op: it shells out to
@@ -22,8 +22,8 @@
 //!   critic; the CLI is the authority.
 //!
 //! Root/config resolution mirrors the `mimus` CLI exactly
-//! (`mimus-cli/src/main.rs` `root()` + `mimus-config-toml`
-//! `TomlSource`):
+//! (`mimus-cli/src/main.rs` `root()` + `mimus-config`'s
+//! `FileSource`):
 //!
 //! 1. Request params — `config` names a config file directly;
 //!    `dir`/`root`/`repo` name the repo dir the config search
@@ -88,27 +88,20 @@ fn overrides(params: &Map<String, Value>) -> (Option<PathBuf>, Option<String>) {
 }
 
 /// The config-file candidates in CLI order, given the explicit
-/// path/env override and the directory `./mimus.toml` resolves
-/// against. Returns the first that exists.
+/// path/env override and the directory `./mimus.*` resolves
+/// against — `mimus_config::candidates_in` is the same scarab
+/// discovery the CLI's `FileSource` runs, rooted at `search_dir`.
+/// Returns the first that exists.
 fn find_config(explicit: Option<String>, search_dir: &Path) -> Option<PathBuf> {
-    let candidates: Vec<PathBuf> =
-        match explicit.or_else(|| std::env::var("MIMUS_CONFIG").ok().filter(|s| !s.is_empty())) {
-            Some(p) => vec![PathBuf::from(p)],
-            None => vec![
-                search_dir.join("mimus.toml"),
-                std::env::var("HOME")
-                    .map(PathBuf::from)
-                    .unwrap_or_else(|_| ".".into())
-                    .join(".config/mimus/mimus.toml"),
-            ],
-        };
-    candidates.into_iter().find(|p| p.exists())
+    mimus_config::candidates_in(search_dir, explicit)
+        .into_iter()
+        .find(|p| p.is_file())
 }
 
-/// Parse a config file through the same `TomlSource` the CLI
+/// Parse a config file through the same `FileSource` the CLI
 /// wires — explicit path only, so the search semantics stay here.
 fn parse_config(path: &Path) -> Result<Config, String> {
-    mimus_config_toml::TomlSource {
+    mimus_config::FileSource {
         path: Some(path.display().to_string()),
     }
     .load()

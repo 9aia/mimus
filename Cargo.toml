@@ -16,7 +16,6 @@ members = [
     "crates/mimus-dotenv",
     "crates/mimus-cuora",
     "crates/mimus-config",
-    "crates/mimus-config-toml",
     "crates/mimus-driver",
 ]
 
@@ -48,8 +47,9 @@ mimus-keyring = { path = "crates/mimus-keyring", version = "0.1.0" }
 mimus-dotenv = { path = "crates/mimus-dotenv", version = "0.1.0" }
 mimus-cuora = { path = "crates/mimus-cuora", version = "0.1.0" }
 mimus-config = { path = "crates/mimus-config", version = "0.1.0" }
-mimus-config-toml = { path = "crates/mimus-config-toml", version = "0.1.0" }
 mimus-driver = { path = "crates/mimus-driver", version = "0.1.0" }
+scarab-config = { git = "ssh://git@github.com/9aia/scarab.git", rev = "9364df88fad0ca46bd838467717a823893f47438", version = "0.1" }
+scarab-config-file = { git = "ssh://git@github.com/9aia/scarab.git", rev = "9364df88fad0ca46bd838467717a823893f47438", version = "0.1" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "0.8"

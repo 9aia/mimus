@@ -1,14 +1,112 @@
 name: mimus-config
 path: crates/mimus-config/Cargo.toml
-purpose: 'Config port: where mimus.toml-shaped config comes from'
+purpose: 'Config port + scarab-config impl: mimus.{yaml,yml,toml} discovery'
 api:
+- name: CFG
+  kind: const
+  file: crates/mimus-config/src/lib.rs
+  line: 93
+  module: mimus-config
+- name: ConfigSource
+  kind: trait
+  file: crates/mimus-config/src/lib.rs
+  line: 15
+  module: mimus-config
+- name: ENV_LOCK
+  kind: const
+  file: crates/mimus-config/src/lib.rs
+  line: 254
+  module: mimus-config
+- name: FileSource
+  kind: type
+  file: crates/mimus-config/src/lib.rs
+  line: 22
+  module: mimus-config
+- name: candidates
+  kind: function
+  file: crates/mimus-config/src/lib.rs
+  line: 46
+  module: mimus-config
+- name: candidates_in
+  kind: function
+  file: crates/mimus-config/src/lib.rs
+  line: 63
+  module: mimus-config
+- name: candidates_in_probes_dir_then_user
+  kind: function
+  file: crates/mimus-config/src/lib.rs
+  line: 218
+  module: mimus-config
+- name: env_var_and_home_unset
+  kind: function
+  file: crates/mimus-config/src/lib.rs
+  line: 186
+  module: mimus-config
+- name: explicit_path_loads
+  kind: function
+  file: crates/mimus-config/src/lib.rs
+  line: 103
+  module: mimus-config
+- name: load
+  kind: function
+  file: crates/mimus-config/src/lib.rs
+  line: 53
+  module: mimus-config
 - name: mimus-config
   kind: module
   file: crates/mimus-config/Cargo.toml
   line: 1
   module: mimus-config
+- name: missing_and_malformed_err
+  kind: function
+  file: crates/mimus-config/src/lib.rs
+  line: 159
+  module: mimus-config
+- name: overrides_apply
+  kind: function
+  file: crates/mimus-config/src/lib.rs
+  line: 120
+  module: mimus-config
+- name: parse_file
+  kind: function
+  file: crates/mimus-config/src/lib.rs
+  line: 77
+  module: mimus-config
+- name: parse_file_reads_one_path
+  kind: function
+  file: crates/mimus-config/src/lib.rs
+  line: 243
+  module: mimus-config
+- name: scratch
+  kind: function
+  file: crates/mimus-config/src/lib.rs
+  line: 86
+  module: mimus-config
+- name: source
+  kind: function
+  file: crates/mimus-config/src/lib.rs
+  line: 30
+  module: mimus-config
+- name: tests
+  kind: module
+  file: crates/mimus-config/src/lib.rs
+  line: 83
+  module: mimus-config
+- name: with_explicit
+  kind: function
+  file: crates/mimus-config/src/lib.rs
+  line: 35
+  module: mimus-config
+- name: yaml_config_loads
+  kind: function
+  file: crates/mimus-config/src/lib.rs
+  line: 146
+  module: mimus-config
 deps:
 - mimus-core
+- scarab-config
+- scarab-config-file
+- scarab_config
 notes: ''
 verify:
 - crates/mimus-config/Cargo.toml
@@ -18,8 +116,8 @@ provenance:
   - crates/mimus-config/Cargo.toml
   - crates/mimus-config/src/lib.rs
   hashes:
-  - 2b57fc93873c3fa45b96c90218c20d4a3c9927f1
-  - 4c4410395d1b598e2e98bb8d009db5f57384a0b1
-  commit_sha: 2d42434814785226bba68e3068d3c2426b141e99
-  generated_at: '1794114021'
-  generator: kuda-template/0.1.2
+  - f0959201dd8a0504d04fe9631fa407b96e30c9ed
+  - d342b9f05648691a14ef9910919d4dd2c49e29e3
+  commit_sha: a9c9dd8500e573e7bc44acb336da724f7150cdc7
+  generated_at: '1794490051'
+  generator: kuda-template/0.1.4

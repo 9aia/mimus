@@ -25,37 +25,37 @@ api:
 - name: T-002
   kind: record
   file: project/TODO.md
-  line: 12
+  line: 11
   module: project
 - name: T-003
   kind: record
   file: project/TODO.md
-  line: 13
+  line: 12
   module: project
 - name: T-004
   kind: record
   file: project/TODO.md
-  line: 14
+  line: 13
   module: project
 - name: T-005
   kind: record
   file: project/TODO.md
-  line: 15
+  line: 14
   module: project
 - name: T-006
   kind: record
   file: project/TODO.md
-  line: 19
+  line: 18
   module: project
 - name: T-007
   kind: record
   file: project/TODO.md
-  line: 20
+  line: 19
   module: project
 - name: T-008
   kind: record
   file: project/TODO.md
-  line: 21
+  line: 20
   module: project
 - name: T-009
   kind: record
@@ -134,13 +134,14 @@ api:
   module: project
 - name: T-024
   kind: record
-  file: project/TODO.md
-  line: 8
+  file: project/DONE.md
+  line: 3
   module: project
 deps: []
 notes: ''
 verify:
 - project/BACKLOG.md
+- project/DONE.md
 - project/TODO.md
 - project/adrs/0001-adr-0001-claim-taxonomy-the-evidence-bar.md
 - project/adrs/0002-adr-0002-graph-tier-bidirectional-reflexive-checking-at-mechanical-speed.md
@@ -150,6 +151,7 @@ verify:
 provenance:
   files:
   - project/BACKLOG.md
+  - project/DONE.md
   - project/TODO.md
   - project/adrs/0001-adr-0001-claim-taxonomy-the-evidence-bar.md
   - project/adrs/0002-adr-0002-graph-tier-bidirectional-reflexive-checking-at-mechanical-speed.md
@@ -158,12 +160,13 @@ provenance:
   - project/index.md
   hashes:
   - 25246dc9411a800c134eed64472d7a731fbdf098
-  - bccbba74f378ad4d16f97c00482d3b6ead55e4be
-  - 6466c4f881d56429aa0fd1de5193cddf495b176f
-  - 8124d1cbd2a9a545a08f88ed68922afa13fa8d5d
-  - 5105f7ed6e75c0f6f82372bb496ef5fa6f49fa73
+  - 16737a2e81affe18ee7c8e9dc7b90c09c38e5dea
+  - 8606daa9c3ee7c33cf5b8ccdc2cdf368eaf4cb0f
+  - 5672348fae080d3dbf36879f156071ff7097f8ce
+  - 50da40ffdcc62983e15380efd539c00b0bcb082c
+  - 95e89a42bc05e7839025e1486618c84d0d2fe40b
   - 9b8f11818e849fc06efdc0597b7cb44f944c5dfd
   - e5a284a8a41bcb4413d537a00fb50e503cef2fed
-  commit_sha: 1b6e167593770d57a9d4b7113b199d98ec4795a6
-  generated_at: '1794290822'
-  generator: kuda-template/0.1.2
+  commit_sha: a9c9dd8500e573e7bc44acb336da724f7150cdc7
+  generated_at: '1794490051'
+  generator: kuda-template/0.1.4

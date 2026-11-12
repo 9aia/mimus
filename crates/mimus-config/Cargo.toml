@@ -1,6 +1,6 @@
 [package]
 name = "mimus-config"
-description = "Config port: where mimus.toml-shaped config comes from"
+description = "Config port + scarab-config impl: mimus.{yaml,yml,toml} discovery"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,3 +10,5 @@ categories = ["development-tools"]
 
 [dependencies]
 mimus-core.workspace = true
+scarab-config.workspace = true
+scarab-config-file.workspace = true

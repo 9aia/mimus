@@ -215,7 +215,6 @@ deps:
 - mimus-check-symbol
 - mimus-claims
 - mimus-config
-- mimus-config-toml
 - mimus-core
 - mimus-cuora
 - mimus-dotenv
@@ -228,7 +227,6 @@ deps:
 - clap
 - mimus-check
 - mimus-config
-- mimus-config-toml
 - mimus-core
 - asyncio
 - typing
@@ -256,15 +254,15 @@ provenance:
   - modules/dagger/dagger/src/mimus/main.py
   - modules/dagger/tests/test_self_patch.py
   hashes:
-  - 63034b6f2147188dfeeac79a594f419ccc97adab
-  - ee7efd21a03f14188cdfd534c2af3a046196aba1
-  - a84cb01d6adb62f856f8a2c1fae6193ca0cc8896
+  - 91e8218c3869e721b99a5bbcc2075ed3f021f254
+  - 996ba373898417d99f51ba02790333e95aec843b
+  - e41c6b078ab7f93a966cfb7048f6460dcca9264c
   - e1575f1cd039e7d7df8ff90c20a93bde52f78da7
   - 874f375dedab9bc6436a93187767cea9bcb77d6a
   - 6391d6a9586b1a42d2e3b1270cd9a441f321af68
   - 4093067c2bfef36b97a7be4448a54a5439d61d91
   - 912bc128df92503a9353c765bd892d9ec84c537e
   - d515a59e736b23d553075159e989585bba9ca252
-  commit_sha: 1b6e167593770d57a9d4b7113b199d98ec4795a6
-  generated_at: '1794290822'
-  generator: kuda-template/0.1.2
+  commit_sha: a9c9dd8500e573e7bc44acb336da724f7150cdc7
+  generated_at: '1794490051'
+  generator: kuda-template/0.1.4

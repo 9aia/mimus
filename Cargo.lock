@@ -315,7 +315,6 @@ dependencies = [
  "mimus-check-symbol",
  "mimus-claims",
  "mimus-config",
- "mimus-config-toml",
  "mimus-core",
  "mimus-cuora",
  "mimus-dotenv",
@@ -392,15 +391,8 @@ name = "mimus-config"
 version = "0.1.0"
 dependencies = [
  "mimus-core",
-]
-
-[[package]]
-name = "mimus-config-toml"
-version = "0.1.0"
-dependencies = [
- "mimus-config",
- "mimus-core",
- "toml",
+ "scarab-config",
+ "scarab-config-file",
 ]
 
 [[package]]
@@ -435,7 +427,6 @@ dependencies = [
  "mimus",
  "mimus-check-graph",
  "mimus-config",
- "mimus-config-toml",
  "mimus-core",
  "mimus-rules",
  "pavo-driver-kit",
@@ -623,6 +614,46 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
 
 [[package]]
+name = "scarab-config"
+version = "0.1.0"
+source = "git+ssh://git@github.com/9aia/scarab.git?rev=9364df88fad0ca46bd838467717a823893f47438#9364df88fad0ca46bd838467717a823893f47438"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
+name = "scarab-config-file"
+version = "0.1.0"
+source = "git+ssh://git@github.com/9aia/scarab.git?rev=9364df88fad0ca46bd838467717a823893f47438#9364df88fad0ca46bd838467717a823893f47438"
+dependencies = [
+ "scarab-config",
+ "scarab-config-toml",
+ "scarab-config-yaml",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "scarab-config-toml"
+version = "0.1.0"
+source = "git+ssh://git@github.com/9aia/scarab.git?rev=9364df88fad0ca46bd838467717a823893f47438#9364df88fad0ca46bd838467717a823893f47438"
+dependencies = [
+ "scarab-config",
+ "serde",
+ "toml",
+]
+
+[[package]]
+name = "scarab-config-yaml"
+version = "0.1.0"
+source = "git+ssh://git@github.com/9aia/scarab.git?rev=9364df88fad0ca46bd838467717a823893f47438#9364df88fad0ca46bd838467717a823893f47438"
+dependencies = [
+ "scarab-config",
+ "serde",
+ "serde_yaml_ng",
+]
+
+[[package]]
 name = "serde"
 version = "1.0.229"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -658,6 +689,8 @@ version = "1.0.154"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e7e9cc8b1b85264074fbcc02a88680c4096b1e47df8f739dceb03bf482f04bd6"
 dependencies = [
+ "foldhash",
+ "indexmap",
  "itoa",
  "memchr",
  "serde",
@@ -679,6 +712,19 @@ name = "serde_yaml"
 version = "0.9.34+deprecated"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a8b1a1a2ebf674015cc02edccce75287f1a0130d394307b36743c2f5d504b47"
+dependencies = [
+ "indexmap",
+ "itoa",
+ "ryu",
+ "serde",
+ "unsafe-libyaml",
+]
+
+[[package]]
+name = "serde_yaml_ng"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b4db627b98b36d4203a7b458cf3573730f2bb591b28871d916dfa9efabfd41f"
 dependencies = [
  "indexmap",
  "itoa",

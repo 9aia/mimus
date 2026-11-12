@@ -120,12 +120,12 @@ api:
 - name: find_config
   kind: function
   file: crates/mimus-driver/src/data.rs
-  line: 93
+  line: 95
   module: mimus-driver
 - name: find_mimus
   kind: function
   file: crates/mimus-driver/src/data.rs
-  line: 119
+  line: 112
   module: mimus-driver
 - name: fmt_age
   kind: function
@@ -160,7 +160,7 @@ api:
 - name: load
   kind: function
   file: crates/mimus-driver/src/data.rs
-  line: 157
+  line: 150
   module: mimus-driver
 - name: main
   kind: function
@@ -208,7 +208,6 @@ deps:
 - mimus
 - mimus-check-graph
 - mimus-config
-- mimus-config-toml
 - mimus-core
 - mimus-rules
 - pavo-driver-kit
@@ -241,13 +240,13 @@ provenance:
   - crates/mimus-driver/src/views.rs
   - crates/mimus-driver/tests/conformance.rs
   hashes:
-  - 31ce564c2265b717f2c11e5a650f0002e7f0527e
-  - cc4885ee1f57deabd6499fb0d57a7e8e5a84ad46
+  - 1105394764467416129af290b4067dc9af6cdf66
+  - c0e7f01667852e3ab8ad3465e785b1898c4b8985
   - 61266e10fe1f13b5e09067e77cba5e3ad6bd9721
   - f2c1aa6e5988724e620bfd42c1cd2c28c209565c
   - 55749ca1d5c581df3984012424b0e4c92f3f45e5
   - c580c971b3c9dd67e3e34991c3fc4a6bf3675ec6
   - a0cd119f99326dcfc9ecc2dcec69161c4c06ad5c
-  commit_sha: 1b6e167593770d57a9d4b7113b199d98ec4795a6
-  generated_at: '1794290822'
-  generator: kuda-template/0.1.2
+  commit_sha: a9c9dd8500e573e7bc44acb336da724f7150cdc7
+  generated_at: '1794490051'
+  generator: kuda-template/0.1.4
