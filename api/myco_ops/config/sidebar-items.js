@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["TOML"],"fn":["default_view_for","kinds_for","sync_auto_fetch_for"],"struct":["ConfigLoader"]};
