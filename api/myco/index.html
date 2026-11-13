@@ -50,8 +50,9 @@ to <code>open</code> and gets an <code>interrupted</code> handoff in one commit.
 verbs (<code>status</code>, <code>view</code>, <code>report</code>, <code>index rebuild</code>, <code>org</code>).</dd><dt><a class="mod" href="discover/index.html" title="mod myco::discover">discover</a></dt><dd>Re-export — lives in <code>myco_ops::discover</code> so other front-ends
 (<code>myco-driver</code>) share it. <code>discover</code> itself is cli-local: ops
 takes the config loader as a parameter and the composition
-root (this crate) names the impl, so call sites stay two-arg.</dd><dt><a class="mod" href="done/index.html" title="mod myco::done">done</a></dt><dd><code>myco done list</code> — the DONE.md archive read. Done tasks leave
-TODO.md but stay here, filterable like every other list.</dd><dt><a class="mod" href="indexcmd/index.html" title="mod myco::indexcmd">indexcmd</a></dt><dd><code>myco index add|remove|list|rebuild</code> — the derived-cache
+root (this crate) names the impl, so call sites stay two-arg.</dd><dt><a class="mod" href="done/index.html" title="mod myco::done">done</a></dt><dd><code>myco done list</code> — the DONE.md archive read. Terminal tasks
+(done and cancelled) leave TODO.md but stay here, filterable
+like every other list.</dd><dt><a class="mod" href="indexcmd/index.html" title="mod myco::indexcmd">indexcmd</a></dt><dd><code>myco index add|remove|list|rebuild</code> — the derived-cache
 registry verbs.</dd><dt><a class="mod" href="init/index.html" title="mod myco::init">init</a></dt><dd><code>myco init</code> — orphan <code>project</code> branch (plumbing, never
 <code>checkout --orphan</code>), <code>git worktree add project project</code>,
 canonical scaffold, <code>project/</code> into the parent <code>.gitignore</code>,

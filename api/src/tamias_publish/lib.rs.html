@@ -204,227 +204,268 @@
 <a href=#204 id=204 data-nosnippet>204</a>    <span class="kw">let </span>out = out.map_or_else(|| PathBuf::from(<span class="kw-2">&amp;</span>default_name), Path::to_path_buf);
 <a href=#205 id=205 data-nosnippet>205</a>    <span class="kw">if </span>includes == Includes::Flatten &amp;&amp; !manifest.include.is_empty() {
 <a href=#206 id=206 data-nosnippet>206</a>        <span class="kw">let </span>composed = compose(<span class="kw-2">&amp;</span>root, store_root)<span class="question-mark">?</span>;
-<a href=#207 id=207 data-nosnippet>207</a>        <span class="kw">return </span>pack_tgz(<span class="kw-2">&amp;</span>composed.dir, <span class="kw-2">&amp;</span>out);
-<a href=#208 id=208 data-nosnippet>208</a>    }
-<a href=#209 id=209 data-nosnippet>209</a>    pack_tgz(<span class="kw-2">&amp;</span>root, <span class="kw-2">&amp;</span>out)
-<a href=#210 id=210 data-nosnippet>210</a>}
-<a href=#211 id=211 data-nosnippet>211</a>
-<a href=#212 id=212 data-nosnippet>212</a><span class="attr">#[cfg(test)]
-<a href=#213 id=213 data-nosnippet>213</a>#[cfg_attr(coverage, coverage(off))]
-<a href=#214 id=214 data-nosnippet>214</a></span><span class="kw">mod </span>tests {
-<a href=#215 id=215 data-nosnippet>215</a>    <span class="attr">#![allow(clippy::unwrap_used)]
+<a href=#207 id=207 data-nosnippet>207</a>        <span class="comment">// Declared `bins[].payload` files must ship in the tarball —
+<a href=#208 id=208 data-nosnippet>208</a>        // catch authoring typos here, not at install time. Checked on
+<a href=#209 id=209 data-nosnippet>209</a>        // the composed payload so `include:` bases can satisfy decls.
+<a href=#210 id=210 data-nosnippet>210</a>        </span>tamias_bin::check_shipped_bins(<span class="kw-2">&amp;</span>composed.dir, <span class="kw-2">&amp;</span>manifest)<span class="question-mark">?</span>;
+<a href=#211 id=211 data-nosnippet>211</a>        <span class="kw">return </span>pack_tgz(<span class="kw-2">&amp;</span>composed.dir, <span class="kw-2">&amp;</span>out);
+<a href=#212 id=212 data-nosnippet>212</a>    }
+<a href=#213 id=213 data-nosnippet>213</a>    tamias_bin::check_shipped_bins(<span class="kw-2">&amp;</span>root, <span class="kw-2">&amp;</span>manifest)<span class="question-mark">?</span>;
+<a href=#214 id=214 data-nosnippet>214</a>    pack_tgz(<span class="kw-2">&amp;</span>root, <span class="kw-2">&amp;</span>out)
+<a href=#215 id=215 data-nosnippet>215</a>}
 <a href=#216 id=216 data-nosnippet>216</a>
-<a href=#217 id=217 data-nosnippet>217</a>    </span><span class="kw">use super</span>::<span class="kw-2">*</span>;
-<a href=#218 id=218 data-nosnippet>218</a>
-<a href=#219 id=219 data-nosnippet>219</a>    <span class="doccomment">/// Serializes tests that mutate process env/cwd — `cargo test`
-<a href=#220 id=220 data-nosnippet>220</a>    /// runs tests on threads in one process, so mutations must be
-<a href=#221 id=221 data-nosnippet>221</a>    /// serialized *and* restored even on panic.
-<a href=#222 id=222 data-nosnippet>222</a>    </span><span class="kw">static </span>ENV: std::sync::Mutex&lt;()&gt; = std::sync::Mutex::new(());
+<a href=#217 id=217 data-nosnippet>217</a><span class="attr">#[cfg(test)]
+<a href=#218 id=218 data-nosnippet>218</a>#[cfg_attr(coverage, coverage(off))]
+<a href=#219 id=219 data-nosnippet>219</a></span><span class="kw">mod </span>tests {
+<a href=#220 id=220 data-nosnippet>220</a>    <span class="attr">#![allow(clippy::unwrap_used)]
+<a href=#221 id=221 data-nosnippet>221</a>
+<a href=#222 id=222 data-nosnippet>222</a>    </span><span class="kw">use super</span>::<span class="kw-2">*</span>;
 <a href=#223 id=223 data-nosnippet>223</a>
-<a href=#224 id=224 data-nosnippet>224</a>    <span class="doccomment">/// RAII guard for [`ENV`]: restores the process environment and
-<a href=#225 id=225 data-nosnippet>225</a>    /// working directory on drop — panic-safe. Poison is ignored: an
-<a href=#226 id=226 data-nosnippet>226</a>    /// unwinding sibling already restored everything via its `Drop`.
-<a href=#227 id=227 data-nosnippet>227</a>    </span><span class="kw">struct </span>EnvGuard {
-<a href=#228 id=228 data-nosnippet>228</a>        _lock: std::sync::MutexGuard&lt;<span class="lifetime">'static</span>, ()&gt;,
-<a href=#229 id=229 data-nosnippet>229</a>        env: Vec&lt;(std::ffi::OsString, std::ffi::OsString)&gt;,
-<a href=#230 id=230 data-nosnippet>230</a>        cwd: std::path::PathBuf,
-<a href=#231 id=231 data-nosnippet>231</a>    }
-<a href=#232 id=232 data-nosnippet>232</a>
-<a href=#233 id=233 data-nosnippet>233</a>    <span class="kw">impl </span>EnvGuard {
-<a href=#234 id=234 data-nosnippet>234</a>        <span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
-<a href=#235 id=235 data-nosnippet>235</a>            <span class="kw">let </span>lock = ENV.lock().unwrap_or_else(|e| e.into_inner());
-<a href=#236 id=236 data-nosnippet>236</a>            <span class="kw">let </span>env = std::env::vars_os().collect();
-<a href=#237 id=237 data-nosnippet>237</a>            <span class="kw">let </span>cwd = std::env::current_dir().unwrap();
-<a href=#238 id=238 data-nosnippet>238</a>            <span class="self">Self </span>{
-<a href=#239 id=239 data-nosnippet>239</a>                _lock: lock,
-<a href=#240 id=240 data-nosnippet>240</a>                env,
-<a href=#241 id=241 data-nosnippet>241</a>                cwd,
-<a href=#242 id=242 data-nosnippet>242</a>            }
-<a href=#243 id=243 data-nosnippet>243</a>        }
-<a href=#244 id=244 data-nosnippet>244</a>    }
-<a href=#245 id=245 data-nosnippet>245</a>
-<a href=#246 id=246 data-nosnippet>246</a>    <span class="kw">impl </span>Drop <span class="kw">for </span>EnvGuard {
-<a href=#247 id=247 data-nosnippet>247</a>        <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#248 id=248 data-nosnippet>248</a>            <span class="kw">for </span>(k, <span class="kw">_</span>) <span class="kw">in </span>std::env::vars_os() {
-<a href=#249 id=249 data-nosnippet>249</a>                <span class="kw">if </span>!<span class="self">self</span>.env.iter().any(|(sk, <span class="kw">_</span>)| <span class="kw-2">*</span>sk == k) {
-<a href=#250 id=250 data-nosnippet>250</a>                    std::env::remove_var(<span class="kw-2">&amp;</span>k);
-<a href=#251 id=251 data-nosnippet>251</a>                }
-<a href=#252 id=252 data-nosnippet>252</a>            }
-<a href=#253 id=253 data-nosnippet>253</a>            <span class="kw">for </span>(k, v) <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.env {
-<a href=#254 id=254 data-nosnippet>254</a>                std::env::set_var(k, v);
-<a href=#255 id=255 data-nosnippet>255</a>            }
-<a href=#256 id=256 data-nosnippet>256</a>            <span class="kw">let _ </span>= std::env::set_current_dir(<span class="kw-2">&amp;</span><span class="self">self</span>.cwd);
-<a href=#257 id=257 data-nosnippet>257</a>        }
-<a href=#258 id=258 data-nosnippet>258</a>    }
-<a href=#259 id=259 data-nosnippet>259</a>
-<a href=#260 id=260 data-nosnippet>260</a>    <span class="kw">fn </span>store_entry(root: <span class="kw-2">&amp;</span>Path, name: <span class="kw-2">&amp;</span>str, files: <span class="kw-2">&amp;</span>[(<span class="kw-2">&amp;</span>str, <span class="kw-2">&amp;</span>str)]) -&gt; PathBuf {
-<a href=#261 id=261 data-nosnippet>261</a>        <span class="kw">let </span>dir = root.join(name);
-<a href=#262 id=262 data-nosnippet>262</a>        std::fs::create_dir_all(<span class="kw-2">&amp;</span>dir).unwrap();
-<a href=#263 id=263 data-nosnippet>263</a>        std::fs::write(
-<a href=#264 id=264 data-nosnippet>264</a>            dir.join(<span class="string">"tamias.yaml"</span>),
-<a href=#265 id=265 data-nosnippet>265</a>            <span class="macro">format!</span>(<span class="string">"name: {}\nversion: 1.0.0\n"</span>, name.replace(<span class="string">'/'</span>, <span class="string">"-"</span>)),
-<a href=#266 id=266 data-nosnippet>266</a>        )
-<a href=#267 id=267 data-nosnippet>267</a>        .unwrap();
-<a href=#268 id=268 data-nosnippet>268</a>        <span class="kw">for </span>(f, c) <span class="kw">in </span>files {
-<a href=#269 id=269 data-nosnippet>269</a>            std::fs::write(dir.join(f), c).unwrap();
-<a href=#270 id=270 data-nosnippet>270</a>        }
-<a href=#271 id=271 data-nosnippet>271</a>        dir
-<a href=#272 id=272 data-nosnippet>272</a>    }
-<a href=#273 id=273 data-nosnippet>273</a>
-<a href=#274 id=274 data-nosnippet>274</a>    <span class="attr">#[test]
-<a href=#275 id=275 data-nosnippet>275</a>    </span><span class="kw">fn </span>packs_a_dir() {
-<a href=#276 id=276 data-nosnippet>276</a>        <span class="kw">let </span>_g = EnvGuard::new();
-<a href=#277 id=277 data-nosnippet>277</a>        <span class="kw">let </span>src = tempfile::tempdir().unwrap();
-<a href=#278 id=278 data-nosnippet>278</a>        std::fs::write(src.path().join(<span class="string">"tamias.yaml"</span>), <span class="string">"name: x\nversion: 1.2.0\n"</span>).unwrap();
-<a href=#279 id=279 data-nosnippet>279</a>        std::fs::write(src.path().join(<span class="string">"a.txt"</span>), <span class="string">"a"</span>).unwrap();
-<a href=#280 id=280 data-nosnippet>280</a>        <span class="kw">let </span>dir = tempfile::tempdir().unwrap();
-<a href=#281 id=281 data-nosnippet>281</a>        <span class="kw">let </span>store = tempfile::tempdir().unwrap();
-<a href=#282 id=282 data-nosnippet>282</a>        <span class="kw">let </span>out = dir.path().join(<span class="string">"x.tgz"</span>);
-<a href=#283 id=283 data-nosnippet>283</a>        <span class="kw">let </span>packed = pack(src.path(), <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>out), Includes::Flatten, store.path()).unwrap();
-<a href=#284 id=284 data-nosnippet>284</a>        <span class="macro">assert!</span>(packed.is_file());
-<a href=#285 id=285 data-nosnippet>285</a>    }
-<a href=#286 id=286 data-nosnippet>286</a>
-<a href=#287 id=287 data-nosnippet>287</a>    <span class="attr">#[test]
-<a href=#288 id=288 data-nosnippet>288</a>    </span><span class="kw">fn </span>pack_without_version_uses_name() {
-<a href=#289 id=289 data-nosnippet>289</a>        <span class="kw">let </span>_g = EnvGuard::new();
-<a href=#290 id=290 data-nosnippet>290</a>        <span class="kw">let </span>src = tempfile::tempdir().unwrap();
-<a href=#291 id=291 data-nosnippet>291</a>        std::fs::write(src.path().join(<span class="string">"tamias.yaml"</span>), <span class="string">"name: nv\n"</span>).unwrap();
-<a href=#292 id=292 data-nosnippet>292</a>        std::fs::write(src.path().join(<span class="string">"a.txt"</span>), <span class="string">"a"</span>).unwrap();
-<a href=#293 id=293 data-nosnippet>293</a>        <span class="kw">let </span>out = tempfile::tempdir().unwrap();
-<a href=#294 id=294 data-nosnippet>294</a>        <span class="kw">let </span>store = tempfile::tempdir().unwrap();
-<a href=#295 id=295 data-nosnippet>295</a>        <span class="kw">let </span>old = std::env::current_dir().unwrap();
-<a href=#296 id=296 data-nosnippet>296</a>        std::env::set_current_dir(out.path()).unwrap();
-<a href=#297 id=297 data-nosnippet>297</a>        <span class="kw">let </span>packed = pack(src.path(), <span class="prelude-val">None</span>, Includes::Flatten, store.path()).unwrap();
-<a href=#298 id=298 data-nosnippet>298</a>        std::env::set_current_dir(old).unwrap();
-<a href=#299 id=299 data-nosnippet>299</a>        <span class="macro">assert_eq!</span>(packed.file_name().unwrap().to_str().unwrap(), <span class="string">"nv.tgz"</span>);
-<a href=#300 id=300 data-nosnippet>300</a>    }
-<a href=#301 id=301 data-nosnippet>301</a>
-<a href=#302 id=302 data-nosnippet>302</a>    <span class="attr">#[test]
-<a href=#303 id=303 data-nosnippet>303</a>    </span><span class="kw">fn </span>pack_flattens_store_name_include() {
-<a href=#304 id=304 data-nosnippet>304</a>        <span class="kw">let </span>tmp = tempfile::tempdir().unwrap();
-<a href=#305 id=305 data-nosnippet>305</a>        <span class="kw">let </span>store_root = tmp.path().join(<span class="string">"store"</span>);
-<a href=#306 id=306 data-nosnippet>306</a>        <span class="kw">let </span>store = Store::new(<span class="kw-2">&amp;</span>store_root);
-<a href=#307 id=307 data-nosnippet>307</a>        <span class="comment">// install a base into the store directly
-<a href=#308 id=308 data-nosnippet>308</a>        </span><span class="kw">let </span>base_dir = store_entry(tmp.path(), <span class="string">"basepkg"</span>, <span class="kw-2">&amp;</span>[(<span class="string">"base.txt"</span>, <span class="string">"B"</span>)]);
-<a href=#309 id=309 data-nosnippet>309</a>        <span class="kw">let </span>record = tamias_core::StoreRecord {
-<a href=#310 id=310 data-nosnippet>310</a>            name: <span class="string">"base"</span>.into(),
-<a href=#311 id=311 data-nosnippet>311</a>            scope: <span class="prelude-val">None</span>,
-<a href=#312 id=312 data-nosnippet>312</a>            version: <span class="prelude-val">Some</span>(<span class="string">"1.0.0"</span>.into()),
-<a href=#313 id=313 data-nosnippet>313</a>            kind: <span class="prelude-val">None</span>,
-<a href=#314 id=314 data-nosnippet>314</a>            source_ref: <span class="string">"./base"</span>.into(),
-<a href=#315 id=315 data-nosnippet>315</a>            resolved: <span class="string">"sha256:abc"</span>.into(),
-<a href=#316 id=316 data-nosnippet>316</a>            digest: String::new(),
-<a href=#317 id=317 data-nosnippet>317</a>            signature: <span class="prelude-val">None</span>,
-<a href=#318 id=318 data-nosnippet>318</a>            signer: <span class="prelude-val">None</span>,
-<a href=#319 id=319 data-nosnippet>319</a>            trust: <span class="prelude-val">None</span>,
-<a href=#320 id=320 data-nosnippet>320</a>            installed_at: <span class="number">0</span>,
-<a href=#321 id=321 data-nosnippet>321</a>        };
-<a href=#322 id=322 data-nosnippet>322</a>        store.install(<span class="kw-2">&amp;</span>base_dir, record).unwrap();
-<a href=#323 id=323 data-nosnippet>323</a>        <span class="comment">// package includes `base`, adds its own file + yaml merge
-<a href=#324 id=324 data-nosnippet>324</a>        </span><span class="kw">let </span>src = tmp.path().join(<span class="string">"top"</span>);
-<a href=#325 id=325 data-nosnippet>325</a>        std::fs::create_dir_all(<span class="kw-2">&amp;</span>src).unwrap();
-<a href=#326 id=326 data-nosnippet>326</a>        std::fs::write(
-<a href=#327 id=327 data-nosnippet>327</a>            src.join(<span class="string">"tamias.yaml"</span>),
-<a href=#328 id=328 data-nosnippet>328</a>            <span class="string">"name: top\nversion: 2.0.0\ninclude:\n  - base\n"</span>,
-<a href=#329 id=329 data-nosnippet>329</a>        )
-<a href=#330 id=330 data-nosnippet>330</a>        .unwrap();
-<a href=#331 id=331 data-nosnippet>331</a>        std::fs::write(src.join(<span class="string">"top.txt"</span>), <span class="string">"T"</span>).unwrap();
-<a href=#332 id=332 data-nosnippet>332</a>        std::fs::write(src.join(<span class="string">"cfg.yaml"</span>), <span class="string">"k: top\n"</span>).unwrap();
-<a href=#333 id=333 data-nosnippet>333</a>        <span class="comment">// flatten → composed tgz carries the base payload
-<a href=#334 id=334 data-nosnippet>334</a>        </span><span class="kw">let </span>out = tmp.path().join(<span class="string">"flat.tgz"</span>);
-<a href=#335 id=335 data-nosnippet>335</a>        pack(<span class="kw-2">&amp;</span>src, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>out), Includes::Flatten, <span class="kw-2">&amp;</span>store_root).unwrap();
-<a href=#336 id=336 data-nosnippet>336</a>        <span class="kw">let </span>entries = tgz_files(<span class="kw-2">&amp;</span>out);
-<a href=#337 id=337 data-nosnippet>337</a>        <span class="macro">assert!</span>(entries.iter().any(|e| e == <span class="string">"base.txt"</span>), <span class="string">"{entries:?}"</span>);
-<a href=#338 id=338 data-nosnippet>338</a>        <span class="macro">assert!</span>(entries.iter().any(|e| e == <span class="string">"top.txt"</span>), <span class="string">"{entries:?}"</span>);
-<a href=#339 id=339 data-nosnippet>339</a>        <span class="comment">// keep-includes → raw payload only
-<a href=#340 id=340 data-nosnippet>340</a>        </span><span class="kw">let </span>raw = tmp.path().join(<span class="string">"raw.tgz"</span>);
-<a href=#341 id=341 data-nosnippet>341</a>        pack(<span class="kw-2">&amp;</span>src, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>raw), Includes::Keep, <span class="kw-2">&amp;</span>store_root).unwrap();
-<a href=#342 id=342 data-nosnippet>342</a>        <span class="kw">let </span>raw_entries = tgz_files(<span class="kw-2">&amp;</span>raw);
-<a href=#343 id=343 data-nosnippet>343</a>        <span class="macro">assert!</span>(
-<a href=#344 id=344 data-nosnippet>344</a>            !raw_entries.iter().any(|e| e == <span class="string">"base.txt"</span>),
-<a href=#345 id=345 data-nosnippet>345</a>            <span class="string">"{raw_entries:?}"
-<a href=#346 id=346 data-nosnippet>346</a>        </span>);
-<a href=#347 id=347 data-nosnippet>347</a>        <span class="macro">assert!</span>(
-<a href=#348 id=348 data-nosnippet>348</a>            raw_entries.iter().any(|e| e == <span class="string">"top.txt"</span>),
-<a href=#349 id=349 data-nosnippet>349</a>            <span class="string">"{raw_entries:?}"
-<a href=#350 id=350 data-nosnippet>350</a>        </span>);
-<a href=#351 id=351 data-nosnippet>351</a>    }
-<a href=#352 id=352 data-nosnippet>352</a>
-<a href=#353 id=353 data-nosnippet>353</a>    <span class="attr">#[test]
-<a href=#354 id=354 data-nosnippet>354</a>    </span><span class="kw">fn </span>pack_missing_base_fails_naming_it() {
-<a href=#355 id=355 data-nosnippet>355</a>        <span class="kw">let </span>tmp = tempfile::tempdir().unwrap();
-<a href=#356 id=356 data-nosnippet>356</a>        <span class="kw">let </span>store_root = tmp.path().join(<span class="string">"store"</span>);
-<a href=#357 id=357 data-nosnippet>357</a>        <span class="kw">let </span>src = tmp.path().join(<span class="string">"top"</span>);
-<a href=#358 id=358 data-nosnippet>358</a>        std::fs::create_dir_all(<span class="kw-2">&amp;</span>src).unwrap();
-<a href=#359 id=359 data-nosnippet>359</a>        std::fs::write(
-<a href=#360 id=360 data-nosnippet>360</a>            src.join(<span class="string">"tamias.yaml"</span>),
-<a href=#361 id=361 data-nosnippet>361</a>            <span class="string">"name: top\nversion: 1.0.0\ninclude:\n  - ghost\n"</span>,
-<a href=#362 id=362 data-nosnippet>362</a>        )
-<a href=#363 id=363 data-nosnippet>363</a>        .unwrap();
-<a href=#364 id=364 data-nosnippet>364</a>        <span class="kw">let </span>err = pack(<span class="kw-2">&amp;</span>src, <span class="prelude-val">None</span>, Includes::Flatten, <span class="kw-2">&amp;</span>store_root)
-<a href=#365 id=365 data-nosnippet>365</a>            .unwrap_err()
-<a href=#366 id=366 data-nosnippet>366</a>            .to_string();
-<a href=#367 id=367 data-nosnippet>367</a>        <span class="macro">assert!</span>(err.contains(<span class="string">"ghost"</span>), <span class="string">"{err}"</span>);
-<a href=#368 id=368 data-nosnippet>368</a>        <span class="macro">assert!</span>(err.contains(<span class="string">"keep-includes"</span>), <span class="string">"{err}"</span>);
-<a href=#369 id=369 data-nosnippet>369</a>        <span class="comment">// keep-includes still packs fine
-<a href=#370 id=370 data-nosnippet>370</a>        </span><span class="kw">let </span>out = tmp.path().join(<span class="string">"top.tgz"</span>);
-<a href=#371 id=371 data-nosnippet>371</a>        pack(<span class="kw-2">&amp;</span>src, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>out), Includes::Keep, <span class="kw-2">&amp;</span>store_root).unwrap();
-<a href=#372 id=372 data-nosnippet>372</a>        <span class="macro">assert!</span>(out.is_file());
-<a href=#373 id=373 data-nosnippet>373</a>    }
-<a href=#374 id=374 data-nosnippet>374</a>
-<a href=#375 id=375 data-nosnippet>375</a>    <span class="attr">#[test]
-<a href=#376 id=376 data-nosnippet>376</a>    </span><span class="kw">fn </span>pack_resolves_fs_dir_and_installed_ref_bases() {
-<a href=#377 id=377 data-nosnippet>377</a>        <span class="kw">let </span>tmp = tempfile::tempdir().unwrap();
-<a href=#378 id=378 data-nosnippet>378</a>        <span class="kw">let </span>store_root = tmp.path().join(<span class="string">"store"</span>);
-<a href=#379 id=379 data-nosnippet>379</a>        <span class="kw">let </span>store = Store::new(<span class="kw-2">&amp;</span>store_root);
-<a href=#380 id=380 data-nosnippet>380</a>        <span class="comment">// an fs-dir base resolved in place (not installed)
-<a href=#381 id=381 data-nosnippet>381</a>        </span><span class="kw">let </span>fsbase = store_entry(tmp.path(), <span class="string">"fsbase"</span>, <span class="kw-2">&amp;</span>[(<span class="string">"fs.txt"</span>, <span class="string">"F"</span>)]);
-<a href=#382 id=382 data-nosnippet>382</a>        <span class="comment">// an installed ref base — source_ref match
-<a href=#383 id=383 data-nosnippet>383</a>        </span><span class="kw">let </span>refdir = store_entry(tmp.path(), <span class="string">"refbase"</span>, <span class="kw-2">&amp;</span>[(<span class="string">"ref.txt"</span>, <span class="string">"R"</span>)]);
-<a href=#384 id=384 data-nosnippet>384</a>        store
-<a href=#385 id=385 data-nosnippet>385</a>            .install(
-<a href=#386 id=386 data-nosnippet>386</a>                <span class="kw-2">&amp;</span>refdir,
-<a href=#387 id=387 data-nosnippet>387</a>                tamias_core::StoreRecord {
-<a href=#388 id=388 data-nosnippet>388</a>                    name: <span class="string">"refb"</span>.into(),
-<a href=#389 id=389 data-nosnippet>389</a>                    scope: <span class="prelude-val">None</span>,
-<a href=#390 id=390 data-nosnippet>390</a>                    version: <span class="prelude-val">Some</span>(<span class="string">"1.0.0"</span>.into()),
-<a href=#391 id=391 data-nosnippet>391</a>                    kind: <span class="prelude-val">None</span>,
-<a href=#392 id=392 data-nosnippet>392</a>                    source_ref: <span class="string">"/some/ref"</span>.into(),
-<a href=#393 id=393 data-nosnippet>393</a>                    resolved: <span class="string">"sha256:abc"</span>.into(),
-<a href=#394 id=394 data-nosnippet>394</a>                    digest: String::new(),
-<a href=#395 id=395 data-nosnippet>395</a>                    signature: <span class="prelude-val">None</span>,
-<a href=#396 id=396 data-nosnippet>396</a>                    signer: <span class="prelude-val">None</span>,
-<a href=#397 id=397 data-nosnippet>397</a>                    trust: <span class="prelude-val">None</span>,
-<a href=#398 id=398 data-nosnippet>398</a>                    installed_at: <span class="number">0</span>,
-<a href=#399 id=399 data-nosnippet>399</a>                },
-<a href=#400 id=400 data-nosnippet>400</a>            )
-<a href=#401 id=401 data-nosnippet>401</a>            .unwrap();
-<a href=#402 id=402 data-nosnippet>402</a>        <span class="kw">let </span>fs_ref = fsbase.display().to_string();
-<a href=#403 id=403 data-nosnippet>403</a>        <span class="kw">let </span>src = tmp.path().join(<span class="string">"top"</span>);
-<a href=#404 id=404 data-nosnippet>404</a>        std::fs::create_dir_all(<span class="kw-2">&amp;</span>src).unwrap();
-<a href=#405 id=405 data-nosnippet>405</a>        std::fs::write(
-<a href=#406 id=406 data-nosnippet>406</a>            src.join(<span class="string">"tamias.yaml"</span>),
-<a href=#407 id=407 data-nosnippet>407</a>            <span class="macro">format!</span>(<span class="string">"name: top\nversion: 1.0.0\ninclude:\n  - '{fs_ref}'\n  - /some/ref\n"</span>),
-<a href=#408 id=408 data-nosnippet>408</a>        )
-<a href=#409 id=409 data-nosnippet>409</a>        .unwrap();
-<a href=#410 id=410 data-nosnippet>410</a>        <span class="kw">let </span>out = tmp.path().join(<span class="string">"top.tgz"</span>);
-<a href=#411 id=411 data-nosnippet>411</a>        pack(<span class="kw-2">&amp;</span>src, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>out), Includes::Flatten, <span class="kw-2">&amp;</span>store_root).unwrap();
-<a href=#412 id=412 data-nosnippet>412</a>        <span class="kw">let </span>entries = tgz_files(<span class="kw-2">&amp;</span>out);
-<a href=#413 id=413 data-nosnippet>413</a>        <span class="macro">assert!</span>(entries.iter().any(|e| e == <span class="string">"fs.txt"</span>), <span class="string">"{entries:?}"</span>);
-<a href=#414 id=414 data-nosnippet>414</a>        <span class="macro">assert!</span>(entries.iter().any(|e| e == <span class="string">"ref.txt"</span>), <span class="string">"{entries:?}"</span>);
-<a href=#415 id=415 data-nosnippet>415</a>    }
-<a href=#416 id=416 data-nosnippet>416</a>
-<a href=#417 id=417 data-nosnippet>417</a>    <span class="doccomment">/// File list inside a `.tgz` — entries are stored under a single
-<a href=#418 id=418 data-nosnippet>418</a>    /// top-level dir; we compare suffixes.
-<a href=#419 id=419 data-nosnippet>419</a>    </span><span class="kw">fn </span>tgz_files(tgz: <span class="kw-2">&amp;</span>Path) -&gt; Vec&lt;String&gt; {
-<a href=#420 id=420 data-nosnippet>420</a>        <span class="kw">let </span><span class="kw-2">mut </span>names = Vec::new();
-<a href=#421 id=421 data-nosnippet>421</a>        <span class="comment">// untar_gz writes to a dir — use a scratch and walk it
-<a href=#422 id=422 data-nosnippet>422</a>        </span><span class="kw">let </span>dir = tempfile::tempdir().unwrap();
-<a href=#423 id=423 data-nosnippet>423</a>        untar_gz(fs::File::open(tgz).unwrap(), dir.path()).unwrap();
-<a href=#424 id=424 data-nosnippet>424</a>        <span class="kw">for </span>rel <span class="kw">in </span>tamias_core::digest::payload_files(dir.path()).unwrap() {
-<a href=#425 id=425 data-nosnippet>425</a>            names.push(rel.to_string_lossy().replace(<span class="string">'\\'</span>, <span class="string">"/"</span>));
-<a href=#426 id=426 data-nosnippet>426</a>        }
-<a href=#427 id=427 data-nosnippet>427</a>        names
-<a href=#428 id=428 data-nosnippet>428</a>    }
-<a href=#429 id=429 data-nosnippet>429</a>}
+<a href=#224 id=224 data-nosnippet>224</a>    <span class="doccomment">/// Serializes tests that mutate process env/cwd — `cargo test`
+<a href=#225 id=225 data-nosnippet>225</a>    /// runs tests on threads in one process, so mutations must be
+<a href=#226 id=226 data-nosnippet>226</a>    /// serialized *and* restored even on panic.
+<a href=#227 id=227 data-nosnippet>227</a>    </span><span class="kw">static </span>ENV: std::sync::Mutex&lt;()&gt; = std::sync::Mutex::new(());
+<a href=#228 id=228 data-nosnippet>228</a>
+<a href=#229 id=229 data-nosnippet>229</a>    <span class="doccomment">/// RAII guard for [`ENV`]: restores the process environment and
+<a href=#230 id=230 data-nosnippet>230</a>    /// working directory on drop — panic-safe. Poison is ignored: an
+<a href=#231 id=231 data-nosnippet>231</a>    /// unwinding sibling already restored everything via its `Drop`.
+<a href=#232 id=232 data-nosnippet>232</a>    </span><span class="kw">struct </span>EnvGuard {
+<a href=#233 id=233 data-nosnippet>233</a>        _lock: std::sync::MutexGuard&lt;<span class="lifetime">'static</span>, ()&gt;,
+<a href=#234 id=234 data-nosnippet>234</a>        env: Vec&lt;(std::ffi::OsString, std::ffi::OsString)&gt;,
+<a href=#235 id=235 data-nosnippet>235</a>        cwd: std::path::PathBuf,
+<a href=#236 id=236 data-nosnippet>236</a>    }
+<a href=#237 id=237 data-nosnippet>237</a>
+<a href=#238 id=238 data-nosnippet>238</a>    <span class="kw">impl </span>EnvGuard {
+<a href=#239 id=239 data-nosnippet>239</a>        <span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
+<a href=#240 id=240 data-nosnippet>240</a>            <span class="kw">let </span>lock = ENV.lock().unwrap_or_else(|e| e.into_inner());
+<a href=#241 id=241 data-nosnippet>241</a>            <span class="kw">let </span>env = std::env::vars_os().collect();
+<a href=#242 id=242 data-nosnippet>242</a>            <span class="kw">let </span>cwd = std::env::current_dir().unwrap();
+<a href=#243 id=243 data-nosnippet>243</a>            <span class="self">Self </span>{
+<a href=#244 id=244 data-nosnippet>244</a>                _lock: lock,
+<a href=#245 id=245 data-nosnippet>245</a>                env,
+<a href=#246 id=246 data-nosnippet>246</a>                cwd,
+<a href=#247 id=247 data-nosnippet>247</a>            }
+<a href=#248 id=248 data-nosnippet>248</a>        }
+<a href=#249 id=249 data-nosnippet>249</a>    }
+<a href=#250 id=250 data-nosnippet>250</a>
+<a href=#251 id=251 data-nosnippet>251</a>    <span class="kw">impl </span>Drop <span class="kw">for </span>EnvGuard {
+<a href=#252 id=252 data-nosnippet>252</a>        <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#253 id=253 data-nosnippet>253</a>            <span class="kw">for </span>(k, <span class="kw">_</span>) <span class="kw">in </span>std::env::vars_os() {
+<a href=#254 id=254 data-nosnippet>254</a>                <span class="kw">if </span>!<span class="self">self</span>.env.iter().any(|(sk, <span class="kw">_</span>)| <span class="kw-2">*</span>sk == k) {
+<a href=#255 id=255 data-nosnippet>255</a>                    std::env::remove_var(<span class="kw-2">&amp;</span>k);
+<a href=#256 id=256 data-nosnippet>256</a>                }
+<a href=#257 id=257 data-nosnippet>257</a>            }
+<a href=#258 id=258 data-nosnippet>258</a>            <span class="kw">for </span>(k, v) <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.env {
+<a href=#259 id=259 data-nosnippet>259</a>                std::env::set_var(k, v);
+<a href=#260 id=260 data-nosnippet>260</a>            }
+<a href=#261 id=261 data-nosnippet>261</a>            <span class="kw">let _ </span>= std::env::set_current_dir(<span class="kw-2">&amp;</span><span class="self">self</span>.cwd);
+<a href=#262 id=262 data-nosnippet>262</a>        }
+<a href=#263 id=263 data-nosnippet>263</a>    }
+<a href=#264 id=264 data-nosnippet>264</a>
+<a href=#265 id=265 data-nosnippet>265</a>    <span class="kw">fn </span>store_entry(root: <span class="kw-2">&amp;</span>Path, name: <span class="kw-2">&amp;</span>str, files: <span class="kw-2">&amp;</span>[(<span class="kw-2">&amp;</span>str, <span class="kw-2">&amp;</span>str)]) -&gt; PathBuf {
+<a href=#266 id=266 data-nosnippet>266</a>        <span class="kw">let </span>dir = root.join(name);
+<a href=#267 id=267 data-nosnippet>267</a>        std::fs::create_dir_all(<span class="kw-2">&amp;</span>dir).unwrap();
+<a href=#268 id=268 data-nosnippet>268</a>        std::fs::write(
+<a href=#269 id=269 data-nosnippet>269</a>            dir.join(<span class="string">"tamias.yaml"</span>),
+<a href=#270 id=270 data-nosnippet>270</a>            <span class="macro">format!</span>(<span class="string">"name: {}\nversion: 1.0.0\n"</span>, name.replace(<span class="string">'/'</span>, <span class="string">"-"</span>)),
+<a href=#271 id=271 data-nosnippet>271</a>        )
+<a href=#272 id=272 data-nosnippet>272</a>        .unwrap();
+<a href=#273 id=273 data-nosnippet>273</a>        <span class="kw">for </span>(f, c) <span class="kw">in </span>files {
+<a href=#274 id=274 data-nosnippet>274</a>            std::fs::write(dir.join(f), c).unwrap();
+<a href=#275 id=275 data-nosnippet>275</a>        }
+<a href=#276 id=276 data-nosnippet>276</a>        dir
+<a href=#277 id=277 data-nosnippet>277</a>    }
+<a href=#278 id=278 data-nosnippet>278</a>
+<a href=#279 id=279 data-nosnippet>279</a>    <span class="attr">#[test]
+<a href=#280 id=280 data-nosnippet>280</a>    </span><span class="kw">fn </span>packs_a_dir() {
+<a href=#281 id=281 data-nosnippet>281</a>        <span class="kw">let </span>_g = EnvGuard::new();
+<a href=#282 id=282 data-nosnippet>282</a>        <span class="kw">let </span>src = tempfile::tempdir().unwrap();
+<a href=#283 id=283 data-nosnippet>283</a>        std::fs::write(src.path().join(<span class="string">"tamias.yaml"</span>), <span class="string">"name: x\nversion: 1.2.0\n"</span>).unwrap();
+<a href=#284 id=284 data-nosnippet>284</a>        std::fs::write(src.path().join(<span class="string">"a.txt"</span>), <span class="string">"a"</span>).unwrap();
+<a href=#285 id=285 data-nosnippet>285</a>        <span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+<a href=#286 id=286 data-nosnippet>286</a>        <span class="kw">let </span>store = tempfile::tempdir().unwrap();
+<a href=#287 id=287 data-nosnippet>287</a>        <span class="kw">let </span>out = dir.path().join(<span class="string">"x.tgz"</span>);
+<a href=#288 id=288 data-nosnippet>288</a>        <span class="kw">let </span>packed = pack(src.path(), <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>out), Includes::Flatten, store.path()).unwrap();
+<a href=#289 id=289 data-nosnippet>289</a>        <span class="macro">assert!</span>(packed.is_file());
+<a href=#290 id=290 data-nosnippet>290</a>    }
+<a href=#291 id=291 data-nosnippet>291</a>
+<a href=#292 id=292 data-nosnippet>292</a>    <span class="attr">#[test]
+<a href=#293 id=293 data-nosnippet>293</a>    </span><span class="kw">fn </span>pack_without_version_uses_name() {
+<a href=#294 id=294 data-nosnippet>294</a>        <span class="kw">let </span>_g = EnvGuard::new();
+<a href=#295 id=295 data-nosnippet>295</a>        <span class="kw">let </span>src = tempfile::tempdir().unwrap();
+<a href=#296 id=296 data-nosnippet>296</a>        std::fs::write(src.path().join(<span class="string">"tamias.yaml"</span>), <span class="string">"name: nv\n"</span>).unwrap();
+<a href=#297 id=297 data-nosnippet>297</a>        std::fs::write(src.path().join(<span class="string">"a.txt"</span>), <span class="string">"a"</span>).unwrap();
+<a href=#298 id=298 data-nosnippet>298</a>        <span class="kw">let </span>out = tempfile::tempdir().unwrap();
+<a href=#299 id=299 data-nosnippet>299</a>        <span class="kw">let </span>store = tempfile::tempdir().unwrap();
+<a href=#300 id=300 data-nosnippet>300</a>        <span class="kw">let </span>old = std::env::current_dir().unwrap();
+<a href=#301 id=301 data-nosnippet>301</a>        std::env::set_current_dir(out.path()).unwrap();
+<a href=#302 id=302 data-nosnippet>302</a>        <span class="kw">let </span>packed = pack(src.path(), <span class="prelude-val">None</span>, Includes::Flatten, store.path()).unwrap();
+<a href=#303 id=303 data-nosnippet>303</a>        std::env::set_current_dir(old).unwrap();
+<a href=#304 id=304 data-nosnippet>304</a>        <span class="macro">assert_eq!</span>(packed.file_name().unwrap().to_str().unwrap(), <span class="string">"nv.tgz"</span>);
+<a href=#305 id=305 data-nosnippet>305</a>    }
+<a href=#306 id=306 data-nosnippet>306</a>
+<a href=#307 id=307 data-nosnippet>307</a>    <span class="attr">#[test]
+<a href=#308 id=308 data-nosnippet>308</a>    </span><span class="kw">fn </span>pack_flattens_store_name_include() {
+<a href=#309 id=309 data-nosnippet>309</a>        <span class="kw">let </span>tmp = tempfile::tempdir().unwrap();
+<a href=#310 id=310 data-nosnippet>310</a>        <span class="kw">let </span>store_root = tmp.path().join(<span class="string">"store"</span>);
+<a href=#311 id=311 data-nosnippet>311</a>        <span class="kw">let </span>store = Store::new(<span class="kw-2">&amp;</span>store_root);
+<a href=#312 id=312 data-nosnippet>312</a>        <span class="comment">// install a base into the store directly
+<a href=#313 id=313 data-nosnippet>313</a>        </span><span class="kw">let </span>base_dir = store_entry(tmp.path(), <span class="string">"basepkg"</span>, <span class="kw-2">&amp;</span>[(<span class="string">"base.txt"</span>, <span class="string">"B"</span>)]);
+<a href=#314 id=314 data-nosnippet>314</a>        <span class="kw">let </span>record = tamias_core::StoreRecord {
+<a href=#315 id=315 data-nosnippet>315</a>            name: <span class="string">"base"</span>.into(),
+<a href=#316 id=316 data-nosnippet>316</a>            scope: <span class="prelude-val">None</span>,
+<a href=#317 id=317 data-nosnippet>317</a>            version: <span class="prelude-val">Some</span>(<span class="string">"1.0.0"</span>.into()),
+<a href=#318 id=318 data-nosnippet>318</a>            kind: <span class="prelude-val">None</span>,
+<a href=#319 id=319 data-nosnippet>319</a>            source_ref: <span class="string">"./base"</span>.into(),
+<a href=#320 id=320 data-nosnippet>320</a>            resolved: <span class="string">"sha256:abc"</span>.into(),
+<a href=#321 id=321 data-nosnippet>321</a>            digest: String::new(),
+<a href=#322 id=322 data-nosnippet>322</a>            signature: <span class="prelude-val">None</span>,
+<a href=#323 id=323 data-nosnippet>323</a>            signer: <span class="prelude-val">None</span>,
+<a href=#324 id=324 data-nosnippet>324</a>            trust: <span class="prelude-val">None</span>,
+<a href=#325 id=325 data-nosnippet>325</a>            installed_at: <span class="number">0</span>,
+<a href=#326 id=326 data-nosnippet>326</a>        };
+<a href=#327 id=327 data-nosnippet>327</a>        store.install(<span class="kw-2">&amp;</span>base_dir, record).unwrap();
+<a href=#328 id=328 data-nosnippet>328</a>        <span class="comment">// package includes `base`, adds its own file + yaml merge
+<a href=#329 id=329 data-nosnippet>329</a>        </span><span class="kw">let </span>src = tmp.path().join(<span class="string">"top"</span>);
+<a href=#330 id=330 data-nosnippet>330</a>        std::fs::create_dir_all(<span class="kw-2">&amp;</span>src).unwrap();
+<a href=#331 id=331 data-nosnippet>331</a>        std::fs::write(
+<a href=#332 id=332 data-nosnippet>332</a>            src.join(<span class="string">"tamias.yaml"</span>),
+<a href=#333 id=333 data-nosnippet>333</a>            <span class="string">"name: top\nversion: 2.0.0\ninclude:\n  - base\n"</span>,
+<a href=#334 id=334 data-nosnippet>334</a>        )
+<a href=#335 id=335 data-nosnippet>335</a>        .unwrap();
+<a href=#336 id=336 data-nosnippet>336</a>        std::fs::write(src.join(<span class="string">"top.txt"</span>), <span class="string">"T"</span>).unwrap();
+<a href=#337 id=337 data-nosnippet>337</a>        std::fs::write(src.join(<span class="string">"cfg.yaml"</span>), <span class="string">"k: top\n"</span>).unwrap();
+<a href=#338 id=338 data-nosnippet>338</a>        <span class="comment">// flatten → composed tgz carries the base payload
+<a href=#339 id=339 data-nosnippet>339</a>        </span><span class="kw">let </span>out = tmp.path().join(<span class="string">"flat.tgz"</span>);
+<a href=#340 id=340 data-nosnippet>340</a>        pack(<span class="kw-2">&amp;</span>src, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>out), Includes::Flatten, <span class="kw-2">&amp;</span>store_root).unwrap();
+<a href=#341 id=341 data-nosnippet>341</a>        <span class="kw">let </span>entries = tgz_files(<span class="kw-2">&amp;</span>out);
+<a href=#342 id=342 data-nosnippet>342</a>        <span class="macro">assert!</span>(entries.iter().any(|e| e == <span class="string">"base.txt"</span>), <span class="string">"{entries:?}"</span>);
+<a href=#343 id=343 data-nosnippet>343</a>        <span class="macro">assert!</span>(entries.iter().any(|e| e == <span class="string">"top.txt"</span>), <span class="string">"{entries:?}"</span>);
+<a href=#344 id=344 data-nosnippet>344</a>        <span class="comment">// keep-includes → raw payload only
+<a href=#345 id=345 data-nosnippet>345</a>        </span><span class="kw">let </span>raw = tmp.path().join(<span class="string">"raw.tgz"</span>);
+<a href=#346 id=346 data-nosnippet>346</a>        pack(<span class="kw-2">&amp;</span>src, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>raw), Includes::Keep, <span class="kw-2">&amp;</span>store_root).unwrap();
+<a href=#347 id=347 data-nosnippet>347</a>        <span class="kw">let </span>raw_entries = tgz_files(<span class="kw-2">&amp;</span>raw);
+<a href=#348 id=348 data-nosnippet>348</a>        <span class="macro">assert!</span>(
+<a href=#349 id=349 data-nosnippet>349</a>            !raw_entries.iter().any(|e| e == <span class="string">"base.txt"</span>),
+<a href=#350 id=350 data-nosnippet>350</a>            <span class="string">"{raw_entries:?}"
+<a href=#351 id=351 data-nosnippet>351</a>        </span>);
+<a href=#352 id=352 data-nosnippet>352</a>        <span class="macro">assert!</span>(
+<a href=#353 id=353 data-nosnippet>353</a>            raw_entries.iter().any(|e| e == <span class="string">"top.txt"</span>),
+<a href=#354 id=354 data-nosnippet>354</a>            <span class="string">"{raw_entries:?}"
+<a href=#355 id=355 data-nosnippet>355</a>        </span>);
+<a href=#356 id=356 data-nosnippet>356</a>    }
+<a href=#357 id=357 data-nosnippet>357</a>
+<a href=#358 id=358 data-nosnippet>358</a>    <span class="attr">#[test]
+<a href=#359 id=359 data-nosnippet>359</a>    </span><span class="kw">fn </span>pack_missing_base_fails_naming_it() {
+<a href=#360 id=360 data-nosnippet>360</a>        <span class="kw">let </span>tmp = tempfile::tempdir().unwrap();
+<a href=#361 id=361 data-nosnippet>361</a>        <span class="kw">let </span>store_root = tmp.path().join(<span class="string">"store"</span>);
+<a href=#362 id=362 data-nosnippet>362</a>        <span class="kw">let </span>src = tmp.path().join(<span class="string">"top"</span>);
+<a href=#363 id=363 data-nosnippet>363</a>        std::fs::create_dir_all(<span class="kw-2">&amp;</span>src).unwrap();
+<a href=#364 id=364 data-nosnippet>364</a>        std::fs::write(
+<a href=#365 id=365 data-nosnippet>365</a>            src.join(<span class="string">"tamias.yaml"</span>),
+<a href=#366 id=366 data-nosnippet>366</a>            <span class="string">"name: top\nversion: 1.0.0\ninclude:\n  - ghost\n"</span>,
+<a href=#367 id=367 data-nosnippet>367</a>        )
+<a href=#368 id=368 data-nosnippet>368</a>        .unwrap();
+<a href=#369 id=369 data-nosnippet>369</a>        <span class="kw">let </span>err = pack(<span class="kw-2">&amp;</span>src, <span class="prelude-val">None</span>, Includes::Flatten, <span class="kw-2">&amp;</span>store_root)
+<a href=#370 id=370 data-nosnippet>370</a>            .unwrap_err()
+<a href=#371 id=371 data-nosnippet>371</a>            .to_string();
+<a href=#372 id=372 data-nosnippet>372</a>        <span class="macro">assert!</span>(err.contains(<span class="string">"ghost"</span>), <span class="string">"{err}"</span>);
+<a href=#373 id=373 data-nosnippet>373</a>        <span class="macro">assert!</span>(err.contains(<span class="string">"keep-includes"</span>), <span class="string">"{err}"</span>);
+<a href=#374 id=374 data-nosnippet>374</a>        <span class="comment">// keep-includes still packs fine
+<a href=#375 id=375 data-nosnippet>375</a>        </span><span class="kw">let </span>out = tmp.path().join(<span class="string">"top.tgz"</span>);
+<a href=#376 id=376 data-nosnippet>376</a>        pack(<span class="kw-2">&amp;</span>src, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>out), Includes::Keep, <span class="kw-2">&amp;</span>store_root).unwrap();
+<a href=#377 id=377 data-nosnippet>377</a>        <span class="macro">assert!</span>(out.is_file());
+<a href=#378 id=378 data-nosnippet>378</a>    }
+<a href=#379 id=379 data-nosnippet>379</a>
+<a href=#380 id=380 data-nosnippet>380</a>    <span class="attr">#[test]
+<a href=#381 id=381 data-nosnippet>381</a>    </span><span class="kw">fn </span>pack_resolves_fs_dir_and_installed_ref_bases() {
+<a href=#382 id=382 data-nosnippet>382</a>        <span class="kw">let </span>tmp = tempfile::tempdir().unwrap();
+<a href=#383 id=383 data-nosnippet>383</a>        <span class="kw">let </span>store_root = tmp.path().join(<span class="string">"store"</span>);
+<a href=#384 id=384 data-nosnippet>384</a>        <span class="kw">let </span>store = Store::new(<span class="kw-2">&amp;</span>store_root);
+<a href=#385 id=385 data-nosnippet>385</a>        <span class="comment">// an fs-dir base resolved in place (not installed)
+<a href=#386 id=386 data-nosnippet>386</a>        </span><span class="kw">let </span>fsbase = store_entry(tmp.path(), <span class="string">"fsbase"</span>, <span class="kw-2">&amp;</span>[(<span class="string">"fs.txt"</span>, <span class="string">"F"</span>)]);
+<a href=#387 id=387 data-nosnippet>387</a>        <span class="comment">// an installed ref base — source_ref match
+<a href=#388 id=388 data-nosnippet>388</a>        </span><span class="kw">let </span>refdir = store_entry(tmp.path(), <span class="string">"refbase"</span>, <span class="kw-2">&amp;</span>[(<span class="string">"ref.txt"</span>, <span class="string">"R"</span>)]);
+<a href=#389 id=389 data-nosnippet>389</a>        store
+<a href=#390 id=390 data-nosnippet>390</a>            .install(
+<a href=#391 id=391 data-nosnippet>391</a>                <span class="kw-2">&amp;</span>refdir,
+<a href=#392 id=392 data-nosnippet>392</a>                tamias_core::StoreRecord {
+<a href=#393 id=393 data-nosnippet>393</a>                    name: <span class="string">"refb"</span>.into(),
+<a href=#394 id=394 data-nosnippet>394</a>                    scope: <span class="prelude-val">None</span>,
+<a href=#395 id=395 data-nosnippet>395</a>                    version: <span class="prelude-val">Some</span>(<span class="string">"1.0.0"</span>.into()),
+<a href=#396 id=396 data-nosnippet>396</a>                    kind: <span class="prelude-val">None</span>,
+<a href=#397 id=397 data-nosnippet>397</a>                    source_ref: <span class="string">"/some/ref"</span>.into(),
+<a href=#398 id=398 data-nosnippet>398</a>                    resolved: <span class="string">"sha256:abc"</span>.into(),
+<a href=#399 id=399 data-nosnippet>399</a>                    digest: String::new(),
+<a href=#400 id=400 data-nosnippet>400</a>                    signature: <span class="prelude-val">None</span>,
+<a href=#401 id=401 data-nosnippet>401</a>                    signer: <span class="prelude-val">None</span>,
+<a href=#402 id=402 data-nosnippet>402</a>                    trust: <span class="prelude-val">None</span>,
+<a href=#403 id=403 data-nosnippet>403</a>                    installed_at: <span class="number">0</span>,
+<a href=#404 id=404 data-nosnippet>404</a>                },
+<a href=#405 id=405 data-nosnippet>405</a>            )
+<a href=#406 id=406 data-nosnippet>406</a>            .unwrap();
+<a href=#407 id=407 data-nosnippet>407</a>        <span class="kw">let </span>fs_ref = fsbase.display().to_string();
+<a href=#408 id=408 data-nosnippet>408</a>        <span class="kw">let </span>src = tmp.path().join(<span class="string">"top"</span>);
+<a href=#409 id=409 data-nosnippet>409</a>        std::fs::create_dir_all(<span class="kw-2">&amp;</span>src).unwrap();
+<a href=#410 id=410 data-nosnippet>410</a>        std::fs::write(
+<a href=#411 id=411 data-nosnippet>411</a>            src.join(<span class="string">"tamias.yaml"</span>),
+<a href=#412 id=412 data-nosnippet>412</a>            <span class="macro">format!</span>(<span class="string">"name: top\nversion: 1.0.0\ninclude:\n  - '{fs_ref}'\n  - /some/ref\n"</span>),
+<a href=#413 id=413 data-nosnippet>413</a>        )
+<a href=#414 id=414 data-nosnippet>414</a>        .unwrap();
+<a href=#415 id=415 data-nosnippet>415</a>        <span class="kw">let </span>out = tmp.path().join(<span class="string">"top.tgz"</span>);
+<a href=#416 id=416 data-nosnippet>416</a>        pack(<span class="kw-2">&amp;</span>src, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>out), Includes::Flatten, <span class="kw-2">&amp;</span>store_root).unwrap();
+<a href=#417 id=417 data-nosnippet>417</a>        <span class="kw">let </span>entries = tgz_files(<span class="kw-2">&amp;</span>out);
+<a href=#418 id=418 data-nosnippet>418</a>        <span class="macro">assert!</span>(entries.iter().any(|e| e == <span class="string">"fs.txt"</span>), <span class="string">"{entries:?}"</span>);
+<a href=#419 id=419 data-nosnippet>419</a>        <span class="macro">assert!</span>(entries.iter().any(|e| e == <span class="string">"ref.txt"</span>), <span class="string">"{entries:?}"</span>);
+<a href=#420 id=420 data-nosnippet>420</a>    }
+<a href=#421 id=421 data-nosnippet>421</a>
+<a href=#422 id=422 data-nosnippet>422</a>    <span class="doccomment">/// T-005: `bins[].payload` decls are gated at pack time — a decl
+<a href=#423 id=423 data-nosnippet>423</a>    /// with no shipped counterpart fails `pack`, while a decl naming a
+<a href=#424 id=424 data-nosnippet>424</a>    /// *foreign* triple passes as long as some platform dir ships the
+<a href=#425 id=425 data-nosnippet>425</a>    /// file (the install host's triple is substituted at deploy).
+<a href=#426 id=426 data-nosnippet>426</a>    </span><span class="attr">#[test]
+<a href=#427 id=427 data-nosnippet>427</a>    </span><span class="kw">fn </span>pack_gates_declared_payload_bins() {
+<a href=#428 id=428 data-nosnippet>428</a>        <span class="kw">let </span>tmp = tempfile::tempdir().unwrap();
+<a href=#429 id=429 data-nosnippet>429</a>        <span class="kw">let </span>store_root = tmp.path().join(<span class="string">"store"</span>);
+<a href=#430 id=430 data-nosnippet>430</a>        <span class="kw">let </span>src = tmp.path().join(<span class="string">"tool"</span>);
+<a href=#431 id=431 data-nosnippet>431</a>        std::fs::create_dir_all(<span class="kw-2">&amp;</span>src).unwrap();
+<a href=#432 id=432 data-nosnippet>432</a>        std::fs::write(
+<a href=#433 id=433 data-nosnippet>433</a>            src.join(<span class="string">"tamias.yaml"</span>),
+<a href=#434 id=434 data-nosnippet>434</a>            <span class="string">"name: tool\nversion: 1.0.0\nbins:\n  \
+<a href=#435 id=435 data-nosnippet>435</a>             - name: tool\n    payload: tools/bin/x86_64-unknown-linux-gnu/tool\n"</span>,
+<a href=#436 id=436 data-nosnippet>436</a>        )
+<a href=#437 id=437 data-nosnippet>437</a>        .unwrap();
+<a href=#438 id=438 data-nosnippet>438</a>        <span class="comment">// nothing shipped → pack fails naming the decl
+<a href=#439 id=439 data-nosnippet>439</a>        </span><span class="kw">let </span>err = pack(<span class="kw-2">&amp;</span>src, <span class="prelude-val">None</span>, Includes::Keep, <span class="kw-2">&amp;</span>store_root)
+<a href=#440 id=440 data-nosnippet>440</a>            .unwrap_err()
+<a href=#441 id=441 data-nosnippet>441</a>            .to_string();
+<a href=#442 id=442 data-nosnippet>442</a>        <span class="macro">assert!</span>(err.contains(<span class="string">"'tool'"</span>), <span class="string">"{err}"</span>);
+<a href=#443 id=443 data-nosnippet>443</a>        <span class="comment">// a foreign-triple dir satisfies the decl on any host
+<a href=#444 id=444 data-nosnippet>444</a>        </span><span class="kw">let </span>foreign = src.join(<span class="string">"tools/bin/aarch64-apple-darwin"</span>);
+<a href=#445 id=445 data-nosnippet>445</a>        std::fs::create_dir_all(<span class="kw-2">&amp;</span>foreign).unwrap();
+<a href=#446 id=446 data-nosnippet>446</a>        std::fs::write(foreign.join(<span class="string">"tool"</span>), <span class="string">"bin"</span>).unwrap();
+<a href=#447 id=447 data-nosnippet>447</a>        <span class="kw">let </span>out = tmp.path().join(<span class="string">"tool.tgz"</span>);
+<a href=#448 id=448 data-nosnippet>448</a>        pack(<span class="kw-2">&amp;</span>src, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>out), Includes::Keep, <span class="kw-2">&amp;</span>store_root).unwrap();
+<a href=#449 id=449 data-nosnippet>449</a>        <span class="kw">let </span>entries = tgz_files(<span class="kw-2">&amp;</span>out);
+<a href=#450 id=450 data-nosnippet>450</a>        <span class="macro">assert!</span>(
+<a href=#451 id=451 data-nosnippet>451</a>            entries
+<a href=#452 id=452 data-nosnippet>452</a>                .iter()
+<a href=#453 id=453 data-nosnippet>453</a>                .any(|e| e.ends_with(<span class="string">"tools/bin/aarch64-apple-darwin/tool"</span>)),
+<a href=#454 id=454 data-nosnippet>454</a>            <span class="string">"{entries:?}"
+<a href=#455 id=455 data-nosnippet>455</a>        </span>);
+<a href=#456 id=456 data-nosnippet>456</a>    }
+<a href=#457 id=457 data-nosnippet>457</a>
+<a href=#458 id=458 data-nosnippet>458</a>    <span class="doccomment">/// File list inside a `.tgz` — entries are stored under a single
+<a href=#459 id=459 data-nosnippet>459</a>    /// top-level dir; we compare suffixes.
+<a href=#460 id=460 data-nosnippet>460</a>    </span><span class="kw">fn </span>tgz_files(tgz: <span class="kw-2">&amp;</span>Path) -&gt; Vec&lt;String&gt; {
+<a href=#461 id=461 data-nosnippet>461</a>        <span class="kw">let </span><span class="kw-2">mut </span>names = Vec::new();
+<a href=#462 id=462 data-nosnippet>462</a>        <span class="comment">// untar_gz writes to a dir — use a scratch and walk it
+<a href=#463 id=463 data-nosnippet>463</a>        </span><span class="kw">let </span>dir = tempfile::tempdir().unwrap();
+<a href=#464 id=464 data-nosnippet>464</a>        untar_gz(fs::File::open(tgz).unwrap(), dir.path()).unwrap();
+<a href=#465 id=465 data-nosnippet>465</a>        <span class="kw">for </span>rel <span class="kw">in </span>tamias_core::digest::payload_files(dir.path()).unwrap() {
+<a href=#466 id=466 data-nosnippet>466</a>            names.push(rel.to_string_lossy().replace(<span class="string">'\\'</span>, <span class="string">"/"</span>));
+<a href=#467 id=467 data-nosnippet>467</a>        }
+<a href=#468 id=468 data-nosnippet>468</a>        names
+<a href=#469 id=469 data-nosnippet>469</a>    }
+<a href=#470 id=470 data-nosnippet>470</a>}
 </code></pre></div></section></main></body></html>

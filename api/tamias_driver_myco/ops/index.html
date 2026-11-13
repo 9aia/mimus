@@ -6,7 +6,7 @@ stdout and never touches the serve loop’s ndjson stream — and
 every mutation keeps the engine’s own write-path semantics
 (per-verb commit, <code>Actor:</code> trailer, worktree lock).</p>
 <p><code>ops</code> answers the ops manifest as JSON — derived from the
-engine’s own <a href="../../myco/registry/static.VERBS.html" title="static myco::registry::VERBS"><code>myco::registry::VERBS</code></a> table, so a verb can’t
+engine’s own [<code>myco::registry::VERBS</code>] table, so a verb can’t
 exist on the CLI and be missing here. Unbounded verbs
 (<code>serve</code>, <code>ui</code>) are deliberately <em>not</em> ops — they never
 return, so they live in <code>surfaces</code> instead: surface drivers

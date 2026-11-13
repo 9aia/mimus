@@ -237,7 +237,7 @@
 <a href=#237 id=237 data-nosnippet>237</a>
 <a href=#238 id=238 data-nosnippet>238</a><span class="doccomment">/// The bare-name entry the embedded surfaces use (`OpSpec.name` is
 <a href=#239 id=239 data-nosnippet>239</a>/// `cli.`-stripped); the wire path goes `op_of` → `run_verb`.
-<a href=#240 id=240 data-nosnippet>240</a></span><span class="attr">#[cfg(any(feature = <span class="string">"cli"</span>, feature = <span class="string">"mcp"</span>))]
+<a href=#240 id=240 data-nosnippet>240</a></span><span class="attr">#[cfg(feature = <span class="string">"mcp"</span>)]
 <a href=#241 id=241 data-nosnippet>241</a></span><span class="kw">pub fn </span>run_op(op: <span class="kw-2">&amp;</span>str, params: <span class="kw-2">&amp;</span>Map&lt;String, Value&gt;) -&gt; Response {
 <a href=#242 id=242 data-nosnippet>242</a>    <span class="kw">match </span>op_of(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"cli.{}"</span>, op.strip_prefix(<span class="string">"cli."</span>).unwrap_or(op))) {
 <a href=#243 id=243 data-nosnippet>243</a>        <span class="prelude-val">Some</span>(name) =&gt; run_verb(<span class="kw-2">&amp;</span>name, params),

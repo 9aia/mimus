@@ -11,7 +11,7 @@ may <code>capabilities</code>-probe discovered drivers — trusted local
 binaries, 10s timeout); bundled-driver registration, dispatch, and
 the store commit never run.</p>
 <p>Trust/signature are computed exactly as install does, except a
-would-be [<code>tamias_sign::enforce_signature</code>] failure is captured in
+would-be <a href="../tamias_sign/fn.enforce_signature.html" title="fn tamias_sign::enforce_signature"><code>tamias_sign::enforce_signature</code></a> failure is captured in
 <a href="struct.InstallPlan.html#structfield.problems" title="field tamias_install::InstallPlan::problems"><code>InstallPlan::problems</code></a> — a dry-run shows “this would fail”
 instead of hiding it or refusing to plan.</p>
 <h2 id="errors"><a class="doc-anchor" href="#errors">§</a>Errors</h2>

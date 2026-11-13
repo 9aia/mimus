@@ -4,7 +4,7 @@ re-execs <code>tamias-driver-bupha run &lt;argv&gt;</code> in a captured child, 
 <code>bupha::run_from</code> writes to the child’s stdout and never touches
 the serve loop’s ndjson stream.</p>
 <p><code>ops</code> answers the ops manifest as JSON — <em>derived from the
-engine’s own clap tree</em> (<a href="../../bupha/fn.command.html" title="fn bupha::command"><code>bupha::command</code></a>), so a verb can’t
+engine’s own clap tree</em> ([<code>bupha::command</code>]), so a verb can’t
 exist on the CLI and be missing here: declared args become
 typed params (<code>arg</code>/<code>opt</code>/<code>flag</code>), doc strings ride along
 unchanged. The CLI’s one global (<code>--config</code>) rides the
@@ -21,7 +21,7 @@ Hidden plumbing (<code>gen-cli-docs</code>) stays reachable through <code>run</c
 passthrough only.</p>
 <p><code>mutates</code> is honest: bupha mutates CI state — <code>deploy</code>/<code>destroy</code>/
 <code>service</code> drive systemd units, forge webhooks, the env file and
-crates.io releases; <code>init</code> scaffolds repos; <code>import --out</code>
+release tags; <code>init</code> scaffolds repos; <code>import --out</code>
 writes a config; <code>run</code> executes the watched pipeline (worktrees,
 runners, status sinks). Read-only ops are <code>doctor</code>, <code>runs</code>,
 <code>log</code>, <code>explain</code>, <code>deploy check</code>, <code>service status|logs</code>.</p>

@@ -9,6 +9,11 @@ operator on `main`. The script's leading sleep is the debounce
 window — a newer push kills a running release via
 `cancel_running`, so only the last push in a quiet window releases.
 
+The org release plane is **tarsi** (`tarsi-serve` ops — project
+ADR-0005): `scripts/release.sh` is being converted to a thin shim
+over it (PL-014 E1), and until then this script implements the
+same tag-only model directly.
+
 **No crates.io publish**: org policy keeps every repo but tamias off
 crates.io, and the mimus crates are internal lib-only engines behind
 `tamias-driver-mimus`. There is no tamias pack yet either — installs

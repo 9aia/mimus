@@ -9,7 +9,7 @@
         repo: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.99.1/std/primitive.str.html">str</a>,
         rel: &amp;Utf8Path,
         stamp: &amp;<a class="struct" href="struct.FileStamp.html" title="struct myco_index::links::FileStamp">FileStamp</a>,
-        edges: &amp;[<a class="struct" href="../../myco_core/refs/struct.Edge.html" title="struct myco_core::refs::Edge">Edge</a>],
+        edges: &amp;[Edge],
     ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.99.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.99.1/std/primitive.unit.html">()</a>, <a class="enum" href="../enum.Error.html" title="enum myco_index::Error">Error</a>&gt;;
 <span class="item-spacer"></span>    fn <a href="#tymethod.restamp" class="fn">restamp</a>(
         &amp;self,
@@ -20,16 +20,16 @@
 <span class="item-spacer"></span>    fn <a href="#tymethod.related" class="fn">related</a>(
         &amp;self,
         repo: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.99.1/std/primitive.str.html">str</a>,
-        id: <a class="struct" href="../../myco_core/id/struct.ItemId.html" title="struct myco_core::id::ItemId">ItemId</a>,
-        alive: &amp;<a class="struct" href="https://doc.rust-lang.org/1.99.1/alloc/collections/btree/set/struct.BTreeSet.html" title="struct alloc::collections::btree::set::BTreeSet">BTreeSet</a>&lt;<a class="struct" href="../../myco_core/id/struct.ItemId.html" title="struct myco_core::id::ItemId">ItemId</a>&gt;,
+        id: ItemId,
+        alive: &amp;<a class="struct" href="https://doc.rust-lang.org/1.99.1/alloc/collections/btree/set/struct.BTreeSet.html" title="struct alloc::collections::btree::set::BTreeSet">BTreeSet</a>&lt;ItemId&gt;,
     ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.99.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.99.1/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="struct.Related.html" title="struct myco_index::links::Related">Related</a>&gt;, <a class="enum" href="../enum.Error.html" title="enum myco_index::Error">Error</a>&gt;;
 <span class="item-spacer"></span>    fn <a href="#tymethod.reach" class="fn">reach</a>(
         &amp;self,
         repo: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.99.1/std/primitive.str.html">str</a>,
-        id: <a class="struct" href="../../myco_core/id/struct.ItemId.html" title="struct myco_core::id::ItemId">ItemId</a>,
-        kind: <a class="enum" href="../../myco_core/refs/enum.EdgeKind.html" title="enum myco_core::refs::EdgeKind">EdgeKind</a>,
+        id: ItemId,
+        kind: EdgeKind,
         max_depth: <a class="primitive" href="https://doc.rust-lang.org/1.99.1/std/primitive.usize.html">usize</a>,
-    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.99.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.99.1/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../../myco_core/id/struct.ItemId.html" title="struct myco_core::id::ItemId">ItemId</a>&gt;, <a class="enum" href="../enum.Error.html" title="enum myco_index::Error">Error</a>&gt;;
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.99.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.99.1/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;ItemId&gt;, <a class="enum" href="../enum.Error.html" title="enum myco_index::Error">Error</a>&gt;;
 <span class="item-spacer"></span>    fn <a href="#tymethod.sweep" class="fn">sweep</a>(
         &amp;self,
         repo: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.99.1/std/primitive.str.html">str</a>,
@@ -55,7 +55,7 @@ for the invalidation diff.</p>
     repo: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.99.1/std/primitive.str.html">str</a>,
     rel: &amp;Utf8Path,
     stamp: &amp;<a class="struct" href="struct.FileStamp.html" title="struct myco_index::links::FileStamp">FileStamp</a>,
-    edges: &amp;[<a class="struct" href="../../myco_core/refs/struct.Edge.html" title="struct myco_core::refs::Edge">Edge</a>],
+    edges: &amp;[Edge],
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.99.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.99.1/std/primitive.unit.html">()</a>, <a class="enum" href="../enum.Error.html" title="enum myco_index::Error">Error</a>&gt;</h4></section></summary><div class="docblock"><p>Replace <code>rel</code>’s outgoing edge set + stamp atomically —
 one txn, so a crash can never leave a file half-updated.
 <code>edges</code> is the whole set <code>extract</code> derived for this file
@@ -72,8 +72,8 @@ without touching edges.</p>
 </div></details><details class="toggle method-toggle" open><summary><section id="tymethod.related" class="method"><a class="src rightside" href="../../src/myco_index/links.rs.html#108-113">Source</a><h4 class="code-header">fn <a href="#tymethod.related" class="fn">related</a>(
     &amp;self,
     repo: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.99.1/std/primitive.str.html">str</a>,
-    id: <a class="struct" href="../../myco_core/id/struct.ItemId.html" title="struct myco_core::id::ItemId">ItemId</a>,
-    alive: &amp;<a class="struct" href="https://doc.rust-lang.org/1.99.1/alloc/collections/btree/set/struct.BTreeSet.html" title="struct alloc::collections::btree::set::BTreeSet">BTreeSet</a>&lt;<a class="struct" href="../../myco_core/id/struct.ItemId.html" title="struct myco_core::id::ItemId">ItemId</a>&gt;,
+    id: ItemId,
+    alive: &amp;<a class="struct" href="https://doc.rust-lang.org/1.99.1/alloc/collections/btree/set/struct.BTreeSet.html" title="struct alloc::collections::btree::set::BTreeSet">BTreeSet</a>&lt;ItemId&gt;,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.99.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.99.1/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="struct.Related.html" title="struct myco_index::links::Related">Related</a>&gt;, <a class="enum" href="../enum.Error.html" title="enum myco_index::Error">Error</a>&gt;</h4></section></summary><div class="docblock"><p>Everything attached to <code>id</code>, both directions — outgoing
 edges come back verbatim, incoming ones with <code>kind</code>
 mirrored (<code>blocks</code> → <code>blocked_by</code>). Edge ends not in
@@ -83,10 +83,10 @@ cheap to filter and get compacted away on the next
 </div></details><details class="toggle method-toggle" open><summary><section id="tymethod.reach" class="method"><a class="src rightside" href="../../src/myco_index/links.rs.html#119-125">Source</a><h4 class="code-header">fn <a href="#tymethod.reach" class="fn">reach</a>(
     &amp;self,
     repo: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.99.1/std/primitive.str.html">str</a>,
-    id: <a class="struct" href="../../myco_core/id/struct.ItemId.html" title="struct myco_core::id::ItemId">ItemId</a>,
-    kind: <a class="enum" href="../../myco_core/refs/enum.EdgeKind.html" title="enum myco_core::refs::EdgeKind">EdgeKind</a>,
+    id: ItemId,
+    kind: EdgeKind,
     max_depth: <a class="primitive" href="https://doc.rust-lang.org/1.99.1/std/primitive.usize.html">usize</a>,
-) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.99.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.99.1/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../../myco_core/id/struct.ItemId.html" title="struct myco_core::id::ItemId">ItemId</a>&gt;, <a class="enum" href="../enum.Error.html" title="enum myco_index::Error">Error</a>&gt;</h4></section></summary><div class="docblock"><p>Forward reachability from <code>id</code> along <code>kind</code> edges, at most
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.99.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.99.1/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;ItemId&gt;, <a class="enum" href="../enum.Error.html" title="enum myco_index::Error">Error</a>&gt;</h4></section></summary><div class="docblock"><p>Forward reachability from <code>id</code> along <code>kind</code> edges, at most
 <code>max_depth</code> hops — the visited set makes cyclic input
 terminate (the graph tolerates cycles, per the proposal;
 nothing enforces acyclicity). Sorted, <code>id</code> itself excluded.</p>

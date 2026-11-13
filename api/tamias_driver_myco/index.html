@@ -7,7 +7,7 @@ probe; never touches project state).</li>
 <li><code>capabilities</code> — <code>{"capabilities": ["pavo"], "verbs": […]}</code>.</li>
 <li><code>ops</code> — the engine ops manifest: every <code>myco</code> CLI verb as a
 <code>cli.&lt;verb&gt;</code> wire query, derived from the engine’s own
-<a href="../myco/registry/static.VERBS.html" title="static myco::registry::VERBS"><code>myco::registry::VERBS</code></a> table.</li>
+[<code>myco::registry::VERBS</code>] table.</li>
 <li><code>run &lt;argv&gt;</code> — engine passthrough: <code>tamias-driver-myco run board</code> ≡ <code>myco board</code>. Also the child side of <code>cli.*</code> wire
 queries (<code>ops::run_verb</code> re-execs this same verb so engine
 output never touches the serve stream).</li>

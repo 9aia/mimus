@@ -43,7 +43,7 @@ unspawnable pager all fall back to <code>println!</code>.</dd><dt><a class="fn" 
 journal is empty or its top anchor no longer matches HEAD.</dd><dt><a class="fn" href="fn.redo_last.html" title="fn myco::ops::redo_last">redo_<wbr>last</a></dt><dd><code>myco redo</code> — restore the commit the last undo moved away
 from: pop the top of the undo journal
 (<code>&lt;git-common-dir&gt;/myco-history.json</code>, see
-<a href="../../myco_ops/history/index.html" title="mod myco_ops::history"><code>crate::history</code></a>) and <code>git reset --hard</code> to its target.
+[<code>crate::history</code>]) and <code>git reset --hard</code> to its target.
 Repeatable — each pop exposes the next-older undone commit,
 which is the redo stack single-step reflog tricks can’t
 express.</dd><dt><a class="fn" href="fn.resolve_actor.html" title="fn myco::ops::resolve_actor">resolve_<wbr>actor</a></dt><dd>The actor-resolution chain every verb shares — explicit flag

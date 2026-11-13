@@ -18,8 +18,9 @@ the supplied body; <code>None</code> → the caller uses the template.</dd><dt><
 <code>actor</code> is the verb’s actor (<code>--actor</code>/<code>--owner</code> where the verb
 takes one) — stamped as the <code>Actor:</code> trailer; <code>None</code> → <code>cli</code>.</dd><dt><a class="fn" href="fn.compact.html" title="fn myco::items::compact">compact</a></dt><dd><code>T-001 open pri:high owner:devin #core title</code> — the compact
 human list line. Thin wrapper over <a href="../../myco_core/item/struct.Item.html#method.compact" title="method myco_core::item::Item::compact"><code>Item::compact</code></a>.</dd><dt><a class="fn" href="fn.done_push.html" title="fn myco::items::done_push">done_<wbr>push</a></dt><dd>Append <code>item</code> (subtree included — every node must already be
-<code>Status::Done</code>, emit rejects anything else) to the done doc’s
-flat unsectioned list. Duplicate ids — the item’s whole
+terminal, <code>Done</code> or <code>Cancelled</code>; emit rejects anything else)
+to the done doc’s flat unsectioned list. Duplicate ids — the
+item’s whole
 subtree — are refused: an id lives in exactly one place.</dd><dt><a class="fn" href="fn.find_item.html" title="fn myco::items::find_item">find_<wbr>item</a></dt><dd>Locate an item anywhere in the ledger — TODO.md, BACKLOG.md, or
 an item file (live or <code>archive/</code>). Returns the item, its
 location label, and the body for file-backed items.</dd><dt><a class="fn" href="fn.item_for_edit.html" title="fn myco::items::item_for_edit">item_<wbr>for_<wbr>edit</a></dt><dd>Load a file-backed item for mutation. Archived items are
