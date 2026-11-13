@@ -9,6 +9,4 @@
 
 ## Claims + reporting
 
-- [ ] T-008 mimus report — violations with claim+evidence+fix
-
 ## Scaffold debt (forked from bupha — rewrite crate-by-crate)
