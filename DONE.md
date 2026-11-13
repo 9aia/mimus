@@ -5,3 +5,4 @@
 - T-001 mimus-core — Claim / Violation / Evidence / TrustScore; claim taxonomy (path | command | symbol | count | link | behavior) decides which checker verifies it (ADR-0001).
 - T-002 mimus-check port + mimus-check-fs adapter (paths exist)
 - T-003 mimus-check-cmd adapter (commands parse / exit clean)
+- T-004 mimus-check-symbol adapter — resolve symbols via a kuda index (first real cross-tool dep; mimus-kuda glue crate)
