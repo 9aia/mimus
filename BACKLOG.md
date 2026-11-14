@@ -5,6 +5,7 @@
 - T-009 mimus-check-llm adapter — semantic tier: prose claims vs code behavior ("retries 3 times" — code says 5); human-in-loop report, never a gate
 - T-010 mimus-check-link — dead URLs, moved repos, stale badges
 - T-011 ADR-drift checker — decisions vs current code state
+- T-022 presentation deck — pending: run via ~/.9aia-pres pipeline (pres kick mimus or supervisor); agent writes presentation/ on branch presentation/initial, slidev build verify, push; no PR (sturn flow) — the pushed branch is the deliverable; merge is a human/sturn call; status board: ~/.9aia-pres/STATUS.md · created:2026-11-02
 
 ## Rules
 

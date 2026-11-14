@@ -2,7 +2,6 @@
 
 ## Core model
 
-- [ ] T-022 presentation deck — pending: run via ~/.9aia-pres pipeline (pres kick mimus or supervisor); agent writes presentation/ on branch presentation/initial, slidev build verify, push; no PR (sturn flow) — the pushed branch is the deliverable; merge is a human/sturn call; status board: ~/.9aia-pres/STATUS.md · created:2026-11-02
 - [ ] T-023 agent-awareness managed block — when/why agents run mimus audit (independent card verification vs kuda status) as a \<!-- mimus:agent-awareness --> block — pattern: myco init/check · created:2026-11-02
 
 ## Checkers (ports + first adapters)
