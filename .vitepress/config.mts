@@ -11,7 +11,7 @@ export default defineConfig({
   ignoreDeadLinks: [/\/api\//],
   themeConfig: {
     nav: [
-      { text: "Getting Started", link: "/getting-started" },
+      { text: "Getting Started", link: "/tutorials/getting-started" },
       { text: "Tutorial", link: "/tutorials/first-run" },
       { text: "How-to", link: "/how-to/multi-repo" },
       { text: "Explanation", link: "/explanation/architecture" },
@@ -52,6 +52,7 @@ export default defineConfig({
         text: "Explanation",
         items: [
           { text: "Architecture", link: "/explanation/architecture" },
+          { text: "Boundaries", link: "/explanation/boundaries" },
           { text: "Concepts", link: "/explanation/concepts" },
           { text: "Claims & tiers", link: "/explanation/claims" },
           { text: "Decisions", link: "/explanation/decisions" },

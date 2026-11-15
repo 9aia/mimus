@@ -8,7 +8,7 @@ hero:
   actions:
     - theme: brand
       text: Getting Started
-      link: /getting-started
+      link: /tutorials/getting-started
     - theme: alt
       text: Tutorial
       link: /tutorials/first-run
@@ -52,7 +52,7 @@ kuda's, fixing is reconcile's (planned), distribution is tamias's.
 ## Which quadrant answers which goal
 
 - **Learn it** → [Tutorial: first check](tutorials/first-run.md)
-- **Do a task** → [How-to](getting-started.md) — CI gate, kuda
+- **Do a task** → [How-to](tutorials/getting-started.md) — CI gate, kuda
   audit, rules authoring, multi-repo
 - **Understand why** → [Architecture](explanation/architecture.md),
   [claims & tiers](explanation/claims.md),
