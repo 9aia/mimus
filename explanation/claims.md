@@ -29,6 +29,46 @@ and `data Eq` get read as shell.
 - **Mechanical** — deterministic and offline: paths, commands,
   rules. This is the `mimus check` gate; if it flags something,
   the evidence is reproducible by anyone.
+- **Graph** (ADR-0002 — all six classes live) — set-level pass,
+  not per-claim: claims and kuda-index edges become
+  `(subject, relation, object)` triples bucketed by subject. Same
+  bucket, different object → `contradiction` (doc↔doc) or
+  `self-contradiction` (reflexive), warn-tier — index-free, runs
+  on every claim set; index edge with no target →
+  `stale-reference` (error tier); prose edge the index lacks →
+  `unsupported claim`; index module no document names →
+  `undocumented fact` (warn, see below). `[check].aliases` folds
+  differently-spelled subjects into one bucket. A per-file triples
+  cache (`.mimus/triples.db`, gitignored) skips re-extracting
+  unchanged files, and under `--diff` every graph finding is gated
+  to sources the run actually looked at. The mechanical pass is also
+  the semantic tier's *intake filter*: what the buckets can't settle
+  (near-duplicate subjects — canon-differing but sharing a token —
+  asserting different objects for one relation) becomes a pre-bucketed
+  candidate pair the agent adjudicates, so it never scans every claim.
+  Mechanical speed — buckets, not agents.
+
+### `undocumented fact` vs `mimus coverage`
+
+Both run code→doc, but they answer different questions and sit on
+different tiers:
+
+- `mimus coverage` (command, advisory, symbol level) lists
+  *symbols* the index holds and no doc source ever names — a
+  to-do list for writers, never part of `check`.
+- `undocumented fact` (graph class, warn, module level) flags a
+  **public module** — one the index records as a dependency
+  target of another module — that no document in the mined set
+  names. It rides the `check` pipeline (gated by
+  `[check].kuda_index`, scoped by `--diff` on the module's own
+  files) because a missing module page is a contract gap, not a
+  per-symbol chore.
+
+Both match names canonically: `mimus-core`, `mimus_core` and any
+`[check].aliases` spelling count. The fact class is
+deliberately coarse — every indexed import is a fact nobody
+documents, so edge-level reverse coverage would flag the whole
+repo; a module is the smallest unit a doc page can cover.
 - **Semantic** — advisory: the `acp` checker spawns an ACP agent
   (`acp_cmd`, e.g. `env CLINE_PROVIDER=cline-pass
   CLINE_MODEL=cline-free/mimo-v2.6-flash cline --acp` —
@@ -37,7 +77,9 @@ and `data Eq` get read as shell.
   `[check].semantic`; every finding is `warn` + evidence.
   **Can never gate** — that is load-bearing, not a limitation.
   Claims fold into one prompt per batch, and each prompt is
-  debounced — polite to the provider.
+  debounced — polite to the provider. Its intake is the graph
+  tier's fuzzy residue (pre-bucketed candidate pairs), not the raw
+  claim set.
 
 Style opinions are never emitted at all.
 
