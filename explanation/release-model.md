@@ -16,9 +16,11 @@ same tag-only model directly.
 
 **No crates.io publish**: org policy keeps every repo but tamias off
 crates.io, and the mimus crates are internal lib-only engines behind
-`tamias-driver-mimus`. There is no tamias pack yet either — installs
-stay `cargo install --git https://github.com/9aia/mimus mimus`,
-pinning a rev or a tag.
+`tamias-driver-mimus`. Installs ride the tamias pack
+(`libraries/mimus` — `tamias install --allow-drivers
+./libraries/mimus` from a checkout, `tamias publish libraries/mimus`
+for the registry); `cargo install --git` pinning a rev or tag
+remains the source path (the compat `mimus` bin).
 
 ## What a release run does
 
@@ -51,6 +53,6 @@ by tagging once.
   to a GitHub Release) is retired: org policy keeps every repo but
   tamias off crates.io, and prebuilt binary distribution is not
   part of the flow.
-* Install is `cargo install --git` until a tamias pack exists —
-  a `libraries/mimus` pack (mirroring kuda's `bins[]` shim over
-  `tamias-driver-mimus`) is the planned distribution path.
+* Install rides the `libraries/mimus` tamias pack (`bins[]` shim
+  over `tamias-driver-mimus`); `cargo install --git` remains the
+  source path via the compat bin.

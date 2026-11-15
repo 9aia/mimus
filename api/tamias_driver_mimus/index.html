@@ -12,7 +12,7 @@ probe; never touches repo state).</p>
 <li>
 <p><code>ops</code> — the engine ops manifest: every <code>mimus</code> CLI verb as a
 <code>cli.&lt;verb&gt;</code> wire query, derived from the engine’s own clap
-tree ([<code>mimus::command</code>]).</p>
+tree (<a href="../mimus/fn.command.html" title="fn mimus::command"><code>mimus::command</code></a>).</p>
 </li>
 <li>
 <p><code>run &lt;argv&gt;</code> — engine passthrough: <code>tamias-driver-mimus run audit</code> ≡ <code>mimus audit</code>. Also the child side of <code>cli.*</code> wire

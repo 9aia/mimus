@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["ConfigVerb","EmitMode","LedgerMode"],"fn":["is_valid_rev"],"mod":["actor","date","doc","handoff","id","item","kind","ledger","meta","priority","refs","status","view","walk"],"struct":["AliasVerb","Config","IndexConfig","Seen","SyncConfig","ViewEmitVerb"]};

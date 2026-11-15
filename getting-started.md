@@ -15,7 +15,18 @@ Pick by what you need to do.
   [release model](explanation/release-model.md) ·
   [comparison](comparison.md) — vs linters / LLM review
 
-Install:
+Install — the `mimus` command ships as a tamias pack
+(`libraries/mimus`): a generated `bins[]` shim →
+`tamias-driver-mimus cli` → the engine lib's `run_from`. With
+`tamias` installed:
+
+```sh
+scripts/pack.sh && tamias install --allow-drivers ./libraries/mimus   # from a checkout
+tamias install 9aia:mimus@<version>    # org registry, once published
+```
+
+A source build also works — the engine ships a compat `mimus` bin
+(not on crates.io; org policy):
 
 ```sh
 cargo install --git https://github.com/9aia/mimus mimus

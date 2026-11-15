@@ -36,10 +36,15 @@ is *not* a command claim.
 crates:
 
 * `mimus-check` (the checker port) → `mimus-check-fs`,
-  `mimus-check-cmd`, `mimus-check-symbol` (against kuda's index)
+  `mimus-check-cmd`, `mimus-check-symbol` (against kuda's index);
+  `mimus-check-graph` (ADR-0002) runs a *set-level*
+  pass: claims + code edges become `(subject, relation, object)`
+  triples, bucketed by subject — contradictions and stale
+  references at mechanical speed; a second port, not a
+  `Checker` impl, since it compares claims to each other
 * claim sources: markdown today, comments/cards wired in config
 * `mimus-rules` — conventions as `rules/*.toml` data
-* `mimus-vcs`→`mimus-git`, `mimus-config`→`mimus-config-toml`,
+* `mimus-vcs`→`mimus-git`, `mimus-config` (port + scarab-config impl),
   `mimus-secret`→`mimus-keyring`/`mimus-dotenv`
 
 A new checker = new adapter crate; a new convention = a new

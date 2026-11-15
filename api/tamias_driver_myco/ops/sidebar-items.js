@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["SURFACES"],"fn":["argv","bool_param","is_surface","manifest","op_of","ops","param_json","run_verb","scalar","values","workdir"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["h_set","h_show"]};

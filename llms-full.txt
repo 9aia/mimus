@@ -302,8 +302,9 @@ way.
 ## `--no-cmd` — never execute anything
 
 The `cmd` checker verifies documented commands exist on PATH —
-it does **not** run them. But if you want to be explicit that a
-job runs nothing executable:
+it does **not** run them unless `[check].allow_exec` is set.
+But if you want to be explicit that a job runs nothing
+executable:
 
 ```sh
 mimus check --no-cmd
@@ -340,6 +341,19 @@ gate. `reconcile`-style tooling consumes the JSON.
 
 Docs that can drift silently are docs that will. One line keeps
 them honest.
+
+### Gating only new drift (large backlogs)
+
+`mimus check --diff <spec>` runs the same checkers but only over
+claims in files matching `git diff --name-only <spec>` — PR
+checks fail on *new* drift while the existing backlog is paid
+down:
+
+```yaml
+- run: mimus check --diff "origin/${{ github.base_ref }}...HEAD"
+```
+
+`--diff` needs a git checkout — outside a repo it exits 2.
 
 See [claims & tiers](../explanation/claims.md) for why the
 semantic tier can never be this gate.
@@ -491,6 +505,7 @@ url: /mimus/reference/config.md
 | `kinds` | `Vec<ClaimKind>` | optional | Only check claims of these kinds (empty = all). |
 | `ignore_prefixes` | `list` | optional | Skip claims whose text starts with any of these prefixes. |
 | `binaries` | `list` | optional | Tool prerequisites the repo declares — commands invoking these skip the PATH probe (docs may legitimately require tools the checker's machine lacks). |
+| `allow_exec` | `bool` | optional | Opt-in execution tier for the cmd checker — when true, command claims that resolve on PATH are also executed (argv-split, no shell, bounded by a timeout) and a non-zero exit refutes the claim. Default false: PATH probe only, never executes. |
 | `aliases` | `table` | optional | Subject aliases for the contradiction buckets — a `[check.aliases]` table mapping `alias = "canonical"`; emitted bucket keys name the canonical form (ADR-0002). |
 
 ## `[rules]`
@@ -604,8 +619,10 @@ violation:
   `<!-- mimus-ignore-file -->` skips the whole file.
 * the `cmd` checker probes the machine's PATH — results vary
   across machines by design (missing binary = `warn`, never
-  `error`). Declare prerequisites in `[check].binaries`, or run
-  `check --no-cmd`.
+  `error`). With opt-in `[check].allow_exec` it also executes each
+  resolved command (argv, no shell, bounded) and refutes on
+  non-zero exit. Declare prerequisites in `[check].binaries`, or
+  run `check --no-cmd`.
 
 ---
 
@@ -674,10 +691,15 @@ is *not* a command claim.
 crates:
 
 * `mimus-check` (the checker port) → `mimus-check-fs`,
-  `mimus-check-cmd`, `mimus-check-symbol` (against kuda's index)
+  `mimus-check-cmd`, `mimus-check-symbol` (against kuda's index);
+  `mimus-check-graph` (ADR-0002) runs a *set-level*
+  pass: claims + code edges become `(subject, relation, object)`
+  triples, bucketed by subject — contradictions and stale
+  references at mechanical speed; a second port, not a
+  `Checker` impl, since it compares claims to each other
 * claim sources: markdown today, comments/cards wired in config
 * `mimus-rules` — conventions as `rules/*.toml` data
-* `mimus-vcs`→`mimus-git`, `mimus-config`→`mimus-config-toml`,
+* `mimus-vcs`→`mimus-git`, `mimus-config` (port + scarab-config impl),
   `mimus-secret`→`mimus-keyring`/`mimus-dotenv`
 
 A new checker = new adapter crate; a new convention = a new
@@ -737,6 +759,47 @@ and `data Eq` get read as shell.
 * **Mechanical** — deterministic and offline: paths, commands,
   rules. This is the `mimus check` gate; if it flags something,
   the evidence is reproducible by anyone.
+* **Graph** (ADR-0002 — all six classes live) — set-level pass,
+  not per-claim: claims and kuda-index edges become
+  `(subject, relation, object)` triples bucketed by subject. Same
+  bucket, different object → `contradiction` (doc↔doc) or
+  `self-contradiction` (reflexive), warn-tier — index-free, runs
+  on every claim set; index edge with no target →
+  `stale-reference` (error tier); prose edge the index lacks →
+  `unsupported claim`; index module no document names →
+  `undocumented fact` (warn, see below). `[check].aliases` folds
+  differently-spelled subjects into one bucket. A per-file triples
+  cache (`.mimus/triples.db`, gitignored) skips re-extracting
+  unchanged files, and under `--diff` every graph finding is gated
+  to sources the run actually looked at. The mechanical pass is also
+  the semantic tier's *intake filter*: what the buckets can't settle
+  (near-duplicate subjects — canon-differing but sharing a token —
+  asserting different objects for one relation) becomes a pre-bucketed
+  candidate pair the agent adjudicates, so it never scans every claim.
+  Mechanical speed — buckets, not agents.
+
+### `undocumented fact` vs `mimus coverage`
+
+Both run code→doc, but they answer different questions and sit on
+different tiers:
+
+* `mimus coverage` (command, advisory, symbol level) lists
+  *symbols* the index holds and no doc source ever names — a
+  to-do list for writers, never part of `check`.
+* `undocumented fact` (graph class, warn, module level) flags a
+  **public module** — one the index records as a dependency
+  target of another module — that no document in the mined set
+  names. It rides the `check` pipeline (gated by
+  `[check].kuda_index`, scoped by `--diff` on the module's own
+  files) because a missing module page is a contract gap, not a
+  per-symbol chore.
+
+Both match names canonically: `mimus-core`, `mimus_core` and any
+`[check].aliases` spelling count. The fact class is
+deliberately coarse — every indexed import is a fact nobody
+documents, so edge-level reverse coverage would flag the whole
+repo; a module is the smallest unit a doc page can cover.
+
 * **Semantic** — advisory: the `acp` checker spawns an ACP agent
   (`acp_cmd`, e.g. `env CLINE_PROVIDER=cline-pass
   CLINE_MODEL=cline-free/mimo-v2.6-flash cline --acp` —
@@ -745,7 +808,9 @@ and `data Eq` get read as shell.
   `[check].semantic`; every finding is `warn` + evidence.
   **Can never gate** — that is load-bearing, not a limitation.
   Claims fold into one prompt per batch, and each prompt is
-  debounced — polite to the provider.
+  debounced — polite to the provider. Its intake is the graph
+  tier's fuzzy residue (pre-bucketed candidate pairs), not the raw
+  claim set.
 
 Style opinions are never emitted at all.
 
@@ -785,9 +850,11 @@ same tag-only model directly.
 
 **No crates.io publish**: org policy keeps every repo but tamias off
 crates.io, and the mimus crates are internal lib-only engines behind
-`tamias-driver-mimus`. There is no tamias pack yet either — installs
-stay `cargo install --git https://github.com/9aia/mimus mimus`,
-pinning a rev or a tag.
+`tamias-driver-mimus`. Installs ride the tamias pack
+(`libraries/mimus` — `tamias install --allow-drivers
+./libraries/mimus` from a checkout, `tamias publish libraries/mimus`
+for the registry); `cargo install --git` pinning a rev or tag
+remains the source path (the compat `mimus` bin).
 
 ## What a release run does
 
@@ -820,9 +887,9 @@ by tagging once.
   to a GitHub Release) is retired: org policy keeps every repo but
   tamias off crates.io, and prebuilt binary distribution is not
   part of the flow.
-* Install is `cargo install --git` until a tamias pack exists —
-  a `libraries/mimus` pack (mirroring kuda's `bins[]` shim over
-  `tamias-driver-mimus`) is the planned distribution path.
+* Install rides the `libraries/mimus` tamias pack (`bins[]` shim
+  over `tamias-driver-mimus`); `cargo install --git` remains the
+  source path via the compat bin.
 
 ---
 
@@ -882,7 +949,18 @@ Pick by what you need to do.
   [release model](explanation/release-model.md) ·
   [comparison](comparison.md) — vs linters / LLM review
 
-Install:
+Install — the `mimus` command ships as a tamias pack
+(`libraries/mimus`): a generated `bins[]` shim →
+`tamias-driver-mimus cli` → the engine lib's `run_from`. With
+`tamias` installed:
+
+```sh
+scripts/pack.sh && tamias install --allow-drivers ./libraries/mimus   # from a checkout
+tamias install 9aia:mimus@<version>    # org registry, once published
+```
+
+A source build also works — the engine ships a compat `mimus` bin
+(not on crates.io; org policy):
 
 ```sh
 cargo install --git https://github.com/9aia/mimus mimus
