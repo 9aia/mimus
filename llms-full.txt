@@ -1,10 +1,28 @@
 ---
-url: /mimus/tutorials/first-run.md
+url: /mimus/tutorials/getting-started.md
 ---
-# Tutorial: your first audit
+# Getting started
 
-Goal: point mimus at a repo's docs and see which claims are still
-true — docs-as-tests, in minutes.
+Point mimus at a repo's docs and see which claims are still true —
+docs-as-tests, in minutes.
+
+## Install
+
+The `mimus` command ships as a tamias pack (`libraries/mimus`): a
+generated `bins[]` shim → `tamias-driver-mimus cli` → the engine
+lib's `run_from`. With `tamias` installed:
+
+```sh
+scripts/pack.sh && tamias install --allow-drivers ./libraries/mimus   # from a checkout
+tamias install 9aia:mimus@<version>    # org registry, once published
+```
+
+A source build also works — the engine ships a compat `mimus` bin
+(not on crates.io; org policy):
+
+```sh
+cargo install --git https://github.com/9aia/mimus mimus
+```
 
 ## 1. Init
 
@@ -26,6 +44,10 @@ mechanical = true
 semantic = false
 ```
 
+`symbol` claims, `audit`, and `coverage` need a
+[kuda](https://github.com/9aia/kuda) index (`kuda sync`) — without
+one, the mechanical tier is paths + commands + rules.
+
 ## 2. Check
 
 ```sh
@@ -45,7 +67,8 @@ docs/guide.md:17 [warn] `cargo bench` — binary `cargo-bench` not found in PATH
 ```
 
 Exit code is `1` on any `error`-severity violation — docs drift
-becomes a gateable signal.
+becomes a gateable signal. `mimus report` lists violations with
+claim + evidence + fix.
 
 ## 3. Make a claim and watch it get caught
 
@@ -65,7 +88,7 @@ README.md:N [error] `nonexistent/dead.rs` — ./nonexistent/dead.rs does not exi
 
 Every violation is claim + evidence + (when mechanical) a fix —
 the evidence bar is the design rule, see
-[architecture](../explanation/architecture.md).
+[architecture](/explanation/architecture).
 
 ## 4. Author a convention
 
@@ -83,7 +106,7 @@ pattern = "TODO|FIXME"
 ```
 
 `mimus check` now flags every TODO — a convention encoded as a
-file, not a code change. See [authoring rules](../how-to/rules-authoring.md).
+file, not a code change. See [authoring rules](/how-to/rules-authoring).
 
 ## 5. Audit the memory layer
 
@@ -102,13 +125,33 @@ drifted      kuda-core
 Cards whose `verify:` files changed since sync report `drifted`;
 missing files report `contradicted`.
 
-## You have built
+## What you now know
 
-A falsification layer: every factual claim in your docs is now a
-test that fails loudly when reality moves.
+* `mimus init` scaffolds `mimus.toml` (sources, `[check]` tiers)
+  plus a `rules/` dir of data-driven conventions.
+* `check` extracts factual claims from docs and verifies them
+  against the filesystem, PATH, and the kuda index — violations
+  are claim + evidence + fix, and `error` severity gates CI.
+* `rules/*.toml` encode conventions without code changes;
+  `audit` checks kuda card freshness (`fresh`/`drifted`/
+  `contradicted`).
 
-Next: [gate CI on it](../how-to/ci-gate.md),
-[write rules](../how-to/rules-authoring.md).
+You have built a falsification layer: every factual claim in your
+docs is now a test that fails loudly when reality moves.
+
+## Where next
+
+* **How-to** (tasks): [memory audit](/how-to/kuda-audit) ·
+  [rules authoring](/how-to/rules-authoring) ·
+  [CI gate](/how-to/ci-gate) · [multi-repo](/how-to/multi-repo)
+* **Reference** (lookup): [cli](/reference/cli) ·
+  [config](/reference/config) · [crate api](/reference/crate-api)
+* **Explanation** (why): [architecture](/explanation/architecture) ·
+  [concepts](/explanation/concepts) ·
+  [claims & tiers](/explanation/claims) ·
+  [decisions](/explanation/decisions) ·
+  [release model](/explanation/release-model) ·
+  [comparison](/comparison) — vs linters / LLM review
 
 ---
 
@@ -1118,58 +1161,6 @@ semantic tier, where findings are advisory by design.
 | scope               | code blocks only       | all factual prose             |
 | claim types         | one or two             | path/cmd/symbol/count/link    |
 | memory audit        | n/a                    | `.kuda/` card trust scores    |
-
----
-
----
-url: /mimus/tutorials/getting-started.md
----
-# Getting started
-
-Pick by what you need to do.
-
-* **Tutorials** (learn): [first-run](/tutorials/first-run.md)
-* **How-to** (tasks): [memory audit](/how-to/kuda-audit.md) ·
-  [rules authoring](/how-to/rules-authoring.md)
-* **Reference** (lookup): [cli](/reference/cli.md) ·
-  [config](/reference/config.md) ·
-  [crate api](/reference/crate-api.md)
-* **Explanation** (why): [architecture](/explanation/architecture.md) ·
-  [concepts](/explanation/concepts.md) ·
-  [claims & tiers](/explanation/claims.md) ·
-  [decisions](/explanation/decisions.md) ·
-  [release model](/explanation/release-model.md) ·
-  [comparison](/comparison.md) — vs linters / LLM review
-
-Install — the `mimus` command ships as a tamias pack
-(`libraries/mimus`): a generated `bins[]` shim →
-`tamias-driver-mimus cli` → the engine lib's `run_from`. With
-`tamias` installed:
-
-```sh
-scripts/pack.sh && tamias install --allow-drivers ./libraries/mimus   # from a checkout
-tamias install 9aia:mimus@<version>    # org registry, once published
-```
-
-A source build also works — the engine ships a compat `mimus` bin
-(not on crates.io; org policy):
-
-```sh
-cargo install --git https://github.com/9aia/mimus mimus
-```
-
-First check:
-
-```sh
-cd your-repo
-mimus init    # detect claim sources -> mimus.toml + rules/
-mimus check   # mechanical tier: paths, commands, symbols
-mimus report  # violations with claim + evidence + fix
-```
-
-`symbol` claims, `audit`, and `coverage` need a
-[kuda](https://github.com/9aia/kuda) index (`kuda sync`) — without
-one, the mechanical tier is paths + commands + rules.
 
 ---
 

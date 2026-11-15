@@ -8,7 +8,7 @@ Verification engine — proofs over what agents claim
 
 ### Tutorials
 
-- [Tutorial: your first audit](/mimus/tutorials/first-run.md)
+- [Getting started](/mimus/tutorials/getting-started.md)
 
 ### How-to
 
@@ -36,5 +36,4 @@ Verification engine — proofs over what agents claim
 
 ### Other
 
-- [Getting started](/mimus/tutorials/getting-started.md)
 - [Untitled](/mimus/public/api/static.files/SourceSerif4-LICENSE-a2cfd9d5.md)
