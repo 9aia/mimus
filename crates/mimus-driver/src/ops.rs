@@ -170,7 +170,7 @@ fn values(v: &Value) -> Vec<String> {
     }
 }
 
-/// `cli.<verb>` params → mimus argv (no argv[0] — `run` prepends
+/// `cli.<verb>` params → mimus argv (no argv\[0\] — `run` prepends
 /// it). Globals are resolved by [`run_verb`] (`--config` prepends
 /// here; the child cwd is the resolved dir, which is how the CLI
 /// finds its repo — mimus has no `--repo` flag). The dotted verb

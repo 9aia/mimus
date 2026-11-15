@@ -21,7 +21,7 @@ pub struct Claim {
     pub line: u32,
 }
 
-/// What kind of assertion — decides which [`Checker`] can prove
+/// What kind of assertion — decides which `Checker` can prove
 /// or refute it (ADR-0001 taxonomy).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]

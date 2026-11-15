@@ -20,7 +20,7 @@ pub struct CmdChecker {
     /// Bound on a single executed claim — the process is killed
     /// past this. Only consulted when `allow_exec` is set.
     pub exec_timeout: Duration,
-    /// Tool prerequisites the repo declares ([check].binaries) —
+    /// Tool prerequisites the repo declares (`[check].binaries`) —
     /// commands invoking these are assumed correct and skip the
     /// PATH probe: docs may legitimately require tools the
     /// checker's machine doesn't have.
