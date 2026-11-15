@@ -207,6 +207,13 @@ pub struct CheckCfg {
     /// tools the checker's machine lacks).
     #[serde(default)]
     pub binaries: Vec<String>,
+    /// Opt-in execution tier for the cmd checker — when true,
+    /// command claims that resolve on PATH are also executed
+    /// (argv-split, no shell, bounded by a timeout) and a
+    /// non-zero exit refutes the claim. Default false: PATH
+    /// probe only, never executes.
+    #[serde(default)]
+    pub allow_exec: bool,
     /// Subject aliases for the contradiction buckets — a
     /// `[check.aliases]` table mapping `alias = "canonical"`;
     /// emitted bucket keys name the canonical form (ADR-0002).
@@ -225,6 +232,7 @@ impl Default for CheckCfg {
             kinds: Vec::new(),
             ignore_prefixes: Vec::new(),
             binaries: Vec::new(),
+            allow_exec: false,
             aliases: BTreeMap::new(),
         }
     }

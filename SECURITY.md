@@ -7,9 +7,12 @@ Do not open public issues for security reports.
 
 ## Scope
 
-- `mimus check`'s `cmd` checker verifies documented commands — it
-  only probes that the invoked binary resolves on PATH and never
-  executes them (`--no-cmd` skips the checker entirely).
+- `mimus check`'s `cmd` checker verifies documented commands — by
+  default it only probes that the invoked binary resolves on PATH
+  and never executes them. Opt-in `[check].allow_exec` additionally
+  runs each resolved command as argv (no shell, bounded by a
+  timeout) and refutes on non-zero exit — only enable it on repos
+  whose docs you trust (`--no-cmd` skips the checker entirely).
 - `mimus` reads source trees and doc files; it does not write to
   the repo except `mimus.toml`/`rules/` on `init`.
 - Secrets resolve via env var → `cuora` vaults → OS keyring

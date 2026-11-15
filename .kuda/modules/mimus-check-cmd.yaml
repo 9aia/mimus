@@ -5,22 +5,47 @@ api:
 - name: CmdChecker
   kind: type
   file: crates/mimus-check-cmd/src/lib.rs
-  line: 10
+  line: 14
   module: mimus-check-cmd
 - name: ENV_LOCK
   kind: const
   file: crates/mimus-check-cmd/tests/cmd.rs
+  line: 125
+  module: mimus-check-cmd
+- name: allow_exec_bounds_runtime
+  kind: function
+  file: crates/mimus-check-cmd/tests/cmd.rs
+  line: 104
+  module: mimus-check-cmd
+- name: allow_exec_off_never_executes
+  kind: function
+  file: crates/mimus-check-cmd/tests/cmd.rs
   line: 84
+  module: mimus-check-cmd
+- name: allow_exec_refutes_failing_command
+  kind: function
+  file: crates/mimus-check-cmd/tests/cmd.rs
+  line: 92
+  module: mimus-check-cmd
+- name: allow_exec_still_probes_path_first
+  kind: function
+  file: crates/mimus-check-cmd/tests/cmd.rs
+  line: 113
+  module: mimus-check-cmd
+- name: argv
+  kind: function
+  file: crates/mimus-check-cmd/src/lib.rs
+  line: 62
   module: mimus-check-cmd
 - name: binary_on_path
   kind: function
   file: crates/mimus-check-cmd/src/lib.rs
-  line: 35
+  line: 46
   module: mimus-check-cmd
 - name: check
   kind: function
   file: crates/mimus-check-cmd/src/lib.rs
-  line: 54
+  line: 101
   module: mimus-check-cmd
 - name: claim
   kind: function
@@ -35,7 +60,7 @@ api:
 - name: default
   kind: function
   file: crates/mimus-check-cmd/src/lib.rs
-  line: 30
+  line: 41
   module: mimus-check-cmd
 - name: empty_and_builtins_are_silence
   kind: function
@@ -45,7 +70,7 @@ api:
 - name: handles
   kind: function
   file: crates/mimus-check-cmd/src/lib.rs
-  line: 50
+  line: 97
   module: mimus-check-cmd
 - name: handles_and_default
   kind: function
@@ -60,17 +85,22 @@ api:
 - name: missing_path_env_is_silence_not_panic
   kind: function
   file: crates/mimus-check-cmd/tests/cmd.rs
-  line: 87
+  line: 128
   module: mimus-check-cmd
 - name: new
   kind: function
   file: crates/mimus-check-cmd/src/lib.rs
-  line: 21
+  line: 31
   module: mimus-check-cmd
 - name: real_and_missing_binaries
   kind: function
   file: crates/mimus-check-cmd/tests/cmd.rs
   line: 58
+  module: mimus-check-cmd
+- name: run_bounded
+  kind: function
+  file: crates/mimus-check-cmd/src/lib.rs
+  line: 71
   module: mimus-check-cmd
 - name: slash_binary_resolves_as_path
   kind: function
@@ -94,8 +124,8 @@ provenance:
   - crates/mimus-check-cmd/tests/cmd.rs
   hashes:
   - 6b4f78cffb51266f2c162ba222cd448903d1f01e
-  - 9bfd6bc407e57560ab1041e290a6486d2e421f11
-  - d6dd5578633d02e679b182522c13332caf5c8e02
-  commit_sha: a9c9dd8500e573e7bc44acb336da724f7150cdc7
-  generated_at: '1794490051'
+  - 8f9399bcb6e53fc08e52360d790ecb957cf2744a
+  - f33ac7591b3702193264a687ebc8c2d5729642e5
+  commit_sha: 3b195f61f20a5be96ffaf6d3a12680f8f39ddb4a
+  generated_at: '1794724602'
   generator: kuda-template/0.1.4

@@ -31,8 +31,9 @@ sources ──► extract ──► classify ──► verify ──► report/f
 - **Memory audit** — `mimus audit` trust-scores `.kuda/` cards
   against source via provenance hashes (fresh / drifted /
   contradicted). kuda remembers; mimus doubts, even the memory
-- **Checkers**: `fs` (paths) · `cmd` (binary on PATH — never
-  executes) · `symbol` (real `.kuda/index.sqlite` schema —
+- **Checkers**: `fs` (paths) · `cmd` (binary on PATH — executes
+  only under opt-in `[check].allow_exec`) · `symbol` (real
+  `.kuda/index.sqlite` schema —
   namespaced claims refuted, externals silent) · `rules/*.toml`
   conventions as data
 - **Command extraction is conservative** — first-token binary

@@ -40,12 +40,12 @@ api:
 - name: ReportCfg
   kind: type
   file: crates/mimus-core/src/lib.rs
-  line: 263
+  line: 271
   module: mimus-core
 - name: RulesCfg
   kind: type
   file: crates/mimus-core/src/lib.rs
-  line: 239
+  line: 247
   module: mimus-core
 - name: Severity
   kind: type
@@ -75,17 +75,17 @@ api:
 - name: default
   kind: function
   file: crates/mimus-core/src/lib.rs
-  line: 218
+  line: 225
   module: mimus-core
 - name: default
   kind: function
   file: crates/mimus-core/src/lib.rs
-  line: 249
+  line: 257
   module: mimus-core
 - name: default
   kind: function
   file: crates/mimus-core/src/lib.rs
-  line: 273
+  line: 281
   module: mimus-core
 - name: default_cards_glob
   kind: function
@@ -95,7 +95,7 @@ api:
 - name: default_confidence
   kind: function
   file: crates/mimus-core/src/lib.rs
-  line: 284
+  line: 292
   module: mimus-core
 - name: default_docs
   kind: function
@@ -105,17 +105,17 @@ api:
 - name: default_format
   kind: function
   file: crates/mimus-core/src/lib.rs
-  line: 281
+  line: 289
   module: mimus-core
 - name: default_rules_dir
   kind: function
   file: crates/mimus-core/src/lib.rs
-  line: 257
+  line: 265
   module: mimus-core
 - name: default_true
   kind: function
   file: crates/mimus-core/src/lib.rs
-  line: 233
+  line: 241
   module: mimus-core
 - name: mimus-core
   kind: module
@@ -137,7 +137,7 @@ provenance:
   - crates/mimus-core/src/lib.rs
   hashes:
   - 6b7185a94a97d0e4ebf63efd7a95dd2800f0bc41
-  - 93eb384b85c332f9123130915d76f245b386b738
-  commit_sha: a9c9dd8500e573e7bc44acb336da724f7150cdc7
-  generated_at: '1794490051'
+  - b142fc640a0def4c0c1012ccb7cda51da6501042
+  commit_sha: 3b195f61f20a5be96ffaf6d3a12680f8f39ddb4a
+  generated_at: '1794724602'
   generator: kuda-template/0.1.4

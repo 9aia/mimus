@@ -434,6 +434,7 @@ fn collect(
     if !no_cmd {
         let mut cmd = mimus_check_cmd::CmdChecker::new();
         cmd.declared = cfg.check.binaries.clone();
+        cmd.allow_exec = cfg.check.allow_exec;
         checkers.push(Box::new(cmd));
     }
     if let Some(idx) = &cfg.check.kuda_index {

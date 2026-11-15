@@ -80,6 +80,47 @@ fn slash_binary_resolves_as_path() {
     assert_eq!(v.severity, Severity::Warn);
 }
 
+#[test]
+fn allow_exec_off_never_executes() {
+    // `sh -c false` exits 1 — but with allow_exec off (default)
+    // the PATH probe alone verifies it: no violation.
+    let c = CmdChecker::new();
+    assert!(c.check(&claim("sh -c false")).unwrap().is_none());
+}
+
+#[test]
+fn allow_exec_refutes_failing_command() {
+    let mut c = CmdChecker::new();
+    c.allow_exec = true;
+    // resolves on PATH and exits 0 → silence
+    assert!(c.check(&claim("sh -c true")).unwrap().is_none());
+    // resolves on PATH but exits non-zero → violation
+    let v = c.check(&claim("sh -c false")).unwrap().unwrap();
+    assert_eq!(v.severity, Severity::Warn);
+    assert!(v.evidence.contains("exited"), "{}", v.evidence);
+}
+
+#[test]
+fn allow_exec_bounds_runtime() {
+    let mut c = CmdChecker::new();
+    c.allow_exec = true;
+    c.exec_timeout = std::time::Duration::from_millis(100);
+    let v = c.check(&claim("sleep 30")).unwrap().unwrap();
+    assert!(v.evidence.contains("timed out"), "{}", v.evidence);
+}
+
+#[test]
+fn allow_exec_still_probes_path_first() {
+    let mut c = CmdChecker::new();
+    c.allow_exec = true;
+    // missing binary → PATH violation, exec never attempted
+    let v = c
+        .check(&claim("definitely-not-a-real-bin-xyz run"))
+        .unwrap()
+        .unwrap();
+    assert!(v.evidence.contains("not found in PATH"));
+}
+
 /// PATH mutation serializes within this binary (cargo test threads).
 static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 

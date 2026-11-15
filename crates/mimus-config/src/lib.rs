@@ -111,6 +111,7 @@ dir = "rules"
         .unwrap();
         assert!(cfg.check.mechanical);
         assert!(!cfg.check.semantic);
+        assert!(!cfg.check.allow_exec);
         assert!(cfg.sources.comments);
         assert_eq!(cfg.report.format, "human");
         assert_eq!(cfg.rules.dir, PathBuf::from("rules"));
@@ -122,7 +123,7 @@ dir = "rules"
         let p = dir.join("mimus.toml");
         std::fs::write(
             &p,
-            "[check]\nsemantic = true\nkinds = [\"path\", \"link\"]\nignore_prefixes = [\"//\"]\nbinaries = [\"bazel\"]\n\
+            "[check]\nsemantic = true\nallow_exec = true\nkinds = [\"path\", \"link\"]\nignore_prefixes = [\"//\"]\nbinaries = [\"bazel\"]\n\
              [sources]\ndocs = [\"DOC.md\"]\ncomments = false\ncards = \"cards/*.yaml\"\n\
              [rules]\ndir = \"my-rules\"\nstrict = true\n\
              [report]\nformat = \"json\"\nmin_confidence = \"all\"\n",
@@ -134,6 +135,7 @@ dir = "rules"
         .load()
         .unwrap();
         assert!(cfg.check.semantic);
+        assert!(cfg.check.allow_exec);
         assert_eq!(cfg.check.kinds.len(), 2);
         assert_eq!(cfg.check.binaries, vec!["bazel"]);
         assert_eq!(cfg.sources.docs, vec!["DOC.md"]);

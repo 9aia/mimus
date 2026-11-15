@@ -10,7 +10,7 @@ api:
 - name: Checker
   kind: trait
   file: crates/mimus-check/src/lib.rs
-  line: 11
+  line: 12
   module: mimus-check
 - name: Erring
   kind: type
@@ -25,7 +25,7 @@ api:
 - name: GraphChecker
   kind: trait
   file: crates/mimus-check/src/lib.rs
-  line: 31
+  line: 32
   module: mimus-check
 - name: check
   kind: function
@@ -40,7 +40,7 @@ api:
 - name: check_batch
   kind: function
   file: crates/mimus-check/src/lib.rs
-  line: 22
+  line: 23
   module: mimus-check
 - name: claim
   kind: function
@@ -75,7 +75,7 @@ api:
 - name: run
   kind: function
   file: crates/mimus-check/src/lib.rs
-  line: 38
+  line: 39
   module: mimus-check
 - name: silence_and_errors_propagate
   kind: function
@@ -97,8 +97,8 @@ provenance:
   - crates/mimus-check/tests/run.rs
   hashes:
   - e7348ffc0841bbee8073e26c5481cd858fd776ba
-  - 932a93c2ca864b1761532037dcb415677ea50092
+  - 395c71b7eb01c501d42b8cfa5aa94a430d7013a2
   - c9909f1e803f640aab3755db2428c6bc743f8d85
-  commit_sha: a9c9dd8500e573e7bc44acb336da724f7150cdc7
-  generated_at: '1794490051'
+  commit_sha: 3b195f61f20a5be96ffaf6d3a12680f8f39ddb4a
+  generated_at: '1794724602'
   generator: kuda-template/0.1.4
