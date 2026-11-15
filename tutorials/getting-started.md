@@ -1,22 +1,22 @@
 ---
-url: /mimus/getting-started.md
+url: /mimus/tutorials/getting-started.md
 ---
 # Getting started
 
 Pick by what you need to do.
 
-* **Tutorials** (learn): [first-run](tutorials/first-run.md)
-* **How-to** (tasks): [memory audit](how-to/kuda-audit.md) ·
-  [rules authoring](how-to/rules-authoring.md)
-* **Reference** (lookup): [cli](reference/cli.md) ·
-  [config](reference/config.md) ·
-  [crate api](reference/crate-api.md)
-* **Explanation** (why): [architecture](explanation/architecture.md) ·
-  [concepts](explanation/concepts.md) ·
-  [claims & tiers](explanation/claims.md) ·
-  [decisions](explanation/decisions.md) ·
-  [release model](explanation/release-model.md) ·
-  [comparison](comparison.md) — vs linters / LLM review
+* **Tutorials** (learn): [first-run](/tutorials/first-run.md)
+* **How-to** (tasks): [memory audit](/how-to/kuda-audit.md) ·
+  [rules authoring](/how-to/rules-authoring.md)
+* **Reference** (lookup): [cli](/reference/cli.md) ·
+  [config](/reference/config.md) ·
+  [crate api](/reference/crate-api.md)
+* **Explanation** (why): [architecture](/explanation/architecture.md) ·
+  [concepts](/explanation/concepts.md) ·
+  [claims & tiers](/explanation/claims.md) ·
+  [decisions](/explanation/decisions.md) ·
+  [release model](/explanation/release-model.md) ·
+  [comparison](/comparison.md) — vs linters / LLM review
 
 Install — the `mimus` command ships as a tamias pack
 (`libraries/mimus`): a generated `bins[]` shim →

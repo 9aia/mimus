@@ -27,6 +27,7 @@ Verification engine — proofs over what agents claim
 ### Explanation
 
 - [Explanation: architecture](/mimus/explanation/architecture.md)
+- [Boundaries](/mimus/explanation/boundaries.md)
 - [Concepts](/mimus/explanation/concepts.md)
 - [Explanation: claims, tiers, and the evidence bar](/mimus/explanation/claims.md)
 - [Decisions](/mimus/explanation/decisions.md)
@@ -35,5 +36,5 @@ Verification engine — proofs over what agents claim
 
 ### Other
 
-- [Getting started](/mimus/getting-started.md)
+- [Getting started](/mimus/tutorials/getting-started.md)
 - [Untitled](/mimus/public/api/static.files/SourceSerif4-LICENSE-a2cfd9d5.md)
