@@ -1,8 +1,9 @@
 //! Check port — verify a claim against reality.
 //! Impls: `mimus-check-fs` (paths), `mimus-check-cmd`
-//! (commands), `mimus-check-symbol` (kuda index), `check-llm`
-//! (behavior prose — semantic tier, advisory). New checker =
-//! new adapter crate. Set-level classes (claim↔index, ADR-0002)
+//! (commands), `mimus-check-symbol` (kuda index), `mimus-check-acp`
+//! (behavior prose — semantic tier, advisory, agent-backed over ACP).
+//! New checker = new adapter crate. Set-level classes (claim↔index,
+//! ADR-0002)
 //! use [`GraphChecker`] instead — impl: `mimus-check-graph`.
 
 use mimus_core::{Claim, ClaimKind, Graph, Violation};

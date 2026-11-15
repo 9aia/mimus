@@ -978,7 +978,7 @@ fn doctor(cli: &Cli) -> i32 {
         }
         Err(e) => println!("  config   --  {e}"),
     }
-    println!("  adapters    fs, cmd (symbol/llm pending kuda schema + provider)");
+    println!("  adapters    fs, cmd, symbol, graph, acp");
     // index freshness — stale index → stale graph findings
     // (ADR-0002). Reported when [check].kuda_index is configured.
     if let Ok(c) = load(cli) {
@@ -1031,7 +1031,7 @@ fn doctor(cli: &Cli) -> i32 {
 /// vaults are the canonical store post-migration; keyring and the
 /// `~/.config/mimus/env` file are legacy read-throughs kept
 /// during the transition. Writes land in cuora (`env` refuses
-/// `set`, cuora is the first writable store). The llm adapter
+/// `set`, cuora is the first writable store). The acp adapter
 /// (semantic tier) resolves provider keys through this.
 fn secrets() -> mimus_secret::Chain {
     mimus_secret::Chain::new(vec![
