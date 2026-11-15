@@ -6,12 +6,17 @@ dogfoods its own CI. Fork freely under MIT.
 ## Layout
 
 `crates/` — rust workspace. `mimus-core` is pure domain (claims,
-violations, evidence); ports are crates: `mimus-check`,
-`mimus-claims`, `mimus-rules`, `mimus-vcs`; adapters:
-`mimus-check-fs`/`mimus-check-cmd`/`mimus-check-symbol`/
-`mimus-check-llm` (checkers), `mimus-kuda` (kuda index glue),
-`mimus-git` (vcs); `mimus` (cli) is the composition root.
-`modules/dagger/` is the shared pipeline module (Python SDK).
+violations, evidence); ports are crates: `mimus-check` (the
+`Checker` trait + `GraphChecker` set-level classes),
+`mimus-claims`, `mimus-rules`, `mimus-config`, `mimus-secret`;
+adapters: `mimus-check-fs`/`mimus-check-cmd`/`mimus-check-symbol`/
+`mimus-check-graph` (mechanical checkers), `mimus-check-acp`
+(semantic tier — spawns an ACP agent, advisory only),
+`mimus-keyring`/`mimus-dotenv`/`mimus-cuora` (secrets chain);
+`mimus-cli` (package `mimus`) is the engine lib — `run_from` is
+reached through `tamias-driver-mimus` (`crates/mimus-driver`, the
+bins[] shim + ops surface). `modules/dagger/` is the shared
+pipeline module (Python SDK).
 
 ## Rules of thumb
 
@@ -38,8 +43,10 @@ violations, evidence); ports are crates: `mimus-check`,
 references, and a `mimus-v<ver>` tag. There is **no crates.io
 publish**: org policy keeps every repo but tamias off crates.io,
 and the mimus crates are internal lib-only engines behind
-`tamias-driver-mimus`. There is no tamias pack yet either —
-installs stay `cargo install --git` pinning a rev (see README).
+`tamias-driver-mimus`. User-facing installs ride the tamias pack
+(`libraries/mimus`, `scripts/pack.sh` stages the driver);
+`cargo install --git` pinning a rev remains a source path (see
+README).
 See `docs/explanation/release-model.md`.
 
 ## Docs

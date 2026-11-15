@@ -7,17 +7,19 @@ Do not open public issues for security reports.
 
 ## Scope
 
-- `mimus check` executes shell lines it finds in docs — it
-  verifies *your own repo's* documented commands; never point it at
-  untrusted sources without `--no-cmd`.
+- `mimus check`'s `cmd` checker verifies documented commands — it
+  only probes that the invoked binary resolves on PATH and never
+  executes them (`--no-cmd` skips the checker entirely).
 - `mimus` reads source trees and doc files; it does not write to
   the repo except `mimus.toml`/`rules/` on `init`.
-- Secrets (`MIMUS_LLM_KEY` and future provider keys) resolve via
-  env var → OS keyring (`secret-tool`) → `~/.config/mimus/env`
-  (chmod 600); values never appear in `mimus.toml` or reports.
-- The `llm` checker sends claim+context fragments to a third-party
-  provider — it is opt-in (`semantic = true`); the mechanical tier
-  is fully local.
+- Secrets resolve via env var → `cuora` vaults → OS keyring
+  (`secret-tool`) → `~/.config/mimus/env` (chmod 600) — the
+  `mimus-secret` chain; values never appear in `mimus.toml` or
+  reports.
+- The semantic tier (`--semantic`, needs `[check].acp_cmd`) spawns
+  an ACP agent to verify prose `behavior` claims — it is opt-in,
+  advisory only, and never gates `check`; point `acp_cmd` at an
+  agent you trust with the repo's claim text.
 
 ## Notes
 
