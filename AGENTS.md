@@ -115,6 +115,6 @@ Style opinions are never emitted — evidence or silence.
 ## Docs
 
 `docs/` worktree — VitePress + Diátaxis (tutorials/how-to/reference/
-explanation) → GitHub Pages at `9aia.com/mimus`. `docs/gen-*.py`
+explanation) → GitHub Pages at `9aia.com/mimus`. `cypera gen` (driven by `cypera.toml`)
 renders cli/config/crate-map from source — keep `lib.rs` module
 docs accurate.

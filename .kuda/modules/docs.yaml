@@ -81,10 +81,10 @@ verify:
 - docs/explanation/claims.md
 - docs/explanation/release-model.md
 - docs/gen-api-index.py
-- docs/gen-config-docs.py
-- docs/gen-crate-map.py
 - docs/getting-started.md
 - docs/how-to/ci-gate.md
+- docs/how-to/kuda-audit.md
+- docs/how-to/multi-repo.md
 provenance:
   files:
   - docs/comparison.md
@@ -92,8 +92,6 @@ provenance:
   - docs/explanation/claims.md
   - docs/explanation/release-model.md
   - docs/gen-api-index.py
-  - docs/gen-config-docs.py
-  - docs/gen-crate-map.py
   - docs/getting-started.md
   - docs/how-to/ci-gate.md
   - docs/how-to/kuda-audit.md
@@ -111,23 +109,21 @@ provenance:
   - c6fc0201555b57e16708f350e5b4cd7dc16dbd19
   - 8b0fedfcf9eb3b447def35fc4f40b907ff783554
   - f36bd667851683ea8afab22a43c11c7488e6f331
-  - ab683c31119a606c375b5c52873fa26e290b7492
+  - 8a4952d930621043cba1d4a1f9dc39de73626cf8
   - 017f6fd87e86f8234928388956319d98fda7c65a
-  - 10d8d771944d0bd9339d438914a2eda4e6adfd8e
-  - 51ae74d14952f77be7691915d2c56921b5816c96
-  - f2422405516070122f974450ec7fb652c908911a
+  - c3a091fcdbd7954e2564c7596a824139b8626978
   - 7a80a0d9da156335f597b3371febd5750ccc3003
   - 829ebc202da56067116747c11f53ac23d1c467f2
   - 2b50fb2fc116944dd519d432799800cd78ec7eb1
   - 29da6f345e3f4efa87571a997f9d0408038f5208
   - 9cedaad7f217e33c53bce7d5653ec072c59e537c
-  - 805cb3042fc1706f7666af5d2685042db9be858d
+  - 1a9dd3ea21bba6f7603c2a1e53d2d3fe6dbe9841
   - 175fa4f47aecdc02e902d243a1c29914eb2ee258
-  - 38ba76e566156b2797acb143389eb9d109001c69
-  - dd95e033198f8b8d259a94aca801ace0b0a71a8e
-  - 71723a349ad2dfd9ea7edb947f4f01964965a2fd
+  - 62e9e3d6b45407183c461d2a12a2a66f4e6b9f5d
+  - 7885a752b99731e58b91a55516749a84f89e1c92
+  - 7c42f7360c19ae953b0676d632aaceb796eefbbe
   - 4f7c92eb3d570b463de72092bd1f9d2407b18836
   - 5b0ad76344a8cebdb4eeeda5a903c40aecd9ba53
-  commit_sha: 3b195f61f20a5be96ffaf6d3a12680f8f39ddb4a
-  generated_at: '1794724602'
+  commit_sha: bd0c68b8ef776d0109e381cbd137bd07bfe71e82
+  generated_at: '1794759786'
   generator: kuda-template/0.1.4

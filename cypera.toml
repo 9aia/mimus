@@ -1,0 +1,86 @@
+# cypera — org docs/reference generation contract (see ../cypera).
+# Discovered upward from the repo root; `bun run docs:gen` inside
+# docs/ drives `cypera gen crate-map|cli|config` with no flags.
+
+[crate_map]
+order = ["domain", "port", "impl", "binary"]
+default_layer = "impl"
+
+[crate_map.layers]
+"mimus" = "binary"
+"mimus-core" = "domain"
+"mimus-runner" = "port"
+"mimus-tunnel" = "port"
+"mimus-trigger" = "port"
+"mimus-status" = "port"
+"mimus-vcs" = "port"
+"mimus-queue" = "port"
+"mimus-service" = "port"
+"mimus-secret" = "port"
+"mimus-config" = "port"
+"mimus-cache" = "port"
+
+[[crate_map.splices]]
+target = "docs/explanation/architecture.md"
+first_table = true
+
+[crate_map.crate_api]
+site = "mimus"
+out = "docs/reference/crate-api.md"
+
+[cli]
+package = "mimus"
+bin = "mimus"
+prefix = []
+out = "docs/reference/cli.md"
+
+[config]
+title = "Config — `mimus.toml`"
+out = "docs/reference/config.md"
+types = { "String" = "string", "PathBuf" = "path", "bool" = "bool", "u16" = "int", "usize" = "int", "Vec<String>" = "list", "QueuePolicy" = "\"latest\" | \"all\"", "BTreeMap<String, String>" = "table" }
+
+[[config.structs]]
+file = "crates/mimus-core/src/lib.rs"
+name = "Config"
+title = "Top level"
+[[config.structs]]
+file = "crates/mimus-core/src/lib.rs"
+name = "SourcesCfg"
+title = "`[sources]`"
+[[config.structs]]
+file = "crates/mimus-core/src/lib.rs"
+name = "CheckCfg"
+title = "`[check]`"
+[[config.structs]]
+file = "crates/mimus-core/src/lib.rs"
+name = "RulesCfg"
+title = "`[rules]`"
+[[config.structs]]
+file = "crates/mimus-core/src/lib.rs"
+name = "ReportCfg"
+title = "`[report]`"
+
+[[config.sections]]
+title = "Top level"
+struct = "Config"
+[[config.sections]]
+title = "`[sources]`"
+struct = "SourcesCfg"
+[[config.sections]]
+title = "`[check]`"
+struct = "CheckCfg"
+[[config.sections]]
+title = "`[rules]`"
+struct = "RulesCfg"
+[[config.sections]]
+title = "`[report]`"
+struct = "ReportCfg"
+[[config.sections]]
+title = "Constraints"
+text = """
+- `queue = "all"` rejects `cancel_running = true` at load —
+  killing a run would silently drop a promised commit.
+- `runner.kind` and `trigger.kind`/`status.kind` resolve to impl
+  crates; unknown kinds fail at `mimus doctor`/startup.
+- `deny_unknown_fields`: typos in field names fail the load.
+"""

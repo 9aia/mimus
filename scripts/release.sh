@@ -23,8 +23,9 @@ cd "$(git rev-parse --show-toplevel)"
 # docs drift with the CLI — regen generated references before
 # tagging so cli.md/config.md always match the released source.
 if [ -d docs/reference ]; then
-    cargo run -qp mimus -- gen-cli-docs > docs/reference/cli.md
-    python3 docs/gen-config-docs.py
+    CYPERA="cargo run -q --manifest-path ../cypera/Cargo.toml -p cypera --"
+    $CYPERA gen cli --repo .
+    $CYPERA gen config --repo .
 fi
 
 tarsi-serve release --dir . --yes
