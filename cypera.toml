@@ -84,3 +84,6 @@ text = """
   crates; unknown kinds fail at `mimus doctor`/startup.
 - `deny_unknown_fields`: typos in field names fail the load.
 """
+
+[check]
+profile = "engine"
