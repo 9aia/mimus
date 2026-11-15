@@ -23,7 +23,7 @@ cd "$(git rev-parse --show-toplevel)"
 # docs drift with the CLI — regen generated references before
 # tagging so cli.md/config.md always match the released source.
 if [ -d docs/reference ]; then
-    CYPERA="cargo run -q --manifest-path ../cypera/Cargo.toml -p cypera --"
+    CYPERA="cypera"
     $CYPERA gen cli --repo .
     $CYPERA gen config --repo .
 fi
