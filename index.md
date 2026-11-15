@@ -10,8 +10,8 @@ hero:
       text: Getting Started
       link: /tutorials/getting-started
     - theme: alt
-      text: Tutorial
-      link: /tutorials/first-run
+      text: CI gate
+      link: /how-to/ci-gate
 
 features:
   - icon: 🪺
@@ -22,7 +22,7 @@ features:
   - icon: 🧪
     title: Docs-as-tests
     details: paths, commands, symbols, counts in your docs verified mechanically — mimus check in CI means docs can't silently rot
-    link: /tutorials/first-run
+    link: /tutorials/getting-started
     linkText: first check
   - icon: 🧠
     title: Memory audit
@@ -51,8 +51,9 @@ kuda's, fixing is reconcile's (planned), distribution is tamias's.
 
 ## Which quadrant answers which goal
 
-- **Learn it** → [Tutorial: first check](tutorials/first-run.md)
-- **Do a task** → [How-to](tutorials/getting-started.md) — CI gate, kuda
+- **Learn it** → [Getting started](tutorials/getting-started.md) —
+  first check, rules, memory audit
+- **Do a task** → [How-to](/how-to/multi-repo) — CI gate, kuda
   audit, rules authoring, multi-repo
 - **Understand why** → [Architecture](explanation/architecture.md),
   [claims & tiers](explanation/claims.md),
