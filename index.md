@@ -43,3 +43,22 @@ features:
     title: Built for agents
     details: mid-plan "is this claim still true" becomes a tool call, not a gamble
 ---
+
+mimus is the org's **verification engine** — it enumerates the
+claims in your docs, comments, and kuda cards and proves each one
+or stays silent. It owns verification and nothing else: memory is
+kuda's, fixing is reconcile's (planned), distribution is tamias's.
+
+## Which quadrant answers which goal
+
+- **Learn it** → [Tutorial: first check](tutorials/first-run.md)
+- **Do a task** → [How-to](getting-started.md) — CI gate, kuda
+  audit, rules authoring, multi-repo
+- **Understand why** → [Architecture](explanation/architecture.md),
+  [claims & tiers](explanation/claims.md),
+  [concepts](explanation/concepts.md),
+  [decisions](explanation/decisions.md)
+- **Look something up** → [CLI](reference/cli.md),
+  [config](reference/config.md),
+  [violations](reference/violations.md),
+  [crate API](reference/crate-api.md)
