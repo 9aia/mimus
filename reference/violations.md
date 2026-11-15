@@ -82,5 +82,7 @@ violation:
   `<!-- mimus-ignore-file -->` skips the whole file.
 - the `cmd` checker probes the machine's PATH — results vary
   across machines by design (missing binary = `warn`, never
-  `error`). Declare prerequisites in `[check].binaries`, or run
-  `check --no-cmd`.
+  `error`). With opt-in `[check].allow_exec` it also executes each
+  resolved command (argv, no shell, bounded) and refutes on
+  non-zero exit. Declare prerequisites in `[check].binaries`, or
+  run `check --no-cmd`.

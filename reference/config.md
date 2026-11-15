@@ -31,6 +31,8 @@
 | `kinds` | `Vec<ClaimKind>` | optional | Only check claims of these kinds (empty = all). |
 | `ignore_prefixes` | `list` | optional | Skip claims whose text starts with any of these prefixes. |
 | `binaries` | `list` | optional | Tool prerequisites the repo declares — commands invoking these skip the PATH probe (docs may legitimately require tools the checker's machine lacks). |
+| `allow_exec` | `bool` | optional | Opt-in execution tier for the cmd checker — when true, command claims that resolve on PATH are also executed (argv-split, no shell, bounded by a timeout) and a non-zero exit refutes the claim. Default false: PATH probe only, never executes. |
+| `aliases` | `table` | optional | Subject aliases for the contradiction buckets — a `[check.aliases]` table mapping `alias = "canonical"`; emitted bucket keys name the canonical form (ADR-0002). |
 
 ## `[rules]`
 
