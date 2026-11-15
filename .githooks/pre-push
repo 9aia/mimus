@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 # Enable: git config core.hooksPath .githooks
-exec scripts/check.sh
+scripts/check.sh && exec bash scripts/docs-check.sh
