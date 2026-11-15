@@ -4,7 +4,9 @@
 # bupha — the watcher runs `bash scripts/deploy-docs.sh` in a detached
 # worktree of the pushed docs sha, so cwd is the docs checkout root and
 # `..` is NOT the main repo. Cargo work happens in MIMUS_REPO (the real
-# checkout); the gen-*.py scripts honor MIMUS_ROOT for the same reason.
+# checkout); the gen-api rustdoc pipeline honors MIMUS_ROOT for the same reason.
+# cli/config/crate-map pages come from `cypera gen` driven by
+# $REPO/cypera.toml.
 set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
@@ -25,14 +27,11 @@ export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$REPO/target/gate}"
 echo "==> bun install"
 bun install
 
-MIMUS_BIN="$(command -v mimus || true)"
-MIMUS_BIN="${MIMUS_BIN:-$HOME/.cargo/bin/mimus}"
-echo "==> reference/cli.md ($MIMUS_BIN gen-cli-docs)"
-"$MIMUS_BIN" gen-cli-docs > reference/cli.md
-
-echo "==> gen config + crate map (MIMUS_ROOT=$REPO)"
-python3 gen-config-docs.py
-python3 gen-crate-map.py
+CYPERA="cargo run -q --manifest-path $REPO/../cypera/Cargo.toml -p cypera --"
+echo "==> reference pages (cypera gen, repo=$REPO)"
+$CYPERA gen cli --repo "$REPO"
+$CYPERA gen config --repo "$REPO"
+$CYPERA gen crate-map --repo "$REPO"
 
 echo "==> rustdoc → public/api (cargo doc in $REPO)"
 mkdir -p public/api && rm -rf public/api/*
