@@ -27,7 +27,9 @@ Verification engine — proofs over what agents claim
 ### Explanation
 
 - [Explanation: architecture](/mimus/explanation/architecture.md)
+- [Concepts](/mimus/explanation/concepts.md)
 - [Explanation: claims, tiers, and the evidence bar](/mimus/explanation/claims.md)
+- [Decisions](/mimus/explanation/decisions.md)
 - [The release model](/mimus/explanation/release-model.md)
 - [mimus vs the alternatives](/mimus/comparison.md)
 

@@ -700,6 +700,16 @@ mimus is the falsification half of the ecosystem: *"every claim
 in your docs, comments, and memory — still true?"* It exists
 because memory without doubt decays into confident confabulation.
 
+## Where it sits
+
+The org stack is **tamias → engines → orchestration → surfaces**.
+mimus is an **engine** — repo-local, deterministic at its core,
+with advisory AI tiers that can never gate. It consumes `kuda`'s
+index (symbol claims, card audits, the graph pass's edges) and
+`sturn`'s WAL where present; its findings feed CI gates,
+`pavo` surfaces, and `peregrin` campaigns. It is the designated
+doubter of every other engine's output.
+
 ## The pipeline
 
 ```
@@ -760,6 +770,75 @@ human adjudicates. Style opinions are never emitted at all.
 
 See [claims & tiers](claims.md) for the taxonomy and why the
 two tiers can never merge.
+
+## Boundary
+
+mimus owns **verification** — claim extraction, checkers, rules,
+violations. It does not own:
+
+* **Memory** — `kuda` builds and stores the index; mimus reads it
+  (symbol checker, `audit`, graph edges) and never writes cards.
+* **Fixing** — `reconcile` (planned) consumes mimus's JSON
+  violation contract to auto-fix; mimus reports, never rewrites.
+* **Distribution** — the `mimus` command ships as a tamias pack
+  (`libraries/mimus`); tamias owns install/transport.
+* **Secrets** — `mimus-secret` ports resolve credentials; values
+  never enter findings or logs.
+* **Style** — style opinions are never emitted at all; mimus
+  checks truth, not taste.
+
+---
+
+---
+url: /mimus/explanation/concepts.md
+---
+# Concepts
+
+mimus's vocabulary centers on one idea: a **claim** is a statement
+in your repo that is either still true or quietly false, and every
+finding must carry **evidence** or not exist.
+
+## Entities
+
+* **Claim** — a checkable assertion extracted from a source:
+  a backticked span, a code block, or a prose pattern. Always
+  carries `source` + `line` so evidence can point back.
+* **Claim kind** — the taxonomy bucket (`path`, `command`,
+  `symbol`, `count`, `link`, `behavior`) that decides which
+  checker applies. See [claims & tiers](claims.md) for the table.
+* **Violation** — a proven false claim: `claim + evidence +
+  fix(optional)`. No evidence, no violation.
+* **Rule** — a convention declared as data in `rules/*.toml`
+  (regex + message + severity), verified by the rules checker.
+  A bad rule regex is silence plus a `doctor` complaint — rules
+  can never crash the gate.
+* **Trust score** — `mimus audit`'s verdict on a kuda card:
+  how much of the card's provenance still matches source.
+
+## Tiers
+
+* **Mechanical** — deterministic, offline checkers (`fs`, `cmd`,
+  `symbol`, `rules`). The `mimus check` gate; evidence is
+  reproducible by anyone.
+* **Graph** — the set-level pass (ADR-0002): claims become
+  `(subject, relation, object)` triples bucketed by subject;
+  contradictions, stale references, undocumented modules.
+  Mechanical speed — buckets, not agents.
+* **Semantic** — the `acp` checker asks an external agent to
+  adjudicate fuzzy residue. Advisory only (`warn`), can never
+  gate CI — that is load-bearing, not a limitation.
+
+## Sources
+
+`[sources]` in `mimus.toml`: `docs` (markdown globs), `comments`
+(`///` and code comments), `cards` (the `.kuda/` artifacts —
+kuda's memory audited as claims too).
+
+## Sinks
+
+Where findings go: human-readable report, `--json` for machines,
+exit 1 for CI gating, and the `coverage` command's advisory
+symbol list (never part of the gate).
 
 ---
 
@@ -867,6 +946,71 @@ separately from the gate.
 (code comments — TODOs, claims in `///`), and `cards` — the
 kuda artifacts get audited as claims too, closing the loop:
 kuda remembers, mimus doubts, even about the memory itself.
+
+---
+
+---
+url: /mimus/explanation/decisions.md
+---
+# Decisions
+
+ADR-lite — the decisions that shape mimus, the alternatives
+rejected, and the consequence each carries.
+
+## No evidence, no finding
+
+**Decision:** every violation must cite claim + proof (+ optional
+fix). A checker that cannot produce evidence emits nothing.
+
+**Alternatives:** best-effort heuristics that flag *suspected*
+issues (false positives kill a critic faster than false negatives);
+LLM-judged everything (non-deterministic, ungateable, expensive).
+
+**Consequence:** the mechanical tier is conservative — command
+claims need a binary allowlist, ambiguous spans classify as prose,
+bad rule regexes are silence + a doctor complaint. Coverage is
+traded for trust.
+
+## The semantic tier can never gate
+
+**Decision:** the `acp` checker reports `warn`-tier findings only;
+`mimus check`'s exit code is decided by mechanical + graph alone.
+
+**Alternatives:** let the agent vote in CI (non-determinism makes
+flaky gates; a provider outage would block merges); drop semantic
+entirely (behavior claims — the majority of real doc rot — go
+unchecked).
+
+**Consequence:** semantic findings inform humans and agents but
+can never break a build. Its intake is the graph tier's fuzzy
+residue — pre-bucketed candidate pairs — not the raw claim set,
+so the agent never scans every claim.
+
+## Rules are data, not code
+
+**Decision:** conventions live in `rules/*.toml` — regex, message,
+severity — interpreted by one checker.
+
+**Alternatives:** per-convention checker crates (adapter sprawl
+for what is fundamentally a pattern match); hard-coded checks in
+Rust (every org convention becomes a release).
+
+**Consequence:** "dispatch via roles, never `kind ==`" is a file a
+repo adds in a diff. The regex engine is the only thing that can
+be wrong, and its failure mode is silence, not a crash.
+
+## Claims fold into batches, debounced
+
+**Decision:** semantic-tier prompts batch claims and pace calls;
+mechanical findings short-circuit before any agent is invoked.
+
+**Alternatives:** one prompt per claim (provider spend and rate
+limits scale with doc size); synchronous agent calls inside the
+gate (latency + flakiness in CI).
+
+**Consequence:** the critic is polite to providers by
+construction, and `--diff` scopes both extraction and graph
+findings to what actually changed.
 
 ---
 
@@ -984,6 +1128,9 @@ Pick by what you need to do.
   [config](reference/config.md) ·
   [crate api](reference/crate-api.md)
 * **Explanation** (why): [architecture](explanation/architecture.md) ·
+  [concepts](explanation/concepts.md) ·
+  [claims & tiers](explanation/claims.md) ·
+  [decisions](explanation/decisions.md) ·
   [release model](explanation/release-model.md) ·
   [comparison](comparison.md) — vs linters / LLM review
 

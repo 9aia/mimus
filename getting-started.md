@@ -12,6 +12,9 @@ Pick by what you need to do.
   [config](reference/config.md) ·
   [crate api](reference/crate-api.md)
 * **Explanation** (why): [architecture](explanation/architecture.md) ·
+  [concepts](explanation/concepts.md) ·
+  [claims & tiers](explanation/claims.md) ·
+  [decisions](explanation/decisions.md) ·
   [release model](explanation/release-model.md) ·
   [comparison](comparison.md) — vs linters / LLM review
 

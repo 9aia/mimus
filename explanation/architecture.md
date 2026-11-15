@@ -7,6 +7,16 @@ mimus is the falsification half of the ecosystem: *"every claim
 in your docs, comments, and memory — still true?"* It exists
 because memory without doubt decays into confident confabulation.
 
+## Where it sits
+
+The org stack is **tamias → engines → orchestration → surfaces**.
+mimus is an **engine** — repo-local, deterministic at its core,
+with advisory AI tiers that can never gate. It consumes `kuda`'s
+index (symbol claims, card audits, the graph pass's edges) and
+`sturn`'s WAL where present; its findings feed CI gates,
+`pavo` surfaces, and `peregrin` campaigns. It is the designated
+doubter of every other engine's output.
+
 ## The pipeline
 
 ```
@@ -67,3 +77,19 @@ human adjudicates. Style opinions are never emitted at all.
 
 See [claims & tiers](claims.md) for the taxonomy and why the
 two tiers can never merge.
+
+## Boundary
+
+mimus owns **verification** — claim extraction, checkers, rules,
+violations. It does not own:
+
+* **Memory** — `kuda` builds and stores the index; mimus reads it
+  (symbol checker, `audit`, graph edges) and never writes cards.
+* **Fixing** — `reconcile` (planned) consumes mimus's JSON
+  violation contract to auto-fix; mimus reports, never rewrites.
+* **Distribution** — the `mimus` command ships as a tamias pack
+  (`libraries/mimus`); tamias owns install/transport.
+* **Secrets** — `mimus-secret` ports resolve credentials; values
+  never enter findings or logs.
+* **Style** — style opinions are never emitted at all; mimus
+  checks truth, not taste.
