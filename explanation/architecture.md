@@ -6,13 +6,13 @@ because memory without doubt decays into confident confabulation.
 
 ## Where it sits
 
-The org stack is **delivery → memory → process → agency**.
-mimus is a **process-layer engine** — repo-local, deterministic at
+The org stack is **delivery → memory → process → interface**.
+mimus is a **process-layer organism** — repo-local, deterministic at
 its core, with advisory AI tiers that can never gate. It consumes
 `kuda`'s index (symbol claims, card audits, the graph pass's edges)
 and `sturn`'s WAL where present; its findings feed CI gates,
 `pavo` views, and `peregrin` campaigns. It is the designated doubter
-of every other engine's output.
+of every other organism's output.
 
 ## The pipeline
 
