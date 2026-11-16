@@ -49,12 +49,15 @@ grep, intended for terminals not parsers.
 
 ## Exit codes
 
-| code | meaning                                         |
-| ---- | ----------------------------------------------- |
-| 0    | clean — or `report`, which never gates          |
-| 1    | `error`-severity violation(s), or usage failure |
+| code | meaning                                                            |
+| ---- | ------------------------------------------------------------------ |
+| 0    | clean — `check`/`fix`/`report` with no `error` violations; `audit`, `doctor`, `coverage` on success |
+| 1    | `error`-severity violation(s) — `check` *and* `report`; `coverage` setup failure (no config or kuda index) |
+| 2    | `check`/`fix` setup failure — no `mimus.toml`, `--diff` outside a git repo |
 
-`audit` always exits 0 — its scores are report-tier.
+`report` is `check --all` under another name: same violations,
+same exit code, plus the advisory semantic tier. `audit` always
+exits 0 — its scores are report-tier.
 
 ## What is silence, not a violation
 
