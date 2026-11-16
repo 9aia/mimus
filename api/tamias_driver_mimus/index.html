@@ -3,7 +3,7 @@ critic state.</p>
 <p>Verbs (the tamias driver contract):</p>
 <ul>
 <li>
-<p><code>manifest</code> — print the <a href="pavo_protocol::DriverManifest"><code>DriverManifest</code></a> JSON (discovery
+<p><code>manifest</code> — print the <a href="../pavo_protocol/manifest/struct.DriverManifest.html" title="struct pavo_protocol::manifest::DriverManifest"><code>DriverManifest</code></a> JSON (discovery
 probe; never touches repo state).</p>
 </li>
 <li>
@@ -62,7 +62,7 @@ resolved dir as cwd, so <code>mimus::dispatch</code> writes to the child’s
 captured stdout and never touches the serve loop’s ndjson stream
 — and every mutation keeps the engine’s own write-path
 semantics (config search, <code>.mimus/</code> cache, claim rewrites).</dd><dt><a class="mod" href="views/index.html" title="mod tamias_driver_mimus::views">views</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>views — the driver’s manifest: every ViewSpec plus the query
-resolvers that feed them.</dd></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.capabilities_json.html" title="fn tamias_driver_mimus::capabilities_json">capabilities_<wbr>json</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.dispatch.html" title="fn tamias_driver_mimus::dispatch">dispatch</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>One parsed wire [<code>Request</code>] → response. The kit’s serve loop owns
+resolvers that feed them.</dd></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.capabilities_json.html" title="fn tamias_driver_mimus::capabilities_json">capabilities_<wbr>json</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.dispatch.html" title="fn tamias_driver_mimus::dispatch">dispatch</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>One parsed wire <a href="../pavo_protocol/wire/enum.Request.html" title="enum pavo_protocol::wire::Request"><code>Request</code></a> → response. The kit’s serve loop owns
 the ndjson plumbing and turns parse failures into <code>ok:false</code>;
 ops this driver doesn’t implement (<code>render</code>, <code>submit</code>, <code>jobs</code>,
 <code>notifications</code>) get the same <code>ok:false</code> convention every

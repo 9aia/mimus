@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["has_commit","push","resolve","snap_commit","store_blob"]};

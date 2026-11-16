@@ -46,16 +46,21 @@ is *not* a command claim.
 crates:
 
 * `mimus-check` (the checker port) → `mimus-check-fs`,
-  `mimus-check-cmd`, `mimus-check-symbol` (against kuda's index);
+  `mimus-check-cmd`, `mimus-check-symbol` (against kuda's index),
+  `mimus-check-acp` (the semantic tier);
   `mimus-check-graph` (ADR-0002) runs a *set-level*
   pass: claims + code edges become `(subject, relation, object)`
   triples, bucketed by subject — contradictions and stale
   references at mechanical speed; a second port, not a
   `Checker` impl, since it compares claims to each other
-* claim sources: markdown today, comments/cards wired in config
-* `mimus-rules` — conventions as `rules/*.toml` data
-* `mimus-vcs`→`mimus-git`, `mimus-config` (port + scarab-config impl),
-  `mimus-secret`→`mimus-keyring`/`mimus-dotenv`
+* claim extraction → `mimus-claims`; conventions → `mimus-rules`
+  (`rules/*.toml` data, verified by the rules checker)
+* `mimus-config` (port + scarab-config discovery,
+  `mimus.{yaml,yml,toml}`); `mimus-secret` → `mimus-cuora`,
+  `mimus-keyring`, `mimus-dotenv` — the env → cuora → keyring →
+  dotenv chain
+* git is shelled out directly inside `mimus-cli` (`git diff`
+  scope, `hash-object` provenance) — there is no vcs port
 
 A new checker = new adapter crate; a new convention = a new
 rule file.

@@ -43,12 +43,14 @@ Tune per rule in `rules/*.toml` (`severity = "warn"`).
 ## Report for humans
 
 ```sh
-mimus report                    # always exits 0 — full list
+mimus report                    # full list incl. the semantic tier
 mimus check --format json       # machine-readable for tooling
 ```
 
-`report` is the audit-view command: same violations, never a
-gate. `reconcile`-style tooling consumes the JSON.
+`report` is `check --all` under another name — same violations,
+same exit code (`1` on any `error`-severity finding), plus the
+advisory semantic tier. It is a wider view, not a gate-free one.
+`reconcile`-style tooling consumes the JSON.
 
 ## Recommended setup
 
