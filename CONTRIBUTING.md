@@ -37,10 +37,15 @@ pipeline module (Python SDK).
 
 ## Releasing
 
-`scripts/release.sh` is run manually by an operator on `main`
-(releases are operator-run) — one workspace version bump
-(`cargo set-version --workspace`), a regen of the generated docs
-references, and a `mimus-v<ver>` tag. There is **no crates.io
+Releases are run manually by an operator on `main` via
+`tarsi-serve release --dir . --yes` directly (the org release
+plane, project ADR-0005; repo config: `tarsi.toml` — the per-repo
+`scripts/release.sh` shims were removed org-wide): plan →
+changelog → bump → tag → push. Because docs drift with the CLI,
+regen the generated references (`cypera gen cli --repo .` +
+`cypera gen config --repo .`, committed on the `docs` branch)
+before tagging — the pre-push `docs-check.sh` gate fails on
+drift. There is **no crates.io
 publish**: org policy keeps every repo but tamias off crates.io,
 and the mimus crates are internal lib-only engines behind
 `tamias-driver-mimus`. User-facing installs ride the tamias pack
