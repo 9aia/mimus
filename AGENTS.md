@@ -74,7 +74,7 @@ ops surface).
 | `rules/` | the repo's own convention rules (`no-todos`, `no-unwrap-in-checkers`) |
 | `libraries/mimus` | the tamias pack — `bins[]` shim + driver payload |
 | `modules/dagger/` | shared pipeline module (Python SDK) |
-| `scripts/` | `check.sh` (pre-push floor), `coverage.sh`, `pack.sh`, `release.sh` (tarsi shim) |
+| `scripts/` | `check.sh` (pre-push floor), `coverage.sh`, `pack.sh` |
 
 ## Commands
 
@@ -89,7 +89,10 @@ scripts/coverage.sh          # llvm-cov HTML → target/llvm-cov/html;
                              # extra args pass through (--fail-under-lines 100)
 scripts/pack.sh              # release tamias-driver-mimus →
                              # libraries/mimus/drivers/bin/<triple>/
-scripts/release.sh           # operator-run: tarsi-serve release shim
+tarsi-serve release --dir . --yes
+                             # operator-run: version bump + tag
+                             # (dry-run without --yes); regen docs
+                             # refs first — see docs-check.sh
 ```
 
 Deploy the command: `scripts/pack.sh` then `tamias install
