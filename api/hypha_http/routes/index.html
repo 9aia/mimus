@@ -17,7 +17,7 @@ than wedging the feed. Heartbeats ride the stream as real
 <code>heartbeat</code> events, not comment pings. Event kinds are whatever
 the registered integrations emit — the route is kind-agnostic.</dd><dt><a class="mod" href="kv/index.html" title="mod hypha_http::routes::kv">kv</a></dt><dd><code>routes/kv.ts</code> generalized — the substrate KV surface (P-006):
 <code>/api/kv</code> namespace list, <code>/api/kv/{ns}</code> entry map, and
-<code>/api/kv/{ns}/{key}</code> single-entry CRUD over [<code>hypha_kv::KvStore</code>],
+<code>/api/kv/{ns}/{key}</code> single-entry CRUD over <a href="../../hypha_kv/trait.KvStore.html" title="trait hypha_kv::KvStore"><code>hypha_kv::KvStore</code></a>,
 plus <code>POST /api/client/keypair</code> (the stateless Ed25519 mint moved
 verbatim from peregrin — a client on a non-secure context has no
 <code>crypto.subtle</code>, so the node mints its identity server-side).</dd><dt><a class="mod" href="misc/index.html" title="mod hypha_http::routes::misc">misc</a></dt><dd><code>routes/misc.ts</code> + <code>routes/fs.ts</code> + <code>routes/node.ts</code> substrate

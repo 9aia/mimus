@@ -2,7 +2,7 @@
 <p><code>cuora-core</code> is pure domain; this crate is everything that touches
 the outside world: config loading + env/vault resolution
 (<code>--env</code>/<code>CUORA_ENV</code> → <code>[envs]</code> routing → a concrete
-[<code>cuora_vault::Vault</code>]), the env-pin override on refs plus the
+<a href="../cuora_vault/trait.Vault.html" title="trait cuora_vault::Vault"><code>cuora_vault::Vault</code></a>), the env-pin override on refs plus the
 <code>[aliases]</code> path remap (validated at <a href="struct.Ops.html#method.load" title="associated function cuora_ops::Ops::load"><code>Ops::load</code></a>, applied in
 <a href="struct.Ops.html#method.resolve" title="method cuora_ops::Ops::resolve"><code>Ops::resolve</code></a> after the pin strips — audit events carry the
 pre-alias path as <code>alias_from</code>), the verb

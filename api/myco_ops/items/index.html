@@ -30,7 +30,7 @@ an item file (live or <code>archive/</code>). Returns the item, its
 location label, and the body for file-backed items.</dd><dt><a class="fn" href="fn.item_for_edit.html" title="fn myco_ops::items::item_for_edit">item_<wbr>for_<wbr>edit</a></dt><dd>Load a file-backed item for mutation. Archived items are
 refused — <code>save_item</code> writes to the live dir, so editing one
 would silently un-archive it.</dd><dt><a class="fn" href="fn.item_rel_path.html" title="fn myco_ops::items::item_rel_path">item_<wbr>rel_<wbr>path</a></dt><dd><code>&lt;dir&gt;/&lt;filename&gt;</code> for a file-backed item — the store impl’s
-own naming grammar (<a href="../../myco_store/trait.Store.html#tymethod.item_path" title="method myco_store::Store::item_path"><code>Store::item_path</code></a>, archive scope
+own naming grammar ([<code>Store::item_path</code>], archive scope
 included), falling back to the bare id for kinds with no file
 form.</dd><dt><a class="fn" href="fn.list_files.html" title="fn myco_ops::items::list_files">list_<wbr>files</a></dt><dd>The shared <code>&lt;kind&gt; list</code> — live item files, plus <code>archive/</code>
 entries when <code>include_archived</code>.</dd><dt><a class="fn" href="fn.load_done.html" title="fn myco_ops::items::load_done">load_<wbr>done</a></dt><dd><code>DONE.md</code> — the done-task archive (<code>todo done</code> lands here).</dd><dt><a class="fn" href="fn.load_ledger.html" title="fn myco_ops::items::load_ledger">load_<wbr>ledger</a></dt><dd>Load both ledger docs through the store.</dd><dt><a class="fn" href="fn.marked_json.html" title="fn myco_ops::items::marked_json">marked_<wbr>json</a></dt><dd><code>(item, archived)</code> pairs → a bare array of item objects, each
@@ -43,7 +43,7 @@ each other; a reader meeting a live writer fails fast.</dd><dt><a class="fn" hre
 exclusive mutation lock — every verb that writes the ledger
 takes this path. <code>mk</code> gets the discovered worktree and names
 the concrete impl (<code>myco</code>’s <code>ops::store_at</code> → <code>MdStore</code>), so
-this crate stays generic over <a href="../../myco_store/trait.Store.html" title="trait myco_store::Store"><code>Store</code></a>; <code>cfg</code> is the same
+this crate stays generic over [<code>Store</code>]; <code>cfg</code> is the same
 story for config (discovery reads <code>project_dir</code>). The lock
 spans discovery → mutation → the per-verb autocommit;
 contention fails fast (<code>another myco process is writing — retry</code>) instead of corrupting the ledger.</dd><dt><a class="fn" href="fn.open_with_index.html" title="fn myco_ops::items::open_with_index">open_<wbr>with_<wbr>index</a></dt><dd><a href="fn.open_with.html" title="fn myco_ops::items::open_with"><code>open_with</code></a> with the repo index at discovery’s disposal —

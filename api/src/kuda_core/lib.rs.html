@@ -534,8 +534,8 @@
 <a href=#534 id=534 data-nosnippet>534</a>}
 <a href=#535 id=535 data-nosnippet>535</a>
 <a href=#536 id=536 data-nosnippet>536</a><span class="doccomment">/// Publish order for workspace members: every member's path-deps on
-<a href=#537 id=537 data-nosnippet>537</a>/// other members come first. Err on a dependency cycle. Used by
-<a href=#538 id=538 data-nosnippet>538</a>/// scripts/release.sh.
+<a href=#537 id=537 data-nosnippet>537</a>/// other members come first. Err on a dependency cycle. Used by the
+<a href=#538 id=538 data-nosnippet>538</a>/// tarsi release pipeline.
 <a href=#539 id=539 data-nosnippet>539</a></span><span class="kw">pub fn </span>publish_order(members: <span class="kw-2">&amp;</span>[String], deps: <span class="kw-2">&amp;</span>[(String, String)]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;String&gt;, String&gt; {
 <a href=#540 id=540 data-nosnippet>540</a>    <span class="kw">let </span>member_set: std::collections::HashSet&lt;<span class="kw-2">&amp;</span>str&gt; = members.iter().map(String::as_str).collect();
 <a href=#541 id=541 data-nosnippet>541</a>    <span class="kw">let </span><span class="kw-2">mut </span>done: std::collections::HashSet&lt;String&gt; = Default::default();

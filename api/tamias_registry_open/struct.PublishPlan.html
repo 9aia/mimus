@@ -10,7 +10,7 @@ per-package limits applied). Surfaces render their own progress
 around <a href="fn.publish_plan.html" title="fn tamias_registry_open::publish_plan"><code>publish_plan</code></a> and finish with <a href="struct.PublishPlan.html#method.publish" title="method tamias_registry_open::PublishPlan::publish"><code>PublishPlan::publish</code></a>.</p>
 <p>When the manifest carries <code>include:</code> and <code>keep_includes</code> is false,
 <a href="fn.publish_plan.html" title="fn tamias_registry_open::publish_plan"><code>publish_plan</code></a> flattens bases read-only via
-<a href="../tamias_publish/fn.compose.html" title="fn tamias_publish::compose"><code>tamias_publish::compose</code></a> — <code>root</code> then points at the <em>composed</em>
+[<code>tamias_publish::compose</code>] — <code>root</code> then points at the <em>composed</em>
 scratch payload (kept alive by <code>_composed</code>) so signing and packing
 both cover the flattened tree. The manifest is unchanged —
 <code>include:</code> stays as provenance.</p>

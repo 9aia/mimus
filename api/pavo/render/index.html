@@ -6,7 +6,7 @@ view’s <code>graph</code> nodes in those graph description languages.</p>
 <p>Everything works on the node’s <strong>raw JSON</strong> rather than the typed
 <a href="../../pavo_protocol/view_node/enum.ViewNode.html" title="enum pavo_protocol::view_node::ViewNode"><code>ViewNode</code></a> enum so the protocol’s forward-compat rule holds
 end-to-end: a node whose <code>kind</code> this host doesn’t know degrades to
-<a href="../../pavo_core/viewnode/fn.kv_fallback_json.html" title="fn pavo_core::viewnode::kv_fallback_json"><code>kv_fallback_json</code></a> (a generic key/value listing) instead of
+[<code>kv_fallback_json</code>] (a generic key/value listing) instead of
 failing the render. Query-bound data comes from the
 <a href="../../pavo_protocol/wire/struct.ViewResult.html" title="struct pavo_protocol::wire::ViewResult"><code>ViewResult::data</code></a> map, keyed by
 the node’s <code>query</code> field.</p>
@@ -25,7 +25,7 @@ order so ids from different graphs can’t collide.</li>
 <code>json</code> (the raw <code>ViewResult</code> dump — host-owned, never claimed):
 for <code>text</code>/<code>dot</code>/<code>mermaid</code> the <code>*_plugins</code> variants substitute a
 claimed node’s <a href="../../pavo_protocol/render_model/enum.RenderModel.html" title="enum pavo_protocol::render_model::RenderModel"><code>RenderModel</code></a> (keyed by tree path, see
-<a href="../../pavo_core/renderers/fn.plugin_nodes.html" title="fn pavo_core::renderers::plugin_nodes"><code>pavo_core::renderers::plugin_nodes</code></a>) and keep the built-in
+[<code>pavo_core::renderers::plugin_nodes</code>]) and keep the built-in
 interpretation for everything unclaimed — the same per-node
 fallback rule the TUI and web surfaces apply.</p>
 </div></details><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.align_at.html" title="fn pavo::render::align_at">align_<wbr>at</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Alignment for column <code>i</code>: declared <code>align</code>, default left.</dd><dt><a class="fn" href="fn.bound.html" title="fn pavo::render::bound">bound</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>The node’s bound query payload, if <code>query</code> names a key in <code>data</code>.
@@ -47,7 +47,7 @@ path) emits the plugin’s output in tree order instead of the
 built-in interpretation; unclaimed <code>graph</code> nodes still emit
 <code>digraph</code> blocks (numbered <code>pavo-0</code>, <code>pavo-1</code>, … over built-in
 graphs only). A claimed container suppresses its whole subtree,
-matching <a href="../../pavo_core/renderers/fn.plugin_nodes.html" title="fn pavo_core::renderers::plugin_nodes"><code>pavo_core::renderers::plugin_nodes</code></a>.</dd><dt><a class="fn" href="fn.render_mermaid.html" title="fn pavo::render::render_mermaid">render_<wbr>mermaid</a></dt><dd>Render every <code>graph</code> node in the view as a single Mermaid
+matching [<code>pavo_core::renderers::plugin_nodes</code>].</dd><dt><a class="fn" href="fn.render_mermaid.html" title="fn pavo::render::render_mermaid">render_<wbr>mermaid</a></dt><dd>Render every <code>graph</code> node in the view as a single Mermaid
 <code>graph TD</code> — all graphs merged, vertex ids rewritten to <code>n0</code>, <code>n1</code>,
 … in first-seen order (nodes first, then edge endpoints).</dd><dt><a class="fn" href="fn.render_mermaid_plugins.html" title="fn pavo::render::render_mermaid_plugins">render_<wbr>mermaid_<wbr>plugins</a></dt><dd><a href="fn.render_mermaid.html" title="fn pavo::render::render_mermaid"><code>render_mermaid</code></a> with renderer-plugin substitution: claimed
 nodes (a <a href="../../pavo_protocol/render_model/enum.RenderModel.html" title="enum pavo_protocol::render_model::RenderModel"><code>RenderModel</code></a> in <code>renders</code>, keyed by tree path) emit
@@ -64,5 +64,5 @@ verb goes through <a href="fn.render_text_plugins.html" title="fn pavo::render::
 path (child indices joined by <code>.</code>, root = <code>""</code>) has a
 <a href="../../pavo_protocol/render_model/enum.RenderModel.html" title="enum pavo_protocol::render_model::RenderModel"><code>RenderModel</code></a> in <code>renders</code> emit the plugin’s output instead of
 the built-in interpretation. Paths come from
-<a href="../../pavo_core/renderers/fn.plugin_nodes.html" title="fn pavo_core::renderers::plugin_nodes"><code>pavo_core::renderers::plugin_nodes</code></a>.</dd><dt><a class="fn" href="fn.rows_text.html" title="fn pavo::render::rows_text">rows_<wbr>text</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Aligned plain-text table for a <a href="../../pavo_protocol/render_model/enum.RenderModel.html#variant.Rows" title="variant pavo_protocol::render_model::RenderModel::Rows"><code>RenderModel::Rows</code></a> — same visual
+[<code>pavo_core::renderers::plugin_nodes</code>].</dd><dt><a class="fn" href="fn.rows_text.html" title="fn pavo::render::rows_text">rows_<wbr>text</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Aligned plain-text table for a <a href="../../pavo_protocol/render_model/enum.RenderModel.html#variant.Rows" title="variant pavo_protocol::render_model::RenderModel::Rows"><code>RenderModel::Rows</code></a> — same visual
 language as <code>table_text</code> (two-space gutters, <code>-</code> separator).</dd><dt><a class="fn" href="fn.scalar_str.html" title="fn pavo::render::scalar_str">scalar_<wbr>str</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.table_text.html" title="fn pavo::render::table_text">table_<wbr>text</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.title_line.html" title="fn pavo::render::title_line">title_<wbr>line</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.tree_item_text.html" title="fn pavo::render::tree_item_text">tree_<wbr>item_<wbr>text</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.tree_text.html" title="fn pavo::render::tree_text">tree_<wbr>text</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt></dl></section></div></main></body></html>

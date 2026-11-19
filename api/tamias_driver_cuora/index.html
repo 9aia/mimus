@@ -7,7 +7,7 @@ probe; never touches vault state).</li>
 <li><code>capabilities</code> — <code>{"capabilities": ["pavo"], "verbs": […]}</code>.</li>
 <li><code>ops</code> — the engine ops manifest: every bounded <code>cuora</code> CLI
 verb as a <code>cli.&lt;verb&gt;</code> wire query, derived from the engine’s
-own clap tree ([<code>cuora::command</code>]). Unbounded/stdin-bound
+own clap tree (<a href="../cuora/fn.command.html" title="fn cuora::command"><code>cuora::command</code></a>). Unbounded/stdin-bound
 verbs (<code>serve</code>, <code>put</code>, <code>rotate</code>) are <code>surfaces</code>, never ops.</li>
 <li><code>run &lt;argv&gt;</code> — engine passthrough: <code>tamias-driver-cuora run list</code> ≡ <code>cuora list</code>. Also the child side of <code>cli.*</code> wire
 queries (<code>ops::run_verb</code> re-execs this same verb so engine

@@ -6,7 +6,7 @@ the child’s captured stdout and never touches the serve loop’s
 ndjson stream — and every mutation keeps the engine’s own
 semantics (config search, audit events, guardrails).</p>
 <p><code>ops</code> answers the ops manifest as JSON — <em>derived from the
-engine’s own clap tree</em> ([<code>cuora::command</code>]), so a verb can’t
+engine’s own clap tree</em> (<a href="../../cuora/fn.command.html" title="fn cuora::command"><code>cuora::command</code></a>), so a verb can’t
 exist on the CLI and be missing here: declared args become
 typed params (<code>arg</code>/<code>opt</code>/<code>flag</code>), doc strings ride along
 unchanged.</p>

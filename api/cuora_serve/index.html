@@ -6,7 +6,7 @@ span export when <code>OTEL_EXPORTER_OTLP_ENDPOINT</code> is set) — three
 separate fds, so a reply never rides the event stream
 and an event never answers a request. A thin front over
 <code>cuora-ops</code> — every vault access goes through
-[<code>Ops</code>], so env-pin resolution, <code>[envs]</code> routing, and the
+<a href="../cuora_ops/struct.Ops.html" title="struct cuora_ops::Ops"><code>Ops</code></a>, so env-pin resolution, <code>[envs]</code> routing, and the
 audit events are the same ones the CLI emits.</p>
 <p>Protocol <code>cuora-serve/1</code>:</p>
 <div class="example-wrap"><pre class="language-json"><code>{&quot;id&quot;: 1, &quot;op&quot;: &quot;get&quot;, &quot;ref&quot;: &quot;cuora://billing/stripe&quot;,
@@ -46,7 +46,7 @@ like it owns <code>cuora get</code>’s stdout.</p>
 are bytes-to-kilobytes; an unbounded <code>read_line</code> lets a broken
 or hostile embedder exhaust memory, so an oversized line is a
 <code>bad_request</code> and the reader resyncs to the next line.</dd></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.run.html" title="fn cuora_serve::run">run</a></dt><dd>Serve the ndjson loop on <code>reader</code>/<code>writer</code> against the loaded
-[<code>Ops</code>] — the <code>cuora serve</code> verb’s whole job. Runs until EOF or
+<a href="../cuora_ops/struct.Ops.html" title="struct cuora_ops::Ops"><code>Ops</code></a> — the <code>cuora serve</code> verb’s whole job. Runs until EOF or
 a <code>shutdown</code> request. A malformed, non-UTF-8, or oversized
 line is a <code>bad_request</code> response, never a crash and never the
 end of the loop; only a real stdout/reader I/O failure

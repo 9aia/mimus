@@ -13,7 +13,7 @@ libdbus client — no async runtime.</li>
 <li>Windows — Credential Manager (DPAPI).</li>
 </ul>
 <p><a href="struct.KeyringIdentity.html#method.platform" title="associated function cuora_identity_keyring::KeyringIdentity::platform"><code>KeyringIdentity::platform</code></a> is the availability probe: it
-fails with [<code>IdentityError::Unavailable</code>] on a headless box
+fails with <a href="../cuora_identity/enum.IdentityError.html#variant.Unavailable" title="variant cuora_identity::IdentityError::Unavailable"><code>IdentityError::Unavailable</code></a> on a headless box
 (no session bus, no daemon) and callers fall back to
 <code>cuora-identity-file</code> — never a crash. Tests drive any
 <code>keyring-core</code> store through <a href="struct.KeyringIdentity.html#method.with_store" title="associated function cuora_identity_keyring::KeyringIdentity::with_store"><code>KeyringIdentity::with_store</code></a>

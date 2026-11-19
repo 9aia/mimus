@@ -23,7 +23,7 @@ mirrored for incoming edges.</dd><dt><a class="struct" href="struct.SyncReport.h
 (live + <code>archive/</code>, metas + bodies), and every <code>handoffs/*.md</code>
 (the filename self-edge plus mentions inside entry notes).
 Per-source edge sets are what <code>extract_file</code> emits per path;
-gathering through <a href="../../myco_store/trait.Store.html" title="trait myco_store::Store"><code>Store</code></a> ports it off the <code>*.md</code> walk so
+gathering through [<code>Store</code>] ports it off the <code>*.md</code> walk so
 non-fs stores play too.</dd><dt><a class="fn" href="fn.sync.html" title="fn myco_ops::links::sync">sync</a></dt><dd>One incremental link-index sync for <code>repo</code>’s worktree <code>wt</code>.
 <code>repo</code> is the index’s repo key (the canonical root path —
 the same key snapshots use). Errors from the index propagate;

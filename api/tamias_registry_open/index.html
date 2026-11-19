@@ -17,7 +17,7 @@ resolve time). <code>id</code> is the optional stable identifier registry-scoped
 install refs (<code>&lt;id&gt;:&lt;name&gt;@&lt;version&gt;</code>) match before the map key.</dd><dt><a class="fn" href="fn.config_target.html" title="fn tamias_registry_open::config_target">config_<wbr>target</a></dt><dd>The config file registry management verbs read/write — <code>file</code>,
 then <code>TAMIAS_CONFIG</code>, then <code>./tamias.{yml,yaml,toml}</code> discovery. No
 file anywhere → <code>./tamias.yml</code> + defaults (created on write). The
-returned <a href="../tamias_config/struct.Config.html" title="struct tamias_config::Config"><code>Config</code></a> is <em>that file’s own</em> — never the merged read
+returned [<code>Config</code>] is <em>that file’s own</em> — never the merged read
 view — so writes can’t flatten a lower layer’s entries into the
 upper file, and a bare <code>registry add</code> in an empty dir still creates
 a project <code>tamias.yml</code> rather than silently editing the global
