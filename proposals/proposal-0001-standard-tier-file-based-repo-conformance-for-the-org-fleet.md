@@ -1,13 +1,13 @@
 +++
 id = "P-001"
-title = "Standard tier — file-based repo conformance for the org fleet"
+title = "Standard tier — declarative repo conformance for the org fleet"
 status = "open"
 created = "2026-11-23"
 owner = "devin"
 priority = "med"
 +++
 
-# Standard tier — file-based repo conformance for the org fleet
+# Standard tier — declarative repo conformance for the org fleet
 
 ## Problem
 
@@ -15,83 +15,116 @@ Org repos drift from the house standard (README rules, manifest
 metadata, license, gate wiring, `.hnl`-only targets). Today the only
 enforcement is prose — `templates/README/README.md` rules,
 `workspace/audit-*.md` snapshots, and ad-hoc `scripts/*-gate.sh`
-loops. Nothing is declarative, mechanically checkable, or cacheable.
+loops. Nothing is declarative, mechanically checkable, cacheable,
+or composable.
 
 ## Idea
 
 Add a **standard tier** to mimus: repo conformance is just another
-kind of claim — "this repo matches its family's expected tree."
+kind of claim — "this repo's file set and contents match its
+family's declared spec." The spec is **data**: a serializable
+config, not a file tree. mimus already loads config
+(`mimus-config`/scarab-config); the same machinery loads org
+standard packs.
 
-### Expected trees (file-based contract)
+### Spec format — include-list, not deny-list
 
-The standard is expressed as a directory of expected files —
-`templates/expected/<family>/` in the owning workspace repo —
-where the filename itself carries the check:
-
-| Filename form | Meaning |
-| --- | --- |
-| `README.md` / `README.md.required` | file must exist |
-| `<dir>/.required-dir` | directory must exist |
-| `LICENSE!MIT` | file must exist and match `MIT` |
-| `<name>.check` | sidecar predicates, one per line (`field:`, `regex:`, `forbid:`) |
-| `<name>.prose` | prose DSL (`words=20..400`, `bare-url`, `forbid-phrase=`) |
-| `.forbid/<path>` | path must not exist / not be git-tracked |
-
-A sibling `_config.toml` carries what filenames can't:
+A standard is a named set of **expectations**. Semantics are
+whitelist: **anything in the repo not covered by the spec is a
+violation** (`unlisted`), so specs stay minimal and composition is
+encouraged — a repo only declares what it needs, and adding a file
+means adding it to the spec.
 
 ```toml
+# expected/engine-compile.toml  (or inline in mimus.toml [[standard]])
 family   = "engine-compile"
-match    = ["engine-compile-*", "engine-*"]   # repo-name globs
-severity = "fail"                              # or warn per repo
-claims   = ["@handl:family", "@handl:license"] # in-file annotations
-semantic = ["README describes what the crate does"]  # LLM tier
+match    = ["engine-compile-*"]        # repo-name globs
+severity = "fail"                        # or warn, per spec/repo
+
+# file-set: exact paths or globs; directories declared explicitly
+files = [
+  "Cargo.toml", "README.md", "LICENSE", "AGENTS.md",
+  "xtask/Cargo.toml", "workflows/gate.yaml",
+  "src/**/*.rs",
+]
+dirs  = ["src", "tests", "xtask"]
+
+# per-path predicates
+[path."Cargo.toml"]
+manifest.fields = ["description", "license", "repository", "readme"]
+manifest.license = "MIT"
+regex.forbid    = ['^\[patch\.']
+
+[path."README.md"]
+prose."## Description".words = "20..400"
+prose."## Documentation".kind = "bare-url"     # or absent
+forbid-phrase   = ["ADR-0", "part of the", "formerly known as"]
+
+[path."LICENSE"]
+contains = "MIT License"
+
+# git-level rules
+git.untracked = ["Cargo.lock"]     # must not be tracked
 ```
 
-In-file `@handl:` annotations (comment syntax per language: `#`,
-`//`, `<!-- -->`, `//!`) let a repo self-declare facts the tree
-verifies — family, stack, license, gate — keeping claims next to
-the truth they describe.
+Non-file rules live in the same doc — manifest fields, prose
+constraints, git-tracking, per-path regexes — because filenames
+can't carry them and a tree-of-files spec can't express globs,
+ranges, or "absent" cleanly.
+
+### In-file claims (optional layer)
+
+`@handl:` annotations (per-language comment token: `#`, `//`,
+`<!-- -->`, `//!`) let a repo self-declare facts the spec verifies
+— `family=`, `stack=`, `license=`, `gate=`. Claims sit next to the
+truth they describe; the standard tier checks `claims ⊇ spec`
+plus the mechanical predicates. Prefix org-parameterized (`@9aia:`)
+so mimus serves multiple orgs.
 
 ### Evaluator
 
-New `mimus standard` surface inside the existing ports-and-adapters
-topology:
+New `mimus standard` surface inside the existing
+ports-and-adapters topology:
 
-- `mimus-check-standard` — `Checker` impl: walk expected tree vs
-  repo tree, eval `.check`/`.prose` predicates, verify `@handl:`
-  claims. Mechanical, deterministic, gates.
+- `mimus-check-standard` — `Checker` impl: load spec → walk repo
+  (git-tracked files only) → unlisted-file violations + per-path
+  predicates (`manifest:`, `regex:`, `prose:`, `contains:`,
+  `git:`) → claim verification. Mechanical, deterministic, gates.
 - Semantic claims route to the existing `mimus-check-acp` tier —
   advisory only, same rule as today.
-- Cache: results keyed by `(rule_version, sha256(file-set))` —
-  unchanged repos skip entirely; this is what makes a ~150-repo
-  fleet sweep cheap enough to run on every push.
-- Parallel: rayon across repos × predicates; `--json` output
-  consumable by bupha/lasius.
+- Cache: results keyed by `(spec_version, sha256(file-set))` —
+  unchanged repos skip entirely; makes a ~150-repo fleet sweep
+  cheap enough for every push.
+- Parallel: rayon across repos × predicates; `--json` output for
+  bupha/lasius consumption.
 
 ### Placement
 
-- `expected/` trees live in the workspace repo next to
-  `templates/README/` — file-tree is the machine-readable twin of
-  the prose rules; `audit-*.md` becomes generated output, not
-  hand-maintained truth.
-- mimus ships a small builtin `expected/` fallback; org trees win
+- Spec files live in the workspace repo beside `templates/README/`
+  — serializable twin of the prose rules; `audit-*.md` becomes
+  generated output, not hand-maintained truth.
+- mimus ships a small builtin spec set as fallback; org specs win
   via `mimus.toml`.
-- Output plugs into the existing fleet machinery: bupha campaign
-  for continuous drift, `lasius check` domain later if a workspace
-  adopts lasius.
+- Output plugs into existing fleet machinery: bupha campaign for
+  continuous drift; a `lasius check` domain later if wanted.
 
 ## Non-goals (v1)
 
-- No auto-fix beyond what `mimus fix` already does for mechanical
-  violations (scaffold-missing is `lasius conform`'s job).
-- Semantic tier behind a flag until the mechanical tier proves out.
-- Not a replacement for cypera (docs content) or the build gates —
-  standard tier checks *structure and claims*, not prose quality.
+- No auto-fix beyond `mimus fix`'s existing mechanical repairs
+  (scaffold-missing stays `lasius conform`'s job).
+- Semantic tier behind a flag until mechanical proves out.
+- Not a cypera replacement (docs content) or build-gate
+  replacement — standard tier checks structure, claims, and
+  file-set hygiene only.
 
 ## Open questions
 
-- Predicate DSL final grammar for `.check` sidecars.
-- Whether `@handl:` annotation prefix should be org-parameterized
-  (`@9aia:`?) so mimus serves multiple orgs.
-- Spike scope: `expected/engine/` tree + file-diff-only checker
-  against the handl-lang sibling clones.
+- Spec discovery: `expected/*.toml` dir vs `[[standard]]` tables
+  in `mimus.toml` — likely both (dir for org packs, inline for
+  repo-local overrides).
+- Glob semantics for `files`/`dirs` — gitignore-style vs
+  globset; needs an "unlisted" carve-out story for generated dirs
+  (`target/`, `node_modules/` are never tracked anyway — git
+  walk makes this free).
+- Spike scope: `engine` spec + file-set-diff-only checker against
+  the handl-lang sibling clones.
