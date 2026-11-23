@@ -16,7 +16,6 @@ default_layer = "impl"
 "mimus-vcs" = "port"
 "mimus-queue" = "port"
 "mimus-service" = "port"
-"mimus-secret" = "port"
 "mimus-config" = "port"
 "mimus-cache" = "port"
 

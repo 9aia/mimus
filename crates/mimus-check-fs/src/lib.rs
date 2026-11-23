@@ -161,18 +161,18 @@ mod tests {
 
     #[test]
     fn doc_relative_resolves() {
-        // `tests/store.rs` doesn't exist under this crate's dir
-        // but does under the claiming doc's dir (mimus-dotenv).
+        // `tests/cmd.rs` doesn't exist under this crate's dir
+        // but does under the claiming doc's dir (mimus-check-cmd).
         let c = FsChecker::new(".");
-        let mut cl = claim("tests/store.rs");
-        cl.source = "../mimus-dotenv/some-doc.md".into();
+        let mut cl = claim("tests/cmd.rs");
+        cl.source = "../mimus-check-cmd/some-doc.md".into();
         assert!(c.check(&cl).unwrap().is_none());
     }
 
     #[test]
     fn base_dirs_resolve() {
         let mut c = FsChecker::new(".");
-        c.base_dirs = vec!["../mimus-dotenv".into()];
-        assert!(c.check(&claim("tests/store.rs")).unwrap().is_none());
+        c.base_dirs = vec!["../mimus-check-cmd".into()];
+        assert!(c.check(&claim("tests/cmd.rs")).unwrap().is_none());
     }
 }

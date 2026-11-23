@@ -145,6 +145,36 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d07550c9036bf2ae0c684c4297d503f838287c83c53686d05370d0e139ae570"
 
 [[package]]
+name = "cuora-secret"
+version = "1.0.4"
+source = "git+ssh://git@github.com/9aia/cuora.git?rev=f81164366bd436a7d4cf204c6e7a83555f50302f#f81164366bd436a7d4cf204c6e7a83555f50302f"
+
+[[package]]
+name = "cuora-secret-cuora"
+version = "1.0.4"
+source = "git+ssh://git@github.com/9aia/cuora.git?rev=f81164366bd436a7d4cf204c6e7a83555f50302f#f81164366bd436a7d4cf204c6e7a83555f50302f"
+dependencies = [
+ "cuora-secret",
+ "serde_json",
+]
+
+[[package]]
+name = "cuora-secret-dotenv"
+version = "1.0.4"
+source = "git+ssh://git@github.com/9aia/cuora.git?rev=f81164366bd436a7d4cf204c6e7a83555f50302f#f81164366bd436a7d4cf204c6e7a83555f50302f"
+dependencies = [
+ "cuora-secret",
+]
+
+[[package]]
+name = "cuora-secret-keyring"
+version = "1.0.4"
+source = "git+ssh://git@github.com/9aia/cuora.git?rev=f81164366bd436a7d4cf204c6e7a83555f50302f#f81164366bd436a7d4cf204c6e7a83555f50302f"
+dependencies = [
+ "cuora-secret",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -307,6 +337,10 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "clap-markdown",
+ "cuora-secret",
+ "cuora-secret-cuora",
+ "cuora-secret-dotenv",
+ "cuora-secret-keyring",
  "mimus-check",
  "mimus-check-acp",
  "mimus-check-cmd",
@@ -316,11 +350,7 @@ dependencies = [
  "mimus-claims",
  "mimus-config",
  "mimus-core",
- "mimus-cuora",
- "mimus-dotenv",
- "mimus-keyring",
  "mimus-rules",
- "mimus-secret",
  "serde_json",
  "serde_yaml",
  "toml",
@@ -405,21 +435,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mimus-cuora"
-version = "0.1.0"
-dependencies = [
- "mimus-secret",
- "serde_json",
-]
-
-[[package]]
-name = "mimus-dotenv"
-version = "0.1.0"
-dependencies = [
- "mimus-secret",
-]
-
-[[package]]
 name = "mimus-driver"
 version = "0.1.0"
 dependencies = [
@@ -438,13 +453,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mimus-keyring"
-version = "0.1.0"
-dependencies = [
- "mimus-secret",
-]
-
-[[package]]
 name = "mimus-rules"
 version = "0.1.0"
 dependencies = [
@@ -454,10 +462,6 @@ dependencies = [
  "serde",
  "toml",
 ]
-
-[[package]]
-name = "mimus-secret"
-version = "0.1.0"
 
 [[package]]
 name = "once_cell"
