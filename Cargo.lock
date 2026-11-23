@@ -273,6 +273,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "lasius-vcs"
+version = "0.4.0"
+source = "git+ssh://git@github.com/9aia/lasius.git?rev=351857536395951d5f6f8502cdaf86a737520b02#351857536395951d5f6f8502cdaf86a737520b02"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "lasius-vcs-git"
+version = "0.4.0"
+source = "git+ssh://git@github.com/9aia/lasius.git?rev=351857536395951d5f6f8502cdaf86a737520b02#351857536395951d5f6f8502cdaf86a737520b02"
+dependencies = [
+ "lasius-vcs",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.191"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -307,6 +323,8 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "clap-markdown",
+ "lasius-vcs",
+ "lasius-vcs-git",
  "mimus-check",
  "mimus-check-acp",
  "mimus-check-cmd",
@@ -424,6 +442,8 @@ name = "mimus-driver"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "lasius-vcs",
+ "lasius-vcs-git",
  "mimus",
  "mimus-check-graph",
  "mimus-config",
