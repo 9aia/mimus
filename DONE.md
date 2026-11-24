@@ -10,3 +10,4 @@
 - T-006 mimus-claims — extract claims from md/comments/cards: backtick paths & commands, numbers, symbol names, behavior prose (semantic tier, deferred to llm adapter)
 - T-007 mimus check — mechanical tier, CI-gateable output
 - T-008 mimus report — violations with claim+evidence+fix
+- T-025 standard tier spike: engine spec + file-set-diff checker vs handl-lang clones (blocked on scarab-compose publish/dep) · owner:devin · created:2026-11-24 · links:P-001 · done:2026-11-24
