@@ -10,6 +10,7 @@
 //! parses mimus.toml, wires checker adapters, runs subcommands.
 
 use clap::{Parser, Subcommand};
+use lasius_vcs::Vcs;
 use mimus_check::{Checker, GraphChecker};
 use mimus_config::ConfigSource;
 use mimus_config::FileSource;
@@ -746,38 +747,17 @@ fn collect(
     Some((root, violations))
 }
 
-/// `git -C <root>` — one spawn-error arm for every call site.
-fn git(root: &Path, args: &[&str]) -> Result<std::process::Output, String> {
-    std::process::Command::new("git")
-        .arg("-C")
-        .arg(root)
-        .args(args)
-        .output()
-        .map_err(|e| format!("git {}: {e}", args.first().unwrap_or(&"")))
-}
-
-/// `git diff --name-only <spec>` — changed files as canonical
-/// paths rooted at the repo toplevel.
+/// `git diff --name-only <spec>` via the lasius-vcs port — changed
+/// files as canonical paths rooted at the repo toplevel.
 fn diff_files(root: &Path, spec: &str) -> Result<std::collections::BTreeSet<PathBuf>, String> {
-    let top = git(root, &["rev-parse", "--show-toplevel"])?;
-    if !top.status.success() {
-        return Err(format!(
-            "--diff needs a git repo: {}",
-            String::from_utf8_lossy(&top.stderr).trim()
-        ));
-    }
-    let top = PathBuf::from(String::from_utf8_lossy(&top.stdout).trim());
-    let out = git(root, &["diff", "--name-only", spec])?;
-    if !out.status.success() {
-        return Err(format!(
-            "git diff {spec}: {}",
-            String::from_utf8_lossy(&out.stderr).trim()
-        ));
-    }
-    Ok(String::from_utf8_lossy(&out.stdout)
-        .lines()
-        .map(|l| canon(&top.join(l)))
-        .collect())
+    let vcs = lasius_vcs_git::GitVcs;
+    let top = vcs
+        .repo_root(root)
+        .ok_or_else(|| "--diff needs a git repo".to_owned())?;
+    let names = vcs
+        .diff_names(root, spec)
+        .map_err(|e| format!("git diff {spec}: {e}"))?;
+    Ok(names.iter().map(|l| canon(&top.join(l))).collect())
 }
 
 /// Canonical path when it exists, else normalized `.`/`..`.
@@ -1065,15 +1045,8 @@ fn audit(cli: &Cli) -> i32 {
                 score = "contradicted";
                 break;
             }
-            let cur = std::process::Command::new("git")
-                .arg("-C")
-                .arg(&root)
-                .args(["hash-object"])
-                .arg(f)
-                .output()
-                .ok()
-                .filter(|o| o.status.success())
-                .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_owned())
+            let cur = lasius_vcs_git::GitVcs
+                .hash_object(&root, f)
                 .unwrap_or_default();
             if cur != *h {
                 score = "drifted";

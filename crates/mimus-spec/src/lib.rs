@@ -460,6 +460,96 @@ impl StandardProvider for CargoProvider {
     }
 }
 
+/// `repo` provider — repo-identity checks that need the checkout's
+/// directory name, which path predicates can't see. Currently one
+/// claim:
+///
+/// - `bupha-name = true` — every `[[repos]]` entry in `bupha.toml`
+///   must be named `<org>/<dirname>` (last path segment equals the
+///   repo directory name). Catches `name =`/`dir =` drift after a
+///   rename. Absent `bupha.toml` is a no-op — the file-set's
+///   `missing` finding already covers that.
+/// - `severity = "warn" | "error"` — optional, default `"warn"`
+///   (identity drift is a floor concern, not a family gate).
+///
+/// Unknown claim keys are a [`ProviderError`].
+#[derive(Debug, Default, Clone, Copy)]
+pub struct RepoProvider;
+
+impl StandardProvider for RepoProvider {
+    fn ns(&self) -> &str {
+        "repo"
+    }
+
+    fn check(
+        &self,
+        repo: &Path,
+        claims: &serde_json::Value,
+    ) -> Result<Vec<SpecViolation>, ProviderError> {
+        let obj = claims.as_object().ok_or_else(|| {
+            ProviderError("`providers.repo` claims must be a table".into())
+        })?;
+        for key in obj.keys() {
+            if !matches!(key.as_str(), "bupha-name" | "severity") {
+                return Err(ProviderError(format!(
+                    "unknown `providers.repo` claim `{key}`"
+                )));
+            }
+        }
+        if obj.get("bupha-name").and_then(serde_json::Value::as_bool) != Some(true) {
+            return Err(ProviderError(
+                "`providers.repo.bupha-name` must be `true`".into(),
+            ));
+        }
+        let severity = match obj.get("severity").and_then(serde_json::Value::as_str) {
+            None | Some("warn") => mimus_core::Severity::Warn,
+            Some("error") => mimus_core::Severity::Error,
+            Some(other) => {
+                return Err(ProviderError(format!(
+                    "`providers.repo.severity` must be \"warn\" or \"error\", got {other:?}"
+                )));
+            }
+        };
+
+        let manifest = repo.join("bupha.toml");
+        let Ok(text) = std::fs::read_to_string(&manifest) else {
+            return Ok(Vec::new()); // missing file → `missing` finding's job
+        };
+        let doc: toml::Value = text
+            .parse()
+            .map_err(|err| ProviderError(format!("bupha.toml parse: {err}")))?;
+        let Some(dirname) = repo.file_name().and_then(|n| n.to_str()) else {
+            return Err(ProviderError(format!(
+                "repo path {} has no usable directory name",
+                repo.display()
+            )));
+        };
+        let mut out = Vec::new();
+        if let Some(repos) = doc.get("repos").and_then(toml::Value::as_array) {
+            for entry in repos {
+                let name = entry
+                    .get("name")
+                    .and_then(toml::Value::as_str)
+                    .unwrap_or("");
+                let last = name.rsplit('/').next().unwrap_or("");
+                if last != dirname || !name.contains('/') {
+                    out.push(SpecViolation {
+                        kind: ViolationKind::Provider,
+                        path: "bupha.toml".into(),
+                        spec: "repo".into(),
+                        severity,
+                        detail: format!(
+                            "`[[repos]] name = {name:?}` doesn't end in `/{dirname}` — \
+                             stale after rename?"
+                        ),
+                    });
+                }
+            }
+        }
+        Ok(out)
+    }
+}
+
 impl Spec {
     /// Load + resolve a spec file — extension dispatch like
     /// `Composer::resolve_file` (`.toml` → TOML, `.json` → JSON,
