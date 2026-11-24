@@ -160,7 +160,7 @@ fn refuted_violation(root: &std::path::Path, claim: &Claim, verdict: &str) -> Op
 
 /// `mimus doctor` probe — spawn the agent, send one canned
 /// prompt, confirm text actually streams back (P6).
-pub fn probe(cmd: &str, root: &PathBuf) -> Result<String, String> {
+pub fn probe(cmd: &str, root: &std::path::Path) -> Result<String, String> {
     let (client, sid) = AcpChecker::connect(cmd, root)?;
     let (_res, prose) = client.prompt_text(&sid, "Reply with only the word: ok")?;
     if prose.trim().is_empty() {
@@ -174,7 +174,7 @@ pub fn probe(cmd: &str, root: &PathBuf) -> Result<String, String> {
 /// Single prompt, no session state needed beyond connect.
 pub fn propose(
     cmd: &str,
-    root: &PathBuf,
+    root: &std::path::Path,
     claim_text: &str,
     evidence: &str,
 ) -> Result<String, String> {
@@ -248,7 +248,7 @@ impl AcpChecker {
     /// `fs_root` advertises the fs capability and serves
     /// `fs/read_text_file` under the repo root for agents that read
     /// through the client instead of shell tools.
-    fn connect(cmd: &str, root: &PathBuf) -> Result<(Client, String), String> {
+    fn connect(cmd: &str, root: &std::path::Path) -> Result<(Client, String), String> {
         let client = Client::connect_shell(
             cmd,
             root,
@@ -258,7 +258,7 @@ impl AcpChecker {
                 inherit_env: true,
                 call_timeout: Some(request_timeout()),
                 client_name: Some("mimus".into()),
-                fs_root: Some(root.clone()),
+                fs_root: Some(root.to_path_buf()),
                 ..Default::default()
             },
         )?;
