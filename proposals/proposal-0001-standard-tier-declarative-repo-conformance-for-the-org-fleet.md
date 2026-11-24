@@ -157,6 +157,22 @@ ports-and-adapters topology:
 - Parallel: rayon across repos × predicates; `--json` output for
   bupha/lasius consumption.
 
+### Reuse & boundaries (anti-duplicate-work map)
+
+| Need | Existing | Decision |
+| --- | --- | --- |
+| pack fetch/store | tamias | reuse — resolution only |
+| config loading | scarab-config | reuse — via mimus-config |
+| docs predicates | cypera check | provider namespace, not reimpl |
+| git/clone facts, repo discovery | lasius | provider + `--repos`/`lasius status --json` |
+| card freshness | kuda | provider namespace |
+| spec schema + merge | peregrin `include:`/config-merge | **do not couple** — same pattern, different domain (node graphs vs predicate tables); reuse tamias ref-resolution, own the ~100-line merge |
+| fleet enumeration | lasius | delegate when available; `--root`/`--repos` for v1 |
+
+Spec schema lives as `mimus-spec` crate inside mimus behind a
+port — extract to `9aia/spec` only when a second consumer
+(e.g. `lasius check --domain standard`) actually appears.
+
 ### Placement
 
 - Spec packs distribute via **tamias** — `libraries/<org>-standard`
@@ -187,6 +203,9 @@ ports-and-adapters topology:
 - Provider ABI: in-process trait vs driver/subprocess boundary —
   tamias drivers already expose ops surfaces; reusing that keeps
   providers in their own repos without mimus linking them.
+- Repo discovery: `--repos`/`--root` args vs shelling to
+  `lasius status --json` — probably both (explicit paths always
+  work; lasius is an optimization when present).
 - Merge semantics edge cases: two parents declaring the same
   `path."X"` predicate — concat vs override; probably concat for
   predicates, last-wins for scalars (`severity`, `family`).
