@@ -115,12 +115,15 @@ fn dispatch(req: &Request) -> Response {
         Request::Render { kind, .. } => Response::err(format!(
             "tamias-driver-mimus claims no renderers (kind '{kind}')"
         )),
-        // The protocol grew `submit`/`jobs`/`notifications` ops after
-        // this driver was written; mutations go through `cli.<verb>`,
-        // never `submit`, so they answer `ok:false` like any
-        // unsupported op.
-        Request::Submit { .. } | Request::Jobs | Request::Notifications => {
-            Response::err("tamias-driver-mimus implements no submit/jobs/notifications ops")
+        // The protocol grew `submit`/`invoke`/`jobs`/`notifications`
+        // ops after this driver was written; mutations go through
+        // `cli.<verb>`, never `submit`, so they answer `ok:false`
+        // like any unsupported op.
+        Request::Submit { .. }
+        | Request::Invoke { .. }
+        | Request::Jobs
+        | Request::Notifications => {
+            Response::err("tamias-driver-mimus implements no submit/invoke/jobs/notifications ops")
         }
     }
 }
