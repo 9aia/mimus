@@ -20,7 +20,7 @@ modules:
 commands:
 - cargo check
 - cargo test --workspace
-tree_digest: 6c8de2003c7531a1e42fe2c0158159711a373a40
+tree_digest: 95ec9a434a60c06fb0dfabec8a6df40006921e32
 files_total: 81
 provenance:
   files:
@@ -53,10 +53,10 @@ provenance:
   - cb3f6438ead264926f39ee1800187cd0bc1dd95c
   - f0959201dd8a0504d04fe9631fa407b96e30c9ed
   - 6b7185a94a97d0e4ebf63efd7a95dd2800f0bc41
-  - 369406bc4a2580e9bbb272f1678790e14bd61352
+  - 32b0dcef9d25773dc1a2bd8c4d56c1f0a2955f33
   - b1cf727ea9ec71dccd378bea295d8def00f34840
   - ed42998d176a080c2540bdde7be12d339e1a7227
   - 6391d6a9586b1a42d2e3b1270cd9a441f321af68
-  commit_sha: a34be4b15d55a8020d4e0889289c407e08335b3f
-  generated_at: '1795543852'
+  commit_sha: 578cb9545a1f8324c79f8cc83eb473a89d114f6d
+  generated_at: '1795553857'
   generator: kuda/0.1.0

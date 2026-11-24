@@ -110,7 +110,7 @@ api:
 - name: engine_argv
   kind: function
   file: crates/mimus-driver/src/main.rs
-  line: 207
+  line: 210
   module: mimus-driver
 - name: err
   kind: function
@@ -170,7 +170,7 @@ api:
 - name: main
   kind: function
   file: crates/mimus-driver/src/main.rs
-  line: 135
+  line: 138
   module: mimus-driver
 - name: manifest
   kind: function
@@ -243,13 +243,13 @@ provenance:
   - crates/mimus-driver/src/views.rs
   - crates/mimus-driver/tests/conformance.rs
   hashes:
-  - 369406bc4a2580e9bbb272f1678790e14bd61352
+  - 32b0dcef9d25773dc1a2bd8c4d56c1f0a2955f33
   - c0e7f01667852e3ab8ad3465e785b1898c4b8985
-  - 8299285cd7812437c3fc7401ce90bb7e45fad7e9
+  - 66c339d9170d9b585c4fe9bb0a96d9487219909f
   - 4770319d0ace5fca0db7d666933a6fe4eb3be87d
   - eb47bef3e49d310bfcb4ba48653f9bb842c2c059
   - 7f400c4f844de3c733900a4a8556eef54584d360
   - a0cd119f99326dcfc9ecc2dcec69161c4c06ad5c
-  commit_sha: 5562a48ee91d18e91761185daa0c08c531ca7d7b
-  generated_at: '1795529214'
+  commit_sha: 578cb9545a1f8324c79f8cc83eb473a89d114f6d
+  generated_at: '1795553857'
   generator: kuda-template/0.1.4

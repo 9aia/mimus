@@ -801,6 +801,316 @@ impl StandardProvider for LasiusProvider {
     }
 }
 
+/// Shared `severity = "warn" | "error"` claim parsing for the
+/// org-marker providers — `default` applies when the claim is
+/// absent. Unknown values are a [`ProviderError`].
+fn severity_claim(
+    obj: &serde_json::Map<String, serde_json::Value>,
+    ns: &str,
+    default: mimus_core::Severity,
+) -> Result<mimus_core::Severity, ProviderError> {
+    match obj.get("severity").and_then(serde_json::Value::as_str) {
+        None => Ok(default),
+        Some("warn") => Ok(mimus_core::Severity::Warn),
+        Some("error") => Ok(mimus_core::Severity::Error),
+        Some(other) => Err(ProviderError(format!(
+            "`providers.{ns}.severity` must be \"warn\" or \"error\", got {other:?}"
+        ))),
+    }
+}
+
+/// Reject claim keys outside `allowed` — a typo'd claim must not
+/// silently pass.
+fn check_claim_keys(
+    obj: &serde_json::Map<String, serde_json::Value>,
+    ns: &str,
+    allowed: &[&str],
+) -> Result<(), ProviderError> {
+    for key in obj.keys() {
+        if !allowed.contains(&key.as_str()) {
+            return Err(ProviderError(format!(
+                "unknown `providers.{ns}` claim `{key}`"
+            )));
+        }
+    }
+    Ok(())
+}
+
+/// `kuda` provider — kuda-wired repo facts. Declaring
+/// `[providers.kuda]` asserts the repo carries the kuda markers:
+/// a `.kuda/` directory plus `kuda.toml` or `kuda.yaml`. On top of
+/// that presence check, optional claims:
+///
+/// - `cards = true` — `.kuda/` must contain at least one `*.yaml`
+///   card (recursive; `index.yaml` excluded — it's the generated
+///   card index, not a card).
+/// - `index = true` — `.kuda/index.sqlite` must exist. The index
+///   is gitignored + rebuildable (`kuda sync` regenerates it), so
+///   this finding is **always warn** regardless of `severity` —
+///   presence drift must never gate.
+/// - `severity = "warn" | "error"` — optional, default `"warn"`.
+///
+/// Card *content* drift is `kuda status`'s job — this provider is
+/// presence-level only. Unknown claim keys are a [`ProviderError`].
+#[derive(Debug, Default, Clone, Copy)]
+pub struct KudaProvider;
+
+impl StandardProvider for KudaProvider {
+    fn ns(&self) -> &str {
+        "kuda"
+    }
+
+    fn check(
+        &self,
+        repo: &Path,
+        claims: &serde_json::Value,
+    ) -> Result<Vec<SpecViolation>, ProviderError> {
+        let obj = claims
+            .as_object()
+            .ok_or_else(|| ProviderError("`providers.kuda` claims must be a table".into()))?;
+        check_claim_keys(obj, "kuda", &["cards", "index", "severity"])?;
+        let flag = |key: &str| obj.get(key).and_then(serde_json::Value::as_bool) == Some(true);
+        let severity = severity_claim(obj, "kuda", mimus_core::Severity::Warn)?;
+
+        let kuda_dir = repo.join(".kuda");
+        let mut out = Vec::new();
+        let mut violate = |path: &str, sev: mimus_core::Severity, detail: String| {
+            out.push(SpecViolation {
+                kind: ViolationKind::Provider,
+                path: path.into(),
+                spec: "kuda".into(),
+                severity: sev,
+                detail,
+            });
+        };
+
+        if !kuda_dir.is_dir() {
+            violate(
+                ".kuda",
+                severity,
+                "`.kuda/` directory absent — repo is not kuda-wired".into(),
+            );
+        }
+        let has_config = repo.join("kuda.toml").is_file() || repo.join("kuda.yaml").is_file();
+        if !has_config {
+            violate(
+                "kuda.toml",
+                severity,
+                "neither `kuda.toml` nor `kuda.yaml` present — kuda config missing".into(),
+            );
+        }
+
+        if flag("cards") {
+            // `.kuda/` cards are the checked-in `*.yaml` artifacts —
+            // `index.yaml` is the generated card index, not a card.
+            let mut stack = vec![kuda_dir.clone()];
+            let mut cards = 0usize;
+            while let Some(dir) = stack.pop() {
+                let Ok(rd) = std::fs::read_dir(&dir) else {
+                    continue;
+                };
+                for e in rd.flatten() {
+                    let p = e.path();
+                    if p.is_dir() {
+                        stack.push(p);
+                    } else if p.extension().and_then(|x| x.to_str()) == Some("yaml")
+                        && p.file_name().and_then(|n| n.to_str()) != Some("index.yaml")
+                    {
+                        cards += 1;
+                    }
+                }
+            }
+            if cards == 0 {
+                violate(
+                    ".kuda",
+                    severity,
+                    "`cards = true` but no `.kuda/**/*.yaml` cards found".into(),
+                );
+            }
+        }
+
+        if flag("index") && !kuda_dir.join("index.sqlite").is_file() {
+            // gitignored + rebuildable — advisory only, never gates.
+            violate(
+                ".kuda/index.sqlite",
+                mimus_core::Severity::Warn,
+                "`index = true` but `.kuda/index.sqlite` absent — run `kuda sync`".into(),
+            );
+        }
+
+        Ok(out)
+    }
+}
+
+/// `sturn` provider — sturn-wired repo marker. Declaring
+/// `[providers.sturn]` asserts `sturn.toml` is present; there are
+/// no further claims (the WAL/refs state is sturn's own domain —
+/// this is presence-level only).
+///
+/// - `severity = "warn" | "error"` — optional, default `"warn"`.
+///
+/// Unknown claim keys are a [`ProviderError`].
+#[derive(Debug, Default, Clone, Copy)]
+pub struct SturnProvider;
+
+impl StandardProvider for SturnProvider {
+    fn ns(&self) -> &str {
+        "sturn"
+    }
+
+    fn check(
+        &self,
+        repo: &Path,
+        claims: &serde_json::Value,
+    ) -> Result<Vec<SpecViolation>, ProviderError> {
+        let obj = claims
+            .as_object()
+            .ok_or_else(|| ProviderError("`providers.sturn` claims must be a table".into()))?;
+        check_claim_keys(obj, "sturn", &["severity"])?;
+        let severity = severity_claim(obj, "sturn", mimus_core::Severity::Warn)?;
+        if !repo.join("sturn.toml").is_file() {
+            return Ok(vec![SpecViolation {
+                kind: ViolationKind::Provider,
+                path: "sturn.toml".into(),
+                spec: "sturn".into(),
+                severity,
+                detail: "`sturn.toml` absent — repo is not sturn-wired".into(),
+            }]);
+        }
+        Ok(Vec::new())
+    }
+}
+
+/// `myco` provider — myco ledger mount. Declaring
+/// `[providers.myco]` asserts `myco.toml` is present (the myco
+/// config marker); optional claims:
+///
+/// - `worktree = true` — `project/` must exist as a directory —
+///   the myco ledger worktree mount. Dir-level only: whether it's
+///   a healthy worktree is `myco status`'s job.
+/// - `severity = "warn" | "error"` — optional, default `"warn"`.
+///
+/// Unknown claim keys are a [`ProviderError`].
+#[derive(Debug, Default, Clone, Copy)]
+pub struct MycoProvider;
+
+impl StandardProvider for MycoProvider {
+    fn ns(&self) -> &str {
+        "myco"
+    }
+
+    fn check(
+        &self,
+        repo: &Path,
+        claims: &serde_json::Value,
+    ) -> Result<Vec<SpecViolation>, ProviderError> {
+        let obj = claims
+            .as_object()
+            .ok_or_else(|| ProviderError("`providers.myco` claims must be a table".into()))?;
+        check_claim_keys(obj, "myco", &["worktree", "severity"])?;
+        let flag = |key: &str| obj.get(key).and_then(serde_json::Value::as_bool) == Some(true);
+        let severity = severity_claim(obj, "myco", mimus_core::Severity::Warn)?;
+
+        let mut out = Vec::new();
+        let mut violate = |path: &str, detail: String| {
+            out.push(SpecViolation {
+                kind: ViolationKind::Provider,
+                path: path.into(),
+                spec: "myco".into(),
+                severity,
+                detail,
+            });
+        };
+
+        if !repo.join("myco.toml").is_file() {
+            violate(
+                "myco.toml",
+                "`myco.toml` absent — repo is not myco-wired".into(),
+            );
+        }
+        if flag("worktree") && !repo.join("project").is_dir() {
+            violate(
+                "project",
+                "`worktree = true` but `project/` ledger worktree absent".into(),
+            );
+        }
+        Ok(out)
+    }
+}
+
+/// `cypera` provider — cypera docs-generation contract marker.
+/// Declaring `[providers.cypera]` asserts `cypera.toml` exists and
+/// parses as TOML. Optional claims:
+///
+/// - `sections = ["crate_map", "cli", …]` — each named top-level
+///   key must be present in `cypera.toml` (cheap structural check;
+///   contents are cypera's own schema).
+/// - `severity = "warn" | "error"` — optional, default `"warn"`.
+///
+/// **Boundary:** this provider is file/parse-level only — it never
+/// shells out to `cypera check`/`cypera gen`. Providers must stay
+/// fast and mechanical; semantic validation of the cypera document
+/// is `cypera check`'s job. Unknown claim keys are a
+/// [`ProviderError`].
+#[derive(Debug, Default, Clone, Copy)]
+pub struct CyperaProvider;
+
+impl StandardProvider for CyperaProvider {
+    fn ns(&self) -> &str {
+        "cypera"
+    }
+
+    fn check(
+        &self,
+        repo: &Path,
+        claims: &serde_json::Value,
+    ) -> Result<Vec<SpecViolation>, ProviderError> {
+        let obj = claims
+            .as_object()
+            .ok_or_else(|| ProviderError("`providers.cypera` claims must be a table".into()))?;
+        check_claim_keys(obj, "cypera", &["sections", "severity"])?;
+        let severity = severity_claim(obj, "cypera", mimus_core::Severity::Warn)?;
+
+        let manifest = repo.join("cypera.toml");
+        if !manifest.is_file() {
+            return Ok(vec![SpecViolation {
+                kind: ViolationKind::Provider,
+                path: "cypera.toml".into(),
+                spec: "cypera".into(),
+                severity,
+                detail: "`cypera.toml` absent — repo has no cypera contract".into(),
+            }]);
+        }
+        let text = std::fs::read_to_string(&manifest)
+            .map_err(|err| ProviderError(format!("cannot read {}: {err}", manifest.display())))?;
+        let doc: toml::Value = text
+            .parse()
+            .map_err(|err| ProviderError(format!("cypera.toml parse: {err}")))?;
+
+        let mut out = Vec::new();
+        if let Some(sections) = obj.get("sections") {
+            let arr = sections.as_array().ok_or_else(|| {
+                ProviderError("`providers.cypera.sections` must be an array of strings".into())
+            })?;
+            for s in arr {
+                let name = s.as_str().ok_or_else(|| {
+                    ProviderError("`providers.cypera.sections` entries must be strings".into())
+                })?;
+                if doc.get(name).is_none() {
+                    out.push(SpecViolation {
+                        kind: ViolationKind::Provider,
+                        path: "cypera.toml".into(),
+                        spec: "cypera".into(),
+                        severity,
+                        detail: format!("`sections` claim: top-level `[{name}]` absent"),
+                    });
+                }
+            }
+        }
+        Ok(out)
+    }
+}
+
 impl Spec {
     /// Load + resolve a spec file — extension dispatch like
     /// `Composer::resolve_file` (`.toml` → TOML, `.json` → JSON,
@@ -1958,6 +2268,202 @@ kuda-core = { path = "../kuda/crates/kuda-core" }
         ] {
             assert!(
                 LasiusProvider.check(dir.path(), &claims).is_err(),
+                "{claims}"
+            );
+        }
+    }
+
+    // --- org-marker providers (kuda/sturn/myco/cypera) ------------
+
+    /// `<tmp>/repo` with `.kuda/{modules/x.yaml,index.yaml,index.sqlite}`
+    /// + `kuda.toml` — a fully wired kuda fixture.
+    fn kuda_fixture() -> (tempfile::TempDir, PathBuf) {
+        let dir = tempfile::tempdir().unwrap();
+        let repo = dir.path().join("repo");
+        let kuda = repo.join(".kuda");
+        std::fs::create_dir_all(kuda.join("modules")).unwrap();
+        std::fs::write(repo.join("kuda.toml"), "[repo]\n").unwrap();
+        std::fs::write(kuda.join("modules").join("x.yaml"), "name: x\n").unwrap();
+        std::fs::write(kuda.join("index.yaml"), "cards: []\n").unwrap();
+        std::fs::write(kuda.join("index.sqlite"), "db").unwrap();
+        (dir, repo)
+    }
+
+    #[test]
+    fn kuda_provider_wired_repo_is_clean() {
+        let (_dir, repo) = kuda_fixture();
+        let claims = serde_json::json!({ "cards": true, "index": true });
+        let vs = KudaProvider.check(&repo, &claims).unwrap();
+        assert!(vs.is_empty(), "{vs:?}");
+    }
+
+    #[test]
+    fn kuda_provider_flags_missing_markers() {
+        let dir = tempfile::tempdir().unwrap();
+        let vs = KudaProvider
+            .check(dir.path(), &serde_json::json!({}))
+            .unwrap();
+        assert_eq!(vs.len(), 2, "{vs:?}"); // .kuda/ + config
+        assert!(vs.iter().all(|v| v.severity == mimus_core::Severity::Warn));
+        // kuda.yaml alone satisfies the config marker
+        std::fs::create_dir(dir.path().join(".kuda")).unwrap();
+        std::fs::write(dir.path().join("kuda.yaml"), "repo: x\n").unwrap();
+        let vs = KudaProvider
+            .check(dir.path(), &serde_json::json!({}))
+            .unwrap();
+        assert!(vs.is_empty(), "{vs:?}");
+    }
+
+    #[test]
+    fn kuda_provider_cards_requires_yaml_cards() {
+        let (_dir, repo) = kuda_fixture();
+        // remove the real card, keep only index.yaml → cards fails
+        std::fs::remove_file(repo.join(".kuda/modules/x.yaml")).unwrap();
+        let vs = KudaProvider
+            .check(&repo, &serde_json::json!({ "cards": true }))
+            .unwrap();
+        assert_eq!(vs.len(), 1, "{vs:?}");
+        assert!(vs[0].detail.contains("cards"));
+    }
+
+    #[test]
+    fn kuda_provider_index_is_always_warn() {
+        let (_dir, repo) = kuda_fixture();
+        std::fs::remove_file(repo.join(".kuda/index.sqlite")).unwrap();
+        // severity=error must NOT escalate the gitignored index
+        let vs = KudaProvider
+            .check(
+                &repo,
+                &serde_json::json!({ "index": true, "severity": "error" }),
+            )
+            .unwrap();
+        assert_eq!(vs.len(), 1, "{vs:?}");
+        assert_eq!(vs[0].severity, mimus_core::Severity::Warn);
+        assert!(vs[0].detail.contains("kuda sync"));
+    }
+
+    #[test]
+    fn kuda_provider_rejects_bad_claims() {
+        let dir = tempfile::tempdir().unwrap();
+        for claims in [
+            serde_json::json!({ "bogus": true }),
+            serde_json::json!({ "severity": "fatal" }),
+            serde_json::json!("nope"),
+        ] {
+            assert!(KudaProvider.check(dir.path(), &claims).is_err(), "{claims}");
+        }
+    }
+
+    #[test]
+    fn sturn_provider_presence_and_severity() {
+        let dir = tempfile::tempdir().unwrap();
+        // absent → warn by default
+        let vs = SturnProvider
+            .check(dir.path(), &serde_json::json!({}))
+            .unwrap();
+        assert_eq!(vs.len(), 1, "{vs:?}");
+        assert_eq!(vs[0].severity, mimus_core::Severity::Warn);
+        assert_eq!(vs[0].path, "sturn.toml");
+        // present → clean; severity=error honored on a fresh repo
+        std::fs::write(dir.path().join("sturn.toml"), "[repo]\n").unwrap();
+        let vs = SturnProvider
+            .check(dir.path(), &serde_json::json!({ "severity": "error" }))
+            .unwrap();
+        assert!(vs.is_empty(), "{vs:?}");
+        for claims in [
+            serde_json::json!({ "bogus": true }),
+            serde_json::json!({ "severity": "fatal" }),
+            serde_json::json!("nope"),
+        ] {
+            assert!(
+                SturnProvider.check(dir.path(), &claims).is_err(),
+                "{claims}"
+            );
+        }
+    }
+
+    #[test]
+    fn myco_provider_toml_and_worktree() {
+        let dir = tempfile::tempdir().unwrap();
+        let repo = dir.path().join("repo");
+        std::fs::create_dir(&repo).unwrap();
+        // no myco.toml → one violation even with worktree claim
+        let vs = MycoProvider
+            .check(&repo, &serde_json::json!({ "worktree": true }))
+            .unwrap();
+        assert_eq!(vs.len(), 2, "{vs:?}"); // myco.toml + project/
+                                           // myco.toml only → worktree claim still fires
+        std::fs::write(repo.join("myco.toml"), "[repo]\n").unwrap();
+        let vs = MycoProvider
+            .check(&repo, &serde_json::json!({ "worktree": true }))
+            .unwrap();
+        assert_eq!(vs.len(), 1, "{vs:?}");
+        assert_eq!(vs[0].path, "project");
+        // project/ mounted → clean
+        std::fs::create_dir(repo.join("project")).unwrap();
+        let vs = MycoProvider
+            .check(&repo, &serde_json::json!({ "worktree": true }))
+            .unwrap();
+        assert!(vs.is_empty(), "{vs:?}");
+        // without the claim, project/ absence is not this provider's job
+        std::fs::remove_dir(repo.join("project")).unwrap();
+        let vs = MycoProvider.check(&repo, &serde_json::json!({})).unwrap();
+        assert!(vs.is_empty(), "{vs:?}");
+        for claims in [
+            serde_json::json!({ "bogus": true }),
+            serde_json::json!({ "severity": "fatal" }),
+            serde_json::json!("nope"),
+        ] {
+            assert!(MycoProvider.check(&repo, &claims).is_err(), "{claims}");
+        }
+    }
+
+    #[test]
+    fn cypera_provider_parse_and_sections() {
+        let dir = tempfile::tempdir().unwrap();
+        // absent → violation
+        let vs = CyperaProvider
+            .check(dir.path(), &serde_json::json!({}))
+            .unwrap();
+        assert_eq!(vs.len(), 1, "{vs:?}");
+        assert_eq!(vs[0].path, "cypera.toml");
+        // unparsable → ProviderError, not a silent pass
+        std::fs::write(dir.path().join("cypera.toml"), "not = [toml\n").unwrap();
+        assert!(CyperaProvider
+            .check(dir.path(), &serde_json::json!({}))
+            .is_err());
+        // parses + declared sections present → clean
+        std::fs::write(
+            dir.path().join("cypera.toml"),
+            "[crate_map]\norder = [\"domain\"]\n\n[cli]\npackage = \"x\"\n",
+        )
+        .unwrap();
+        let vs = CyperaProvider
+            .check(
+                dir.path(),
+                &serde_json::json!({ "sections": ["crate_map", "cli"] }),
+            )
+            .unwrap();
+        assert!(vs.is_empty(), "{vs:?}");
+        // missing section → violation
+        let vs = CyperaProvider
+            .check(
+                dir.path(),
+                &serde_json::json!({ "sections": ["crate_map", "config"] }),
+            )
+            .unwrap();
+        assert_eq!(vs.len(), 1, "{vs:?}");
+        assert!(vs[0].detail.contains("config"));
+        // malformed sections claim → error
+        for claims in [
+            serde_json::json!({ "sections": "crate_map" }),
+            serde_json::json!({ "sections": [1] }),
+            serde_json::json!({ "bogus": true }),
+            serde_json::json!({ "severity": "fatal" }),
+            serde_json::json!("nope"),
+        ] {
+            assert!(
+                CyperaProvider.check(dir.path(), &claims).is_err(),
                 "{claims}"
             );
         }

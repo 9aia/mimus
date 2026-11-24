@@ -360,14 +360,19 @@ fn coverage(cli: &Cli) -> i32 {
 }
 
 /// Provider registry for `mimus standard` — `cargo` ships built-in
-/// (org-local `[patch]` enforcement); lasius/bupha/etc. register
-/// here as they land. Every declared `providers.<ns>` with no
-/// registered provider degrades to a warn violation.
+/// (org-local `[patch]` enforcement); repo/lasius/kuda/sturn/myco/
+/// cypera/etc. register here as they land. Every declared
+/// `providers.<ns>` with no registered provider degrades to a warn
+/// violation.
 fn spec_providers() -> mimus_spec::ProviderSet {
     let mut set = mimus_spec::ProviderSet::new();
     set.register(mimus_spec::CargoProvider);
     set.register(mimus_spec::RepoProvider);
     set.register(mimus_spec::LasiusProvider);
+    set.register(mimus_spec::KudaProvider);
+    set.register(mimus_spec::SturnProvider);
+    set.register(mimus_spec::MycoProvider);
+    set.register(mimus_spec::CyperaProvider);
     set
 }
 

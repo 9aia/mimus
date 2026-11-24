@@ -5,182 +5,177 @@ api:
 - name: AcpChecker
   kind: type
   file: crates/mimus-check-acp/src/lib.rs
-  line: 16
-  module: mimus-check-acp
-- name: AcpClient
-  kind: type
-  file: crates/mimus-check-acp/src/lib.rs
-  line: 29
+  line: 21
   module: mimus-check-acp
 - name: BADUTF8_STUB
   kind: const
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 159
+  line: 169
+  module: mimus-check-acp
+- name: ENV_LOCK
+  kind: const
+  file: crates/mimus-check-acp/tests/acp.rs
+  line: 17
   module: mimus-check-acp
 - name: HALF_STUB
   kind: const
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 183
+  line: 193
   module: mimus-check-acp
 - name: NOSID_STUB
   kind: const
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 135
+  line: 144
   module: mimus-check-acp
 - name: SILENT_STUB
   kind: const
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 113
+  line: 122
   module: mimus-check-acp
 - name: STUB
   kind: const
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 14
+  line: 19
   module: mimus-check-acp
 - name: TOOL_STUB
   kind: const
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 73
+  line: 81
   module: mimus-check-acp
 - name: agent
   kind: function
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 206
-  module: mimus-check-acp
-- name: agent_request_result
-  kind: function
-  file: crates/mimus-check-acp/src/lib.rs
-  line: 337
+  line: 216
   module: mimus-check-acp
 - name: batch_connect_failure
   kind: function
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 503
+  line: 523
   module: mimus-check-acp
 - name: batch_contradiction_and_dead_agent
   kind: function
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 393
+  line: 408
   module: mimus-check-acp
 - name: batch_numbered_verdicts_and_clusters
   kind: function
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 343
+  line: 357
   module: mimus-check-acp
 - name: batch_singles_and_early_return
   kind: function
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 322
+  line: 335
   module: mimus-check-acp
 - name: blocked_agent_times_out
   kind: function
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 597
+  line: 621
   module: mimus-check-acp
 - name: cache_get
   kind: function
   file: crates/mimus-check-acp/src/lib.rs
-  line: 253
+  line: 232
   module: mimus-check-acp
 - name: cache_put
   kind: function
   file: crates/mimus-check-acp/src/lib.rs
-  line: 257
+  line: 236
   module: mimus-check-acp
 - name: check
   kind: function
   file: crates/mimus-check-acp/src/lib.rs
-  line: 478
+  line: 316
   module: mimus-check-acp
 - name: check_batch
   kind: function
   file: crates/mimus-check-acp/src/lib.rs
-  line: 534
+  line: 368
   module: mimus-check-acp
 - name: check_verdicts_and_cache
   kind: function
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 252
+  line: 263
   module: mimus-check-acp
 - name: claim
   kind: function
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 214
+  line: 224
   module: mimus-check-acp
 - name: claim_key
   kind: function
   file: crates/mimus-check-acp/src/lib.rs
-  line: 242
+  line: 221
   module: mimus-check-acp
 - name: comment_slash_pairs_are_not_paths
   kind: function
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 618
+  line: 643
   module: mimus-check-acp
 - name: connect
   kind: function
   file: crates/mimus-check-acp/src/lib.rs
-  line: 269
+  line: 251
   module: mimus-check-acp
 - name: contradiction_needs_structured_line
   kind: function
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 689
+  line: 716
+  module: mimus-check-acp
+- name: dead_agent_surfaces_as_error
+  kind: function
+  file: crates/mimus-check-acp/src/lib.rs
+  line: 576
   module: mimus-check-acp
 - name: dead_path_token
   kind: function
   file: crates/mimus-check-acp/src/lib.rs
-  line: 123
-  module: mimus-check-acp
-- name: drop
-  kind: function
-  file: crates/mimus-check-acp/src/lib.rs
-  line: 43
+  line: 108
   module: mimus-check-acp
 - name: error_response_propagates
   kind: function
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 516
+  line: 537
   module: mimus-check-acp
 - name: evidence_grounded
   kind: function
   file: crates/mimus-check-acp/src/lib.rs
-  line: 62
+  line: 47
   module: mimus-check-acp
 - name: filename_shaped
   kind: function
   file: crates/mimus-check-acp/src/lib.rs
-  line: 109
+  line: 94
   module: mimus-check-acp
 - name: garbage_timeout_env_falls_back
   kind: function
   file: crates/mimus-check-acp/src/lib.rs
-  line: 789
+  line: 559
   module: mimus-check-acp
 - name: handles
   kind: function
   file: crates/mimus-check-acp/src/lib.rs
-  line: 474
+  line: 312
   module: mimus-check-acp
 - name: handles_and_dead_path_triage
   kind: function
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 224
+  line: 234
   module: mimus-check-acp
 - name: ignore_prefixes_cover_comment_claim_tokens
   kind: function
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 656
+  line: 682
   module: mimus-check-acp
 - name: invalid_utf8_agent_output_errors
   kind: function
   file: crates/mimus-check-acp/tests/acp.rs
-  line: 479
+  line: 497
   module: mimus-check-acp
 - name: is_code_source
   kind: function
   file: crates/mimus-check-acp/src/lib.rs
-  line: 76
+  line: 61
   module: mimus-check-acp
 - name: mimus-check-acp
   kind: module
@@ -190,27 +185,31 @@ api:
 - name: new
   kind: function
   file: crates/mimus-check-acp/src/lib.rs
-  line: 223
+  line: 202
   module: mimus-check-acp
 - name: parse_vs_line
   kind: function
   file: crates/mimus-check-acp/src/lib.rs
-  line: 439
+  line: 277
   module: mimus-check-acp
 - name: poisoned_session_lock_paths
   kind: function
   file: crates/mimus-check-acp/src/lib.rs
-  line: 859
+  line: 642
   module: mimus-check-acp
-api_omitted: 20
+- name: poisoned_verdicts_lock_skips_prune
+  kind: function
+  file: crates/mimus-check-acp/src/lib.rs
+  line: 598
+  module: mimus-check-acp
+api_omitted: 14
 deps:
 - mimus-check
 - mimus-core
-- serde
+- sepia-acp
 - serde_json
 - mimus-check
 - mimus-core
-- serde_json
 notes: ''
 verify:
 - crates/mimus-check-acp/Cargo.toml
@@ -222,9 +221,9 @@ provenance:
   - crates/mimus-check-acp/src/lib.rs
   - crates/mimus-check-acp/tests/acp.rs
   hashes:
-  - 41c8b740933ac566f68b8bf5cd4b76a56ce4dfd5
-  - e92762e418115e72b2ad1e797900dea5515a6f85
-  - f06847705b7c887da07359765de6a965c4e57d60
-  commit_sha: a9c9dd8500e573e7bc44acb336da724f7150cdc7
-  generated_at: '1794490051'
+  - 1003e5c4379fa549285c6c962da0b65881ad5327
+  - 886ee9768a6481baa0fccfb29d522b2bd703d5d1
+  - 3bf9a347909ffa2da85b4de0187857838efdef36
+  commit_sha: 578cb9545a1f8324c79f8cc83eb473a89d114f6d
+  generated_at: '1795553857'
   generator: kuda-template/0.1.4
