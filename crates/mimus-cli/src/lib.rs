@@ -366,6 +366,7 @@ fn coverage(cli: &Cli) -> i32 {
 fn spec_providers() -> mimus_spec::ProviderSet {
     let mut set = mimus_spec::ProviderSet::new();
     set.register(mimus_spec::CargoProvider);
+    set.register(mimus_spec::RepoProvider);
     set
 }
 

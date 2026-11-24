@@ -486,9 +486,9 @@ impl StandardProvider for RepoProvider {
         repo: &Path,
         claims: &serde_json::Value,
     ) -> Result<Vec<SpecViolation>, ProviderError> {
-        let obj = claims.as_object().ok_or_else(|| {
-            ProviderError("`providers.repo` claims must be a table".into())
-        })?;
+        let obj = claims
+            .as_object()
+            .ok_or_else(|| ProviderError("`providers.repo` claims must be a table".into()))?;
         for key in obj.keys() {
             if !matches!(key.as_str(), "bupha-name" | "severity") {
                 return Err(ProviderError(format!(
@@ -1521,5 +1521,47 @@ b = { registry = "https://example.com" }
             )
             .unwrap();
         assert!(vs.is_empty());
+    }
+
+    #[test]
+    fn repo_provider_bupha_name_matches_dirname() {
+        let dir = tempfile::tempdir().unwrap();
+        // tempdir name is random — create a named child dir instead
+        let repo = dir.path().join("my-repo");
+        std::fs::create_dir(&repo).unwrap();
+        std::fs::write(
+            repo.join("bupha.toml"),
+            "[[repos]]\nname = \"handl-lang/my-repo\"\ndir = \"~/GitHub/handl-lang/my-repo\"\n",
+        )
+        .unwrap();
+        let claims = serde_json::json!({ "bupha-name": true });
+        assert!(RepoProvider.check(&repo, &claims).unwrap().is_empty());
+    }
+
+    #[test]
+    fn repo_provider_bupha_name_flags_stale() {
+        let dir = tempfile::tempdir().unwrap();
+        let repo = dir.path().join("new-name");
+        std::fs::create_dir(&repo).unwrap();
+        std::fs::write(
+            repo.join("bupha.toml"),
+            "[[repos]]\nname = \"handl-lang/old-name\"\n",
+        )
+        .unwrap();
+        let vs = RepoProvider
+            .check(&repo, &serde_json::json!({ "bupha-name": true }))
+            .unwrap();
+        assert_eq!(vs.len(), 1, "{vs:?}");
+        assert_eq!(vs[0].severity, mimus_core::Severity::Warn);
+        assert!(vs[0].detail.contains("old-name"));
+    }
+
+    #[test]
+    fn repo_provider_absent_bupha_is_noop() {
+        let dir = tempfile::tempdir().unwrap();
+        let vs = RepoProvider
+            .check(dir.path(), &serde_json::json!({ "bupha-name": true }))
+            .unwrap();
+        assert!(vs.is_empty(), "{vs:?}");
     }
 }

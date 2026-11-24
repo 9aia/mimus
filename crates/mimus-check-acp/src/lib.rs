@@ -162,10 +162,7 @@ fn refuted_violation(root: &std::path::Path, claim: &Claim, verdict: &str) -> Op
 /// prompt, confirm text actually streams back (P6).
 pub fn probe(cmd: &str, root: &PathBuf) -> Result<String, String> {
     let (client, sid) = AcpChecker::connect(cmd, root)?;
-    let (_res, prose) = client.prompt_text(
-        &sid,
-        "Reply with only the word: ok",
-    )?;
+    let (_res, prose) = client.prompt_text(&sid, "Reply with only the word: ok")?;
     if prose.trim().is_empty() {
         Err("agent answered but streamed no text".into())
     } else {
