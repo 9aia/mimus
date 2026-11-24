@@ -70,7 +70,7 @@ ops surface).
 | `mimus-claims` | claim extraction from markdown/comments/cards |
 | `mimus-rules` | `rules/*.toml` conventions as data |
 | `mimus-config` | `mimus.toml` loading via scarab-config |
-| `mimus-secret` + `-keyring`/`-dotenv`/`-cuora` | secrets chain — env → cuora vaults → keyring → dotenv file |
+| `cuora-secret` + `-cuora`/`-keyring`/`-dotenv` (git deps) | secrets chain — env → cuora vaults → keyring → dotenv file |
 | `rules/` | the repo's own convention rules (`no-todos`, `no-unwrap-in-checkers`) |
 | `libraries/mimus` | the tamias pack — `bins[]` shim + driver payload |
 | `modules/dagger/` | shared pipeline module (Python SDK) |
@@ -107,7 +107,7 @@ mimus owns **verification** — claim extraction, checkers, rules,
 
 - **kuda** — code memory; mimus audits its cards (`mimus audit`)
   and reads its index for the `symbol` checker.
-- **cuora** — secrets; `mimus-cuora` resolves `cuora://` refs.
+- **cuora** — secrets; the `cuora-secret*` crates resolve `cuora://` refs.
 - **myco** — this repo's `project/` ledger.
 - **tamias** — distribution; mimus ships as a pack + `mimus-rules`
   content type.

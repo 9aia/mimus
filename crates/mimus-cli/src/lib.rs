@@ -1202,17 +1202,21 @@ fn doctor(cli: &Cli) -> i32 {
 /// during the transition. Writes land in cuora (`env` refuses
 /// `set`, cuora is the first writable store). The acp adapter
 /// (semantic tier) resolves provider keys through this.
-fn secrets() -> mimus_secret::Chain {
-    mimus_secret::Chain::new(vec![
-        Box::new(mimus_secret::EnvSecrets),
-        Box::new(mimus_cuora::CuoraSecrets::default()),
-        Box::new(mimus_keyring::KeyringSecrets::default()),
-        Box::new(mimus_dotenv::DotenvSecrets {
-            path: std::env::var("HOME")
+fn secrets() -> cuora_secret::Chain {
+    cuora_secret::Chain::new(vec![
+        Box::new(cuora_secret::EnvSecrets),
+        Box::new(cuora_secret_cuora::CuoraSecrets::from_env(
+            "mimus",
+            "MIMUS_CUORA_BIN",
+            "MIMUS_CUORA_TRANSPORT",
+        )),
+        Box::new(cuora_secret_keyring::KeyringSecrets::new("mimus")),
+        Box::new(cuora_secret_dotenv::DotenvSecrets::new(
+            std::env::var("HOME")
                 .map(PathBuf::from)
                 .unwrap_or_else(|_| PathBuf::from("."))
                 .join(".config/mimus/env"),
-        }),
+        )),
     ])
 }
 

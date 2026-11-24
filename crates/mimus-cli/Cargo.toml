@@ -13,6 +13,10 @@ name = "mimus"
 path = "src/main.rs"
 
 [dependencies]
+cuora-secret.workspace = true
+cuora-secret-cuora.workspace = true
+cuora-secret-keyring.workspace = true
+cuora-secret-dotenv.workspace = true
 mimus-core.workspace = true
 mimus-claims.workspace = true
 mimus-check.workspace = true
@@ -24,10 +28,6 @@ mimus-check-acp.workspace = true
 mimus-rules.workspace = true
 mimus-config.workspace = true
 mimus-spec.workspace = true
-mimus-secret.workspace = true
-mimus-keyring.workspace = true
-mimus-dotenv.workspace = true
-mimus-cuora.workspace = true
 clap.workspace = true
 toml.workspace = true
 serde_json.workspace = true

@@ -8,11 +8,11 @@ dogfoods its own CI. Fork freely under MIT.
 `crates/` — rust workspace. `mimus-core` is pure domain (claims,
 violations, evidence); ports are crates: `mimus-check` (the
 `Checker` trait + `GraphChecker` set-level classes),
-`mimus-claims`, `mimus-rules`, `mimus-config`, `mimus-secret`;
+`mimus-claims`, `mimus-rules`, `mimus-config`;
 adapters: `mimus-check-fs`/`mimus-check-cmd`/`mimus-check-symbol`/
 `mimus-check-graph` (mechanical checkers), `mimus-check-acp`
 (semantic tier — spawns an ACP agent, advisory only),
-`mimus-keyring`/`mimus-dotenv`/`mimus-cuora` (secrets chain);
+the `cuora-secret*` git deps (secrets chain);
 `mimus-cli` (package `mimus`) is the engine lib — `run_from` is
 reached through `tamias-driver-mimus` (`crates/mimus-driver`, the
 bins[] shim + ops surface). `modules/dagger/` is the shared
