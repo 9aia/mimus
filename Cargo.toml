@@ -17,7 +17,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/9aia/mimus"
@@ -29,23 +29,23 @@ inherits = "release"
 lto = "thin"
 
 [workspace.dependencies]
-mimus = { path = "crates/mimus-cli", version = "0.1.0" }
-mimus-core = { path = "crates/mimus-core", version = "0.1.0" }
-mimus-claims = { path = "crates/mimus-claims", version = "0.1.0" }
-mimus-check = { path = "crates/mimus-check", version = "0.1.0" }
-mimus-check-fs = { path = "crates/mimus-check-fs", version = "0.1.0" }
-mimus-check-cmd = { path = "crates/mimus-check-cmd", version = "0.1.0" }
-mimus-check-symbol = { path = "crates/mimus-check-symbol", version = "0.1.0" }
-mimus-check-graph = { path = "crates/mimus-check-graph", version = "0.1.0" }
-mimus-check-acp = { path = "crates/mimus-check-acp", version = "0.1.0" }
-mimus-rules = { path = "crates/mimus-rules", version = "0.1.0" }
+mimus = { path = "crates/mimus-cli", version = "1.0.0" }
+mimus-core = { path = "crates/mimus-core", version = "1.0.0" }
+mimus-claims = { path = "crates/mimus-claims", version = "1.0.0" }
+mimus-check = { path = "crates/mimus-check", version = "1.0.0" }
+mimus-check-fs = { path = "crates/mimus-check-fs", version = "1.0.0" }
+mimus-check-cmd = { path = "crates/mimus-check-cmd", version = "1.0.0" }
+mimus-check-symbol = { path = "crates/mimus-check-symbol", version = "1.0.0" }
+mimus-check-graph = { path = "crates/mimus-check-graph", version = "1.0.0" }
+mimus-check-acp = { path = "crates/mimus-check-acp", version = "1.0.0" }
+mimus-rules = { path = "crates/mimus-rules", version = "1.0.0" }
 cuora-secret = { git = "ssh://git@github.com/9aia/cuora.git", rev = "f81164366bd436a7d4cf204c6e7a83555f50302f" }
 cuora-secret-cuora = { git = "ssh://git@github.com/9aia/cuora.git", rev = "f81164366bd436a7d4cf204c6e7a83555f50302f" }
 cuora-secret-keyring = { git = "ssh://git@github.com/9aia/cuora.git", rev = "f81164366bd436a7d4cf204c6e7a83555f50302f" }
 cuora-secret-dotenv = { git = "ssh://git@github.com/9aia/cuora.git", rev = "f81164366bd436a7d4cf204c6e7a83555f50302f" }
-mimus-config = { path = "crates/mimus-config", version = "0.1.0" }
-mimus-spec = { path = "crates/mimus-spec", version = "0.1.0" }
-mimus-driver = { path = "crates/mimus-driver", version = "0.1.0" }
+mimus-config = { path = "crates/mimus-config", version = "1.0.0" }
+mimus-spec = { path = "crates/mimus-spec", version = "1.0.0" }
+mimus-driver = { path = "crates/mimus-driver", version = "1.0.0" }
 scarab-config = { git = "ssh://git@github.com/9aia/scarab.git", rev = "9364df88fad0ca46bd838467717a823893f47438", version = "0.1" }
 scarab-config-file = { git = "ssh://git@github.com/9aia/scarab.git", rev = "9364df88fad0ca46bd838467717a823893f47438", version = "0.1" }
 # standard tier (P-001): spec documents resolve extends:/include:
