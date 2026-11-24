@@ -464,11 +464,13 @@ impl StandardProvider for CargoProvider {
 /// directory name, which path predicates can't see. Currently one
 /// claim:
 ///
-/// - `bupha-name = true` — every `[[repos]]` entry in `bupha.toml`
-///   must be named `<org>/<dirname>` (last path segment equals the
-///   repo directory name). Catches `name =`/`dir =` drift after a
-///   rename. Absent `bupha.toml` is a no-op — the file-set's
-///   `missing` finding already covers that.
+/// - `bupha-name = true` — `bupha.toml` must contain a `[[repos]]`
+///   self-entry named `<org>/<dirname>` whose `dir` also ends in
+///   `/<dirname>`. Catches `name =`/`dir =` drift after a rename.
+///   Entries naming *other* repos are ignored — shared watcher
+///   manifests (docs) legitimately list the fleet. Absent
+///   `bupha.toml` is a no-op — the file-set's `missing` finding
+///   already covers that.
 /// - `severity = "warn" | "error"` — optional, default `"warn"`
 ///   (identity drift is a floor concern, not a family gate).
 ///
@@ -525,26 +527,47 @@ impl StandardProvider for RepoProvider {
             )));
         };
         let mut out = Vec::new();
+        let mut self_entries = 0usize;
         if let Some(repos) = doc.get("repos").and_then(toml::Value::as_array) {
             for entry in repos {
                 let name = entry
                     .get("name")
                     .and_then(toml::Value::as_str)
                     .unwrap_or("");
-                let last = name.rsplit('/').next().unwrap_or("");
-                if last != dirname || !name.contains('/') {
+                if !(name.contains('/') && name.rsplit('/').next() == Some(dirname)) {
+                    continue; // another repo's entry — shared manifests list the fleet
+                }
+                self_entries += 1;
+                let dir = entry
+                    .get("dir")
+                    .and_then(toml::Value::as_str)
+                    .unwrap_or("")
+                    .trim_end_matches('/');
+                if !dir.ends_with(&format!("/{dirname}")) {
                     out.push(SpecViolation {
                         kind: ViolationKind::Provider,
                         path: "bupha.toml".into(),
                         spec: "repo".into(),
                         severity,
                         detail: format!(
-                            "`[[repos]] name = {name:?}` doesn't end in `/{dirname}` — \
-                             stale after rename?"
+                            "`[[repos]] name = {name:?}` has `dir = {dir:?}` not ending \
+                             in `/{dirname}` — stale after rename?"
                         ),
                     });
                 }
             }
+        }
+        if self_entries == 0 {
+            out.push(SpecViolation {
+                kind: ViolationKind::Provider,
+                path: "bupha.toml".into(),
+                spec: "repo".into(),
+                severity,
+                detail: format!(
+                    "no `[[repos]]` entry named `*/{dirname}` — self-registration missing \
+                     or stale after rename?"
+                ),
+            });
         }
         Ok(out)
     }
@@ -1543,9 +1566,10 @@ b = { registry = "https://example.com" }
         let dir = tempfile::tempdir().unwrap();
         let repo = dir.path().join("new-name");
         std::fs::create_dir(&repo).unwrap();
+        // self-entry under the OLD name — the rename-drift case
         std::fs::write(
             repo.join("bupha.toml"),
-            "[[repos]]\nname = \"handl-lang/old-name\"\n",
+            "[[repos]]\nname = \"handl-lang/old-name\"\ndir = \"~/GitHub/handl-lang/old-name\"\n",
         )
         .unwrap();
         let vs = RepoProvider
@@ -1553,7 +1577,41 @@ b = { registry = "https://example.com" }
             .unwrap();
         assert_eq!(vs.len(), 1, "{vs:?}");
         assert_eq!(vs[0].severity, mimus_core::Severity::Warn);
-        assert!(vs[0].detail.contains("old-name"));
+        assert!(vs[0].detail.contains("new-name"));
+    }
+
+    #[test]
+    fn repo_provider_bupha_dir_drift_flagged() {
+        let dir = tempfile::tempdir().unwrap();
+        let repo = dir.path().join("my-repo");
+        std::fs::create_dir(&repo).unwrap();
+        std::fs::write(
+            repo.join("bupha.toml"),
+            "[[repos]]\nname = \"handl-lang/my-repo\"\ndir = \"~/GitHub/handl-lang/other-dir\"\n",
+        )
+        .unwrap();
+        let vs = RepoProvider
+            .check(&repo, &serde_json::json!({ "bupha-name": true }))
+            .unwrap();
+        assert_eq!(vs.len(), 1, "{vs:?}");
+        assert!(vs[0].detail.contains("other-dir"));
+    }
+
+    #[test]
+    fn repo_provider_shared_manifest_ignores_other_repos() {
+        let dir = tempfile::tempdir().unwrap();
+        let repo = dir.path().join("docs");
+        std::fs::create_dir(&repo).unwrap();
+        std::fs::write(
+            repo.join("bupha.toml"),
+            "[[repos]]\nname = \"handl-lang/host\"\ndir = \"~/GitHub/handl-lang/host\"\n\n\
+             [[repos]]\nname = \"handl-lang/docs\"\ndir = \"~/GitHub/handl-lang/docs\"\n",
+        )
+        .unwrap();
+        let vs = RepoProvider
+            .check(&repo, &serde_json::json!({ "bupha-name": true }))
+            .unwrap();
+        assert!(vs.is_empty(), "{vs:?}");
     }
 
     #[test]
