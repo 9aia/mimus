@@ -25,7 +25,7 @@ api:
 - name: GENERIC
   kind: const
   file: crates/mimus-cli/src/lib.rs
-  line: 294
+  line: 307
   module: mimus
 - name: Mimus
   kind: type
@@ -45,7 +45,7 @@ api:
 - name: audit
   kind: function
   file: crates/mimus-cli/src/lib.rs
-  line: 859
+  line: 970
   module: mimus
 - name: audit_scores_cards
   kind: function
@@ -55,12 +55,12 @@ api:
 - name: canon
   kind: function
   file: crates/mimus-cli/src/lib.rs
-  line: 613
+  line: 724
   module: mimus
 - name: card_prose_claims
   kind: function
   file: crates/mimus-cli/src/lib.rs
-  line: 649
+  line: 760
   module: mimus
 - name: cfg
   kind: function
@@ -70,7 +70,7 @@ api:
 - name: check
   kind: function
   file: crates/mimus-cli/src/lib.rs
-  line: 634
+  line: 745
   module: mimus
 - name: check_all_runs_semantic_tier
   kind: function
@@ -175,7 +175,7 @@ api:
 - name: claims_dump
   kind: function
   file: crates/mimus-cli/src/lib.rs
-  line: 350
+  line: 461
   module: mimus
 - name: claims_dump_with_cards
   kind: function
@@ -185,24 +185,24 @@ api:
 - name: collect
   kind: function
   file: crates/mimus-cli/src/lib.rs
-  line: 383
+  line: 494
   module: mimus
 - name: command
   kind: function
   file: crates/mimus-cli/src/lib.rs
-  line: 109
+  line: 121
   module: mimus
 - name: cov_tests
   kind: module
   file: crates/mimus-cli/src/lib.rs
-  line: 1097
+  line: 1208
   module: mimus
 - name: coverage
   kind: function
   file: crates/mimus-cli/src/lib.rs
-  line: 259
+  line: 272
   module: mimus
-api_omitted: 55
+api_omitted: 56
 deps:
 - dagger-io
 - clap
@@ -221,6 +221,7 @@ deps:
 - mimus-keyring
 - mimus-rules
 - mimus-secret
+- mimus-spec
 - serde_json
 - serde_yaml
 - toml
@@ -254,15 +255,15 @@ provenance:
   - modules/dagger/dagger/src/mimus/main.py
   - modules/dagger/tests/test_self_patch.py
   hashes:
-  - 91e8218c3869e721b99a5bbcc2075ed3f021f254
-  - 996ba373898417d99f51ba02790333e95aec843b
-  - 1d51a65c69e653ebc2dce1f1ba36223894ba95b1
+  - 7240eaf95980951a102bde50ef874daac6c614f9
+  - ca34437371c8798c2a38d9a6e07b061c23a6109a
+  - 1f4fe45d314709986b210632ed8d1ef1d7ddaec7
   - e1575f1cd039e7d7df8ff90c20a93bde52f78da7
   - 874f375dedab9bc6436a93187767cea9bcb77d6a
   - 6391d6a9586b1a42d2e3b1270cd9a441f321af68
   - 4093067c2bfef36b97a7be4448a54a5439d61d91
   - 912bc128df92503a9353c765bd892d9ec84c537e
   - d515a59e736b23d553075159e989585bba9ca252
-  commit_sha: 3b195f61f20a5be96ffaf6d3a12680f8f39ddb4a
-  generated_at: '1794724602'
+  commit_sha: ed65452cfc7d8ce73e80d8d07848e63a01ad7a38
+  generated_at: '1795488163'
   generator: kuda-template/0.1.4

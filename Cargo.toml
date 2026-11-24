@@ -16,6 +16,7 @@ members = [
     "crates/mimus-dotenv",
     "crates/mimus-cuora",
     "crates/mimus-config",
+    "crates/mimus-spec",
     "crates/mimus-driver",
 ]
 
@@ -47,9 +48,20 @@ mimus-keyring = { path = "crates/mimus-keyring", version = "0.1.0" }
 mimus-dotenv = { path = "crates/mimus-dotenv", version = "0.1.0" }
 mimus-cuora = { path = "crates/mimus-cuora", version = "0.1.0" }
 mimus-config = { path = "crates/mimus-config", version = "0.1.0" }
+mimus-spec = { path = "crates/mimus-spec", version = "0.1.0" }
 mimus-driver = { path = "crates/mimus-driver", version = "0.1.0" }
 scarab-config = { git = "ssh://git@github.com/9aia/scarab.git", rev = "9364df88fad0ca46bd838467717a823893f47438", version = "0.1" }
 scarab-config-file = { git = "ssh://git@github.com/9aia/scarab.git", rev = "9364df88fad0ca46bd838467717a823893f47438", version = "0.1" }
+# standard tier (P-001): spec documents resolve extends:/include:
+# through scarab-compose — newer rev than the config crates above.
+# default-features off: the `tamias` feature pulls the tamias
+# store/install crates; `tamias:` spec refs error loudly without
+# it (spike scope — no tamias: resolution yet).
+scarab-compose = { git = "ssh://git@github.com/9aia/scarab.git", rev = "85e50d57110b2f785a5c11d8cf55de7737d67257", version = "0.1", default-features = false }
+scarab-validate = { git = "ssh://git@github.com/9aia/scarab.git", rev = "85e50d57110b2f785a5c11d8cf55de7737d67257", version = "0.1" }
+globset = "0.4"
+thiserror = "2"
+tempfile = "3"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "0.8"

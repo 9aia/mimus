@@ -17,6 +17,11 @@ api:
   file: project/adrs/0003-adr-0003-tiered-memory-artifacts-ports-adapters-topology.md
   line: 2
   module: project
+- name: P-001
+  kind: record
+  file: project/proposals/proposal-0001-standard-tier-declarative-repo-conformance-for-the-org-fleet.md
+  line: 2
+  module: project
 - name: T-001
   kind: record
   file: project/DONE.md
@@ -137,6 +142,11 @@ api:
   file: project/DONE.md
   line: 3
   module: project
+- name: T-025
+  kind: record
+  file: project/TODO.md
+  line: 6
+  module: project
 deps: []
 notes: ''
 verify:
@@ -148,6 +158,7 @@ verify:
 - project/adrs/0003-adr-0003-tiered-memory-artifacts-ports-adapters-topology.md
 - project/handoffs/archive/T-021.md
 - project/index.md
+- project/proposals/proposal-0001-standard-tier-declarative-repo-conformance-for-the-org-fleet.md
 provenance:
   files:
   - project/BACKLOG.md
@@ -158,15 +169,17 @@ provenance:
   - project/adrs/0003-adr-0003-tiered-memory-artifacts-ports-adapters-topology.md
   - project/handoffs/archive/T-021.md
   - project/index.md
+  - project/proposals/proposal-0001-standard-tier-declarative-repo-conformance-for-the-org-fleet.md
   hashes:
   - 4a002c8107e1175b9427a5bca4334514d263d7ce
   - 8b82d0a13fb2c0b2ce67d8e0097fee6a0f7d6994
-  - 1588257d7efc48e775cace547d9cb8096c723114
+  - 9a6c3a99495cb6a7fd17cbe50567288bf7a88704
   - 5672348fae080d3dbf36879f156071ff7097f8ce
   - 50da40ffdcc62983e15380efd539c00b0bcb082c
   - 95e89a42bc05e7839025e1486618c84d0d2fe40b
   - 9b8f11818e849fc06efdc0597b7cb44f944c5dfd
   - e5a284a8a41bcb4413d537a00fb50e503cef2fed
-  commit_sha: 3b195f61f20a5be96ffaf6d3a12680f8f39ddb4a
-  generated_at: '1794724602'
+  - a6a50fd4915dec5116d1a1a90ef691ef5035e501
+  commit_sha: ed65452cfc7d8ce73e80d8d07848e63a01ad7a38
+  generated_at: '1795488163'
   generator: kuda-template/0.1.4

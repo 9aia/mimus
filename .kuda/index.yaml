@@ -19,12 +19,13 @@ modules:
 - mimus-keyring
 - mimus-rules
 - mimus-secret
+- mimus-spec
 - project
 commands:
 - cargo check
 - cargo test --workspace
-tree_digest: 5c96eec9c5c67f3df476fcb31f3efab43afe03c4
-files_total: 87
+tree_digest: 8194dc427fb1abdecbad1fdb9ba98aee59496556
+files_total: 93
 provenance:
   files:
   - Cargo.toml
@@ -45,9 +46,10 @@ provenance:
   - crates/mimus-keyring/Cargo.toml
   - crates/mimus-rules/Cargo.toml
   - crates/mimus-secret/Cargo.toml
+  - crates/mimus-spec/Cargo.toml
   - modules/dagger/dagger/pyproject.toml
   hashes:
-  - 91e8218c3869e721b99a5bbcc2075ed3f021f254
+  - 7240eaf95980951a102bde50ef874daac6c614f9
   - 8d45094eb8f169d3aa740870e7f478b1418aa175
   - e7348ffc0841bbee8073e26c5481cd858fd776ba
   - 41c8b740933ac566f68b8bf5cd4b76a56ce4dfd5
@@ -56,7 +58,7 @@ provenance:
   - 957284426c7b88c9e03b893454e121d04c21539e
   - 9fbf6254aae6add24670adaa8808b5c101844e2c
   - 21e63d1417ba1bcba2262e855cb130e8e90f2151
-  - 996ba373898417d99f51ba02790333e95aec843b
+  - ca34437371c8798c2a38d9a6e07b061c23a6109a
   - f0959201dd8a0504d04fe9631fa407b96e30c9ed
   - 6b7185a94a97d0e4ebf63efd7a95dd2800f0bc41
   - 94d066567a24f6079f354756c22fa86264002c21
@@ -65,7 +67,8 @@ provenance:
   - ab61c787206bd76c1f9937084c108473b6ece3fc
   - b1cf727ea9ec71dccd378bea295d8def00f34840
   - e19d2f415bf9c2b1602d12c39402b368e2e0565d
+  - 475f3f4327e5de3c3b0ef958e22e16e8b274e2ed
   - 6391d6a9586b1a42d2e3b1270cd9a441f321af68
-  commit_sha: bd0c68b8ef776d0109e381cbd137bd07bfe71e82
-  generated_at: '1794759786'
+  commit_sha: ed65452cfc7d8ce73e80d8d07848e63a01ad7a38
+  generated_at: '1795488163'
   generator: kuda/0.1.0

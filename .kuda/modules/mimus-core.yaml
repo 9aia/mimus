@@ -137,7 +137,7 @@ provenance:
   - crates/mimus-core/src/lib.rs
   hashes:
   - 6b7185a94a97d0e4ebf63efd7a95dd2800f0bc41
-  - b142fc640a0def4c0c1012ccb7cda51da6501042
-  commit_sha: 3b195f61f20a5be96ffaf6d3a12680f8f39ddb4a
-  generated_at: '1794724602'
+  - d506d5e7eed41d74082a522e31b95df9932b49aa
+  commit_sha: ed65452cfc7d8ce73e80d8d07848e63a01ad7a38
+  generated_at: '1795488163'
   generator: kuda-template/0.1.4

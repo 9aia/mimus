@@ -1,0 +1,32 @@
+# engine-compile family spec (P-001 spike shape)
+#
+# Whitelist file-set conformance: anything tracked in the repo that
+# isn't covered by `files`/`dirs` is an `unlisted` violation.
+# Per-path predicates ([path."X"]) and provider namespaces
+# (lasius:, bupha:, …) deserialize but are NOT evaluated yet.
+
+family   = "engine-compile"
+match    = ["engine-*"]          # repo-name globs; empty = all repos
+severity = "fail"                # fail | warn
+
+# extends = ["9aia/base", "handl-lang/engine"]   # TODO: tamias: refs — spike skips
+
+files = [
+  "Cargo.toml",
+  "README.md",
+  "LICENSE",
+  "AGENTS.md",
+  "xtask/Cargo.toml",
+  "workflows/gate.yaml",
+  "src/**/*.rs",
+]
+
+dirs = ["src", "tests", "xtask"]
+
+# Per-path predicates — parsed, not evaluated (spike).
+[path."Cargo.toml"]
+manifest.fields = ["description", "license", "repository", "readme"]
+manifest.license = "MIT"
+
+[path."README.md"]
+forbid-phrase = ["ADR-0", "part of the", "formerly known as"]

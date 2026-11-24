@@ -2,9 +2,19 @@ name: docs
 path: docs/package.json
 purpose: documentation corpus — pages as records, backticked refs as edges
 api:
+- name: Boundaries
+  kind: record
+  file: docs/explanation/boundaries.md
+  line: 1
+  module: docs
 - name: Command-Line Help for `mimus`
   kind: record
   file: docs/reference/cli.md
+  line: 1
+  module: docs
+- name: Concepts
+  kind: record
+  file: docs/explanation/concepts.md
   line: 1
   module: docs
 - name: Config — `mimus.toml`
@@ -15,6 +25,11 @@ api:
 - name: Crate API
   kind: record
   file: docs/reference/crate-api.md
+  line: 1
+  module: docs
+- name: Decisions
+  kind: record
+  file: docs/explanation/decisions.md
   line: 1
   module: docs
 - name: 'Explanation: architecture'
@@ -29,7 +44,7 @@ api:
   module: docs
 - name: Getting started
   kind: record
-  file: docs/getting-started.md
+  file: docs/tutorials/getting-started.md
   line: 1
   module: docs
 - name: 'How-to: audit kuda memory'
@@ -62,11 +77,6 @@ api:
   file: docs/explanation/release-model.md
   line: 1
   module: docs
-- name: 'Tutorial: your first audit'
-  kind: record
-  file: docs/tutorials/first-run.md
-  line: 1
-  module: docs
 - name: mimus vs the alternatives
   kind: record
   file: docs/comparison.md
@@ -75,24 +85,26 @@ api:
 deps: []
 notes: ''
 verify:
+- docs/.vitepress/theme/index.ts
 - docs/package.json
 - docs/comparison.md
 - docs/explanation/architecture.md
+- docs/explanation/boundaries.md
 - docs/explanation/claims.md
+- docs/explanation/concepts.md
+- docs/explanation/decisions.md
 - docs/explanation/release-model.md
-- docs/gen-api-index.py
-- docs/getting-started.md
 - docs/how-to/ci-gate.md
-- docs/how-to/kuda-audit.md
-- docs/how-to/multi-repo.md
 provenance:
   files:
+  - docs/.vitepress/theme/index.ts
   - docs/comparison.md
   - docs/explanation/architecture.md
+  - docs/explanation/boundaries.md
   - docs/explanation/claims.md
+  - docs/explanation/concepts.md
+  - docs/explanation/decisions.md
   - docs/explanation/release-model.md
-  - docs/gen-api-index.py
-  - docs/getting-started.md
   - docs/how-to/ci-gate.md
   - docs/how-to/kuda-audit.md
   - docs/how-to/multi-repo.md
@@ -104,26 +116,28 @@ provenance:
   - docs/reference/config.md
   - docs/reference/crate-api.md
   - docs/reference/violations.md
-  - docs/tutorials/first-run.md
+  - docs/tutorials/getting-started.md
   hashes:
+  - 73ba647e82ab0f8fec74d915003400b21fa6898b
   - c6fc0201555b57e16708f350e5b4cd7dc16dbd19
-  - 8b0fedfcf9eb3b447def35fc4f40b907ff783554
+  - f301a59e8de4c82468e11be3389bb067a746deca
+  - 3d59351f499433b93916a7d5182c0692faa20db2
   - f36bd667851683ea8afab22a43c11c7488e6f331
-  - 8a4952d930621043cba1d4a1f9dc39de73626cf8
-  - 017f6fd87e86f8234928388956319d98fda7c65a
-  - c3a091fcdbd7954e2564c7596a824139b8626978
-  - 7a80a0d9da156335f597b3371febd5750ccc3003
+  - f7dfd4063fa6abe6bdad2775475097ae3b304262
+  - e4cac8a88028ea5f8e01e0c46d927d8466ab57ee
+  - 6d768c906f60e24639b65f44ad8e3278a0fff0d0
+  - 99802c7bd2c6c80fa152ce5980b8d10ed1cbc7c3
   - 829ebc202da56067116747c11f53ac23d1c467f2
   - 2b50fb2fc116944dd519d432799800cd78ec7eb1
   - 29da6f345e3f4efa87571a997f9d0408038f5208
-  - 9cedaad7f217e33c53bce7d5653ec072c59e537c
-  - 1a9dd3ea21bba6f7603c2a1e53d2d3fe6dbe9841
+  - 005b028b455e99a3032417d00d2039f35b8e7299
+  - 3cf75ca99fd2dc515dd19877f867bdd9e41d0198
   - 175fa4f47aecdc02e902d243a1c29914eb2ee258
   - 62e9e3d6b45407183c461d2a12a2a66f4e6b9f5d
   - 7885a752b99731e58b91a55516749a84f89e1c92
   - 7c42f7360c19ae953b0676d632aaceb796eefbbe
-  - 4f7c92eb3d570b463de72092bd1f9d2407b18836
-  - 5b0ad76344a8cebdb4eeeda5a903c40aecd9ba53
-  commit_sha: bd0c68b8ef776d0109e381cbd137bd07bfe71e82
-  generated_at: '1794759786'
+  - 04d7ce23e486fc1595eeba9b8730ea9f4b9bd61b
+  - 80d11a3caa7ae5a6a51913316ec0b37b915a9110
+  commit_sha: ed65452cfc7d8ce73e80d8d07848e63a01ad7a38
+  generated_at: '1795488163'
   generator: kuda-template/0.1.4

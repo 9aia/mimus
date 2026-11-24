@@ -1,0 +1,22 @@
+[package]
+name = "mimus-spec"
+description = "Standard tier: declarative repo conformance specs (P-001) — spec loading via scarab-compose + file-set diff"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["verification", "mimus"]
+categories = ["development-tools"]
+
+[dependencies]
+mimus-core.workspace = true
+# default-features already off at the workspace dep — `tamias:`
+# spec refs error loudly without the tamias feature (spike scope).
+scarab-compose.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+globset.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

@@ -81,6 +81,18 @@ enum Cmd {
         #[arg(long)]
         all: bool,
     },
+    /// Standard-tier repo conformance — declarative spec file-set
+    /// diff (P-001 spike: file-set only, no predicates/providers).
+    Standard {
+        /// Repo path to check.
+        #[arg(long)]
+        repo: String,
+        /// Spec file or directory of specs — repeatable. Specs
+        /// whose `match` globs don't cover the repo name are
+        /// skipped; empty `match` applies to every repo.
+        #[arg(long = "spec", required = true)]
+        specs: Vec<String>,
+    },
     /// Emit CLI reference markdown (docs pipeline).
     #[command(hide = true, name = "gen-cli-docs")]
     GenCliDocs,
@@ -122,6 +134,7 @@ pub fn dispatch(cli: &Cli) -> i32 {
         Cmd::Doctor => doctor(cli),
         Cmd::Claims { all } => claims_dump(cli, *all),
         Cmd::Coverage => coverage(cli),
+        Cmd::Standard { repo, specs } => standard(cli, repo, specs),
         Cmd::GenCliDocs => {
             println!("{}", clap_markdown::help_markdown::<Cli>());
             0
@@ -343,6 +356,104 @@ fn coverage(cli: &Cli) -> i32 {
         });
     }
     0
+}
+
+/// `mimus standard` — P-001 spike: declarative file-set conformance.
+/// Loads every spec under each `--spec` path (file or dir), keeps
+/// the ones whose `match` globs cover the repo name, diffs each
+/// against the repo's tracked file set.
+fn standard(cli: &Cli, repo: &str, specs: &[String]) -> i32 {
+    let repo_path = Path::new(repo);
+    let name = mimus_spec::repo_name(repo_path);
+    let mut all = Vec::new();
+    for s in specs {
+        match mimus_spec::load_specs(Path::new(s)) {
+            Ok(v) => all.extend(v),
+            Err(e) => {
+                eprintln!("spec {s}: {e}");
+                return 2;
+            }
+        }
+    }
+    let matched: Vec<&mimus_spec::Spec> = all.iter().filter(|s| s.matches_repo(&name)).collect();
+    if matched.is_empty() {
+        eprintln!("no spec matched repo `{name}` ({} loaded)", all.len());
+        return 1;
+    }
+    // (spec, violations) per matched spec
+    let mut rows = Vec::new();
+    let mut failed = false;
+    for spec in &matched {
+        match spec.check_repo(repo_path) {
+            Ok(vs) => {
+                if vs.iter().any(|v| v.severity == mimus_core::Severity::Error) {
+                    failed = true;
+                }
+                rows.push((spec, vs));
+            }
+            Err(e) => {
+                eprintln!("spec `{}`: {e}", spec.family);
+                return 2;
+            }
+        }
+    }
+    if cli.format == "json" {
+        let report = serde_json::json!({
+            "repo": name,
+            "specs": rows.iter().map(|(s, vs)| serde_json::json!({
+                "family": s.family,
+                "severity": s.severity,
+                "violations": vs,
+            })).collect::<Vec<_>>(),
+        });
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&report).unwrap_or_default()
+        );
+    } else {
+        println!("repo {name} — {} spec(s)", rows.len());
+        for (spec, vs) in &rows {
+            let (errs, warns) = vs.iter().fold((0usize, 0usize), |(e, w), v| {
+                if v.severity == mimus_core::Severity::Error {
+                    (e + 1, w)
+                } else {
+                    (e, w + 1)
+                }
+            });
+            let status = if errs > 0 {
+                "FAIL"
+            } else if warns > 0 {
+                "WARN"
+            } else {
+                "ok"
+            };
+            println!(
+                "  {:<24} {:<5} {} violation(s)",
+                spec.family,
+                status,
+                vs.len()
+            );
+            if errs + warns > 0 {
+                println!("    ({errs} error, {warns} warn)");
+            }
+            for v in vs {
+                println!(
+                    "    {:<8} {:<40} {}",
+                    match v.kind {
+                        mimus_spec::ViolationKind::Missing => "missing",
+                        mimus_spec::ViolationKind::Unlisted => "unlisted",
+                    },
+                    v.path,
+                    v.detail,
+                );
+            }
+        }
+    }
+    if failed {
+        1
+    } else {
+        0
+    }
 }
 
 /// `mimus claims` — print what the extractor produces; the tuning

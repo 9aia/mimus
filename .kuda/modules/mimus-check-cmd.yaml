@@ -124,8 +124,8 @@ provenance:
   - crates/mimus-check-cmd/tests/cmd.rs
   hashes:
   - 6b4f78cffb51266f2c162ba222cd448903d1f01e
-  - 8f9399bcb6e53fc08e52360d790ecb957cf2744a
+  - 67fc916096983b3fe07aeace20e09c4f9c2e19d3
   - f33ac7591b3702193264a687ebc8c2d5729642e5
-  commit_sha: 3b195f61f20a5be96ffaf6d3a12680f8f39ddb4a
-  generated_at: '1794724602'
+  commit_sha: ed65452cfc7d8ce73e80d8d07848e63a01ad7a38
+  generated_at: '1795488163'
   generator: kuda-template/0.1.4
