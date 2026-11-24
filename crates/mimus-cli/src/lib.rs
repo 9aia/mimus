@@ -82,7 +82,7 @@ enum Cmd {
         all: bool,
     },
     /// Standard-tier repo conformance — declarative spec file-set
-    /// diff (P-001 spike: file-set only, no predicates/providers).
+    /// diff plus predicate/provider tiers (P-001/P-002).
     Standard {
         /// Repo path to check.
         #[arg(long)]
@@ -358,6 +358,13 @@ fn coverage(cli: &Cli) -> i32 {
     0
 }
 
+/// Provider registry for `mimus standard` — empty until the first
+/// org-tool providers (lasius, bupha, …) land; every declared
+/// `providers.<ns>` then degrades to a warn violation.
+fn spec_providers() -> mimus_spec::ProviderSet {
+    mimus_spec::ProviderSet::new()
+}
+
 /// `mimus standard` — P-001 spike: declarative file-set conformance.
 /// Loads every spec under each `--spec` path (file or dir), keeps
 /// the ones whose `match` globs cover the repo name, diffs each
@@ -395,27 +402,31 @@ fn standard(cli: &Cli, repo: &str, specs: &[String]) -> i32 {
         Vec<mimus_spec::SpecViolation>,
     )> = Vec::new();
     let mut failed = false;
+    let providers = spec_providers();
     for spec in &matched {
         match spec.check_missing(repo_path) {
             Ok(mut vs) => {
+                // predicate + provider tiers are per-spec — run the
+                // full check and keep everything except `missing`
+                // (already collected above) and `unlisted`
+                // (union-owned for composed runs; per-spec only
+                // when this spec is the whole match set).
+                match spec.check_repo_with(repo_path, &providers) {
+                    Ok(all) => {
+                        vs.extend(all.into_iter().filter(|v| {
+                            v.kind == mimus_spec::ViolationKind::Predicate
+                                || v.kind == mimus_spec::ViolationKind::Provider
+                                || (matched.len() == 1
+                                    && v.kind == mimus_spec::ViolationKind::Unlisted)
+                        }));
+                    }
+                    Err(e) => {
+                        eprintln!("spec `{}`: {e}", spec.family);
+                        return 2;
+                    }
+                }
                 if vs.iter().any(|v| v.severity == mimus_core::Severity::Error) {
                     failed = true;
-                }
-                // per-spec unlisted only when this spec is alone —
-                // the union pass below owns it for composed runs
-                if matched.len() == 1 {
-                    match spec.check_repo(repo_path) {
-                        Ok(all) => {
-                            vs.extend(
-                                all.into_iter()
-                                    .filter(|v| v.kind == mimus_spec::ViolationKind::Unlisted),
-                            );
-                        }
-                        Err(e) => {
-                            eprintln!("spec `{}`: {e}", spec.family);
-                            return 2;
-                        }
-                    }
                 }
                 rows.push((spec.family.clone(), spec.severity, vs));
             }
@@ -487,6 +498,7 @@ fn standard(cli: &Cli, repo: &str, specs: &[String]) -> i32 {
                         mimus_spec::ViolationKind::Missing => "missing",
                         mimus_spec::ViolationKind::Unlisted => "unlisted",
                         mimus_spec::ViolationKind::Predicate => "predicate",
+                        mimus_spec::ViolationKind::Provider => "provider",
                     },
                     v.path,
                     v.detail,

@@ -16,13 +16,24 @@
 //! concatenate** (child entries first), tables merge per-key.
 //!
 //! Spike scope: the file-set tier plus the phase-2 predicate tier —
-//! `[path."X"]` tables (`exists`, `contains`, `regex`) and the
-//! `[git]` namespace (`untracked`) are evaluated by
-//! [`Spec::check_repo`]. `providers`, `tamias:` refs, and unknown
-//! top-level keys still deserialize (or are ignored) without
-//! findings — the model does not `deny_unknown_fields`; they land
-//! in [`Spec::extra`] untouched. Unknown keys *inside* a path
-//! table or the `git` table are errors (typo ≠ silent pass).
+//! `[path."X"]` tables (`exists`, `contains`, `regex`), the
+//! `[git]` namespace (`untracked`), and the `[providers.<ns>]`
+//! namespace are evaluated by [`Spec::check_repo`]. `tamias:` refs
+//! and unknown top-level keys still deserialize (or are ignored)
+//! without findings — the model does not `deny_unknown_fields`;
+//! they land in [`Spec::extra`] untouched. Unknown keys *inside* a
+//! path table or the `git` table are errors (typo ≠ silent pass).
+//!
+//! Providers (P-002): each org tool owns a predicate namespace
+//! (`lasius.*`, `bupha.*`, …) declared as `[providers.<ns>]`
+//! tables. At check time the namespace dispatches to the
+//! [`StandardProvider`] registered under that `ns()` in a
+//! [`ProviderSet`]; an unregistered namespace degrades to a
+//! `provider` **warn** violation (`provider-unavailable`) — never
+//! a hard fail, since providers are optional by design. The
+//! claims table passes through to the provider verbatim: unknown
+//! keys inside it are the provider's problem, not the spec
+//! model's.
 //!
 //! Repo enumeration prefers `git -C <repo> ls-files` (tracked files
 //! only — generated dirs like `target/` never appear, so no
@@ -69,9 +80,10 @@ fn default_severity() -> SpecSeverity {
 /// Field names mirror the TOML: `match` is a Rust keyword, so the
 /// repo-name globs live on [`repo_match`](Self::repo_match) via a
 /// serde rename. `path` collects the `[path."X"]` per-path predicate
-/// tables; `extra` catches every other top-level key (`extends` is
-/// consumed by the composer before this point, but `providers`,
-/// `git`, future namespaces, … land here).
+/// tables; `providers` collects the `[providers.<ns>]` claim
+/// tables (P-002); `extra` catches every other top-level key
+/// (`extends` is consumed by the composer before this point, but
+/// `tamias`, future namespaces, … land here).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Spec {
     /// Spec family name — appears on every violation for
@@ -118,9 +130,17 @@ pub struct Spec {
     /// deserialization (`deny_unknown_fields`) — typo ≠ silent pass.
     #[serde(default)]
     pub git: Option<GitPredicates>,
+    /// `[providers.<ns>]` claim tables — namespace → raw claims
+    /// `Value`, passed through to the [`StandardProvider`]
+    /// registered under `ns` at check time. Values stay untyped on
+    /// purpose: each provider owns its claims schema, and unknown
+    /// keys inside a table are the provider's problem. An
+    /// unregistered namespace yields a `provider` warn violation,
+    /// never a load error.
+    #[serde(default)]
+    pub providers: BTreeMap<String, serde_json::Value>,
     /// Unknown top-level keys, preserved verbatim — forward-compat
-    /// for `providers`, `tamias`, and namespaces the evaluator
-    /// doesn't know yet.
+    /// for `tamias` and namespaces the evaluator doesn't know yet.
     #[serde(flatten)]
     pub extra: BTreeMap<String, serde_json::Value>,
 }
@@ -135,6 +155,10 @@ pub enum ViolationKind {
     Unlisted,
     /// A `[path."X"]` predicate or `[git]` rule failed.
     Predicate,
+    /// A `[providers.<ns>]` claim — either the namespace has no
+    /// registered provider (`provider-unavailable`, always warn)
+    /// or a provider reported a finding.
+    Provider,
 }
 
 /// `[git]` namespace predicates — evaluated by
@@ -154,7 +178,7 @@ pub struct GitPredicates {
 /// One file-set finding — spec provenance + severity attached.
 #[derive(Debug, Clone, Serialize)]
 pub struct SpecViolation {
-    /// `missing` or `unlisted`.
+    /// `missing`, `unlisted`, `predicate`, or `provider`.
     pub kind: ViolationKind,
     /// Repo-relative path at fault.
     pub path: String,
@@ -214,6 +238,103 @@ pub enum SpecError {
         /// What was wrong with the value.
         detail: String,
     },
+    /// A registered provider failed while evaluating its
+    /// `[providers.<ns>]` claims table — propagated, never
+    /// silently passed (unlike an *unregistered* namespace, which
+    /// degrades to a warn violation).
+    #[error("provider `{ns}`: {source}")]
+    Provider {
+        /// The `providers.<ns>` namespace that failed.
+        ns: String,
+        /// The provider's own error.
+        source: ProviderError,
+    },
+}
+
+/// A [`StandardProvider`] evaluation failure — provider-internal
+/// (CLI probe failed, claims unparseable, …). Kept a single
+/// message: providers own their diagnostics.
+#[derive(Debug, thiserror::Error)]
+#[error("{0}")]
+pub struct ProviderError(pub String);
+
+/// An org-tool predicate provider (P-002) — owns one
+/// `providers.<ns>` namespace and evaluates its claims table
+/// against a repo. Implementations may shell out to their tool's
+/// CLI (`bupha status --json`-style) or inspect the tree directly;
+/// the port stays I/O-light by contract.
+///
+/// `claims` is the raw `[providers.<ns>]` table from the spec —
+/// untyped on purpose: the provider owns its claims schema, and
+/// unknown keys inside it are the provider's problem, not the
+/// spec model's. Returned violations keep whatever `spec`/
+/// `severity` the provider sets; the evaluator passes them
+/// through verbatim.
+pub trait StandardProvider {
+    /// Namespace prefix — `"bupha"`, `"lasius"`, … — matched
+    /// against the key under `providers.` in the spec.
+    fn ns(&self) -> &str;
+
+    /// Evaluate one claims table against `repo`.
+    ///
+    /// # Errors
+    /// [`ProviderError`] on provider-internal failure — surfaces
+    /// as [`SpecError::Provider`] at check time.
+    fn check(
+        &self,
+        repo: &Path,
+        claims: &serde_json::Value,
+    ) -> Result<Vec<SpecViolation>, ProviderError>;
+}
+
+/// The registered [`StandardProvider`]s, keyed by [`ns()`](StandardProvider::ns).
+///
+/// Empty by default — every `providers.<ns>` claim then degrades
+/// to a `provider` warn violation. Real providers (lasius, bupha,
+/// …) register here as they land; see `mimus standard`.
+#[derive(Default)]
+pub struct ProviderSet {
+    providers: Vec<Box<dyn StandardProvider>>,
+}
+
+impl ProviderSet {
+    /// An empty registry — the default everywhere until real
+    /// providers ship.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Register `provider` under its [`ns()`](StandardProvider::ns).
+    /// Re-registering the same namespace replaces the earlier
+    /// entry (last wins).
+    pub fn register<P: StandardProvider + 'static>(&mut self, provider: P) -> &mut Self {
+        let ns = provider.ns().to_owned();
+        self.providers.retain(|p| p.ns() != ns);
+        self.providers.push(Box::new(provider));
+        self
+    }
+
+    /// The provider registered under `ns`, if any.
+    #[must_use]
+    pub fn get(&self, ns: &str) -> Option<&dyn StandardProvider> {
+        self.providers
+            .iter()
+            .find(|p| p.ns() == ns)
+            .map(|p| p.as_ref())
+    }
+
+    /// Number of registered providers.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.providers.len()
+    }
+
+    /// Whether no providers are registered.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.providers.is_empty()
+    }
 }
 
 impl Spec {
@@ -302,16 +423,42 @@ impl Spec {
 
     /// File-set diff plus the predicate tier: declared-but-absent →
     /// `missing`; tracked-but-uncovered → `unlisted`; `[path."X"]`
-    /// tables → `predicate`; `[git] untracked` globs → `predicate`.
-    /// `check_missing`/`check_unlisted` keep file-set semantics —
-    /// predicate evaluation lives only here.
+    /// tables → `predicate`; `[git] untracked` globs → `predicate`;
+    /// `[providers.<ns>]` tables → `provider`. `check_missing`/
+    /// `check_unlisted` keep file-set semantics — predicate and
+    /// provider evaluation live only here.
+    ///
+    /// Providers run against an **empty** [`ProviderSet`] — every
+    /// declared namespace degrades to a `provider` warn violation.
+    /// Callers holding real providers use
+    /// [`Spec::check_repo_with`].
     ///
     /// # Errors
     /// [`SpecError::Glob`] on a malformed `files`/`cover`/`git`
     /// pattern, [`SpecError::Predicate`] on an unknown path-table
     /// key, [`SpecError::PredicateValue`] on a mistyped predicate
-    /// value or uncompilable regex.
+    /// value or uncompilable regex, [`SpecError::Provider`] when a
+    /// registered provider fails.
     pub fn check_repo(&self, repo: &Path) -> Result<Vec<SpecViolation>, SpecError> {
+        self.check_repo_with(repo, &ProviderSet::new())
+    }
+
+    /// [`Spec::check_repo`] with a provider registry — the
+    /// `[providers.<ns>]` tier dispatches each declared namespace
+    /// to the [`StandardProvider`] registered under it. Runs last,
+    /// after file-set + path predicates. An unregistered namespace
+    /// yields a `provider` **warn** violation regardless of the
+    /// spec's own severity (providers are optional by design —
+    /// degrade, never fail).
+    ///
+    /// # Errors
+    /// Same as [`Spec::check_repo`], plus [`SpecError::Provider`]
+    /// when a registered provider's `check` fails.
+    pub fn check_repo_with(
+        &self,
+        repo: &Path,
+        providers: &ProviderSet,
+    ) -> Result<Vec<SpecViolation>, SpecError> {
         let tracked = repo_files(repo);
         let coverage = self.coverage_set()?;
         let sev = self.severity.to_core();
@@ -346,6 +493,39 @@ impl Spec {
         }
         out.extend(self.check_path_predicates(repo)?);
         out.extend(self.check_git_untracked(repo)?);
+        out.extend(self.check_providers(repo, providers)?);
+        Ok(out)
+    }
+
+    /// `[providers.<ns>]` dispatch — each declared namespace routes
+    /// to the registered [`StandardProvider`]; unregistered
+    /// namespaces degrade to a `provider` warn violation
+    /// (`provider-unavailable`), never a hard fail.
+    fn check_providers(
+        &self,
+        repo: &Path,
+        providers: &ProviderSet,
+    ) -> Result<Vec<SpecViolation>, SpecError> {
+        let mut out = Vec::new();
+        for (ns, claims) in &self.providers {
+            match providers.get(ns) {
+                Some(p) => {
+                    let vs = p.check(repo, claims).map_err(|err| SpecError::Provider {
+                        ns: ns.clone(),
+                        source: err,
+                    })?;
+                    out.extend(vs);
+                }
+                None => out.push(self.violation(
+                    ViolationKind::Provider,
+                    &format!("providers.{ns}"),
+                    mimus_core::Severity::Warn,
+                    format!(
+                        "provider namespace `{ns}` has no registered provider — claims not evaluated"
+                    ),
+                )),
+            }
+        }
         Ok(out)
     }
 
@@ -823,7 +1003,11 @@ regex.forbid = ['^\[patch\.']
         )
         .unwrap();
         assert!(s.path.contains_key("Cargo.toml"));
-        assert!(s.extra.contains_key("providers"));
+        // `providers` is a typed field now — the `<ns>` claims
+        // tables land in `Spec::providers`, not `extra`
+        let lasius = s.providers.get("lasius").unwrap();
+        assert_eq!(lasius["require"], "clean-clone");
+        assert!(!s.extra.contains_key("providers"));
         // `git` is a typed field now — untracked globs deserialize
         let git = s.git.as_ref().unwrap();
         assert_eq!(git.untracked, vec!["Cargo.lock".to_string()]);
@@ -878,5 +1062,161 @@ regex.forbid = ['^\[patch\.']
         // empty match applies to all
         let all = Spec::parse("family='x'\n").unwrap();
         assert!(all.matches_repo("anything"));
+    }
+
+    // --- P-002 provider tier ------------------------------------
+
+    /// Records the claims `Value` it was called with; returns one
+    /// fixed provider finding so tests can assert pass-through.
+    struct FakeProvider {
+        ns: &'static str,
+        seen: std::sync::Arc<std::sync::Mutex<Option<serde_json::Value>>>,
+    }
+
+    impl StandardProvider for FakeProvider {
+        fn ns(&self) -> &str {
+            self.ns
+        }
+
+        fn check(
+            &self,
+            _repo: &Path,
+            claims: &serde_json::Value,
+        ) -> Result<Vec<SpecViolation>, ProviderError> {
+            *self.seen.lock().unwrap() = Some(claims.clone());
+            Ok(vec![SpecViolation {
+                kind: ViolationKind::Provider,
+                path: format!("providers.{}", self.ns),
+                spec: "fake-provider".into(),
+                severity: mimus_core::Severity::Error,
+                detail: "fake finding".into(),
+            }])
+        }
+    }
+
+    #[test]
+    fn providers_table_parses() {
+        let s = Spec::parse(
+            r#"
+family = "t"
+
+[providers.bupha]
+context = "ci/bupha"
+
+[providers.lasius]
+clone = "present"
+"#,
+        )
+        .unwrap();
+        assert_eq!(s.providers.len(), 2);
+        assert_eq!(s.providers["bupha"]["context"], "ci/bupha");
+        assert_eq!(s.providers["lasius"]["clone"], "present");
+        assert!(s.extra.is_empty());
+    }
+
+    #[test]
+    fn unregistered_provider_ns_warns_never_fails() {
+        // severity=fail spec, but provider-unavailable is always
+        // warn — providers are optional by design
+        let s = Spec::parse(
+            r#"
+family = "t"
+severity = "fail"
+files = ["a.txt"]
+
+[providers.bupha]
+context = "ci/bupha"
+"#,
+        )
+        .unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("a.txt"), "x").unwrap();
+        let vs = s.check_repo(dir.path()).unwrap();
+        assert_eq!(vs.len(), 1, "{vs:?}");
+        assert_eq!(vs[0].kind, ViolationKind::Provider);
+        assert_eq!(vs[0].severity, mimus_core::Severity::Warn);
+        assert_eq!(vs[0].path, "providers.bupha");
+        assert!(vs[0].detail.contains("bupha"));
+    }
+
+    #[test]
+    fn registered_provider_gets_claims_verbatim() {
+        let s = Spec::parse(
+            r#"
+family = "t"
+files = ["a.txt"]
+
+[providers.fake]
+known = "yes"
+unknown.typo = "provider's problem, not ours"
+"#,
+        )
+        .unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("a.txt"), "x").unwrap();
+        let seen = std::sync::Arc::new(std::sync::Mutex::new(None));
+        let mut set = ProviderSet::new();
+        set.register(FakeProvider {
+            ns: "fake",
+            seen: seen.clone(),
+        });
+        let vs = s.check_repo_with(dir.path(), &set).unwrap();
+        // the provider's own violation passes through untouched —
+        // its spec/severity are the provider's to set
+        assert_eq!(vs.len(), 1, "{vs:?}");
+        assert_eq!(vs[0].kind, ViolationKind::Provider);
+        assert_eq!(vs[0].spec, "fake-provider");
+        assert_eq!(vs[0].severity, mimus_core::Severity::Error);
+        // claims Value arrived verbatim, unknown keys included
+        let got = seen.lock().unwrap().clone().unwrap();
+        assert_eq!(got["known"], "yes");
+        assert_eq!(got["unknown"]["typo"], "provider's problem, not ours");
+    }
+
+    #[test]
+    fn provider_error_surfaces_as_spec_error() {
+        struct Boom;
+        impl StandardProvider for Boom {
+            fn ns(&self) -> &str {
+                "boom"
+            }
+            fn check(
+                &self,
+                _repo: &Path,
+                _claims: &serde_json::Value,
+            ) -> Result<Vec<SpecViolation>, ProviderError> {
+                Err(ProviderError("probe failed".into()))
+            }
+        }
+        let s = Spec::parse("family='t'\nfiles=['a.txt']\n\n[providers.boom]\nx = 1\n").unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("a.txt"), "x").unwrap();
+        let mut set = ProviderSet::new();
+        set.register(Boom);
+        let err = s.check_repo_with(dir.path(), &set).unwrap_err();
+        match err {
+            SpecError::Provider { ns, source } => {
+                assert_eq!(ns, "boom");
+                assert_eq!(source.to_string(), "probe failed");
+            }
+            other => panic!("expected Provider error, got {other}"),
+        }
+    }
+
+    #[test]
+    fn provider_set_register_replaces_same_ns() {
+        let mut set = ProviderSet::new();
+        assert!(set.is_empty());
+        set.register(FakeProvider {
+            ns: "fake",
+            seen: std::sync::Arc::new(std::sync::Mutex::new(None)),
+        });
+        set.register(FakeProvider {
+            ns: "fake",
+            seen: std::sync::Arc::new(std::sync::Mutex::new(None)),
+        });
+        assert_eq!(set.len(), 1);
+        assert!(set.get("fake").is_some());
+        assert!(set.get("other").is_none());
     }
 }
