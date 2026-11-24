@@ -15,7 +15,7 @@ api:
 - name: ENV_LOCK
   kind: const
   file: crates/mimus-config/src/lib.rs
-  line: 256
+  line: 257
   module: mimus-config
 - name: FileSource
   kind: type
@@ -75,7 +75,7 @@ api:
 - name: parse_file_reads_one_path
   kind: function
   file: crates/mimus-config/src/lib.rs
-  line: 245
+  line: 246
   module: mimus-config
 - name: scratch
   kind: function
@@ -117,7 +117,7 @@ provenance:
   - crates/mimus-config/src/lib.rs
   hashes:
   - f0959201dd8a0504d04fe9631fa407b96e30c9ed
-  - 4f77208c5030a5e0259c893e448b6ea63ee615ed
-  commit_sha: 3b195f61f20a5be96ffaf6d3a12680f8f39ddb4a
-  generated_at: '1794724602'
+  - 1d78204731962b8316da83f72251773d3fbd1bb7
+  commit_sha: 5562a48ee91d18e91761185daa0c08c531ca7d7b
+  generated_at: '1795529214'
   generator: kuda-template/0.1.4

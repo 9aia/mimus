@@ -18,7 +18,7 @@ contact us first and we will coordinate disclosure privately.
   the repo except `mimus.toml`/`rules/` on `init`.
 - Secrets resolve via env var → `cuora` vaults → OS keyring
   (`secret-tool`) → `~/.config/mimus/env` (chmod 600) — the
-  `mimus-secret` chain; values never appear in `mimus.toml` or
+  `cuora-secret` chain; values never appear in `mimus.toml` or
   reports.
 - The semantic tier (`--semantic`, needs `[check].acp_cmd`) spawns
   an ACP agent to verify prose `behavior` claims — it is opt-in,

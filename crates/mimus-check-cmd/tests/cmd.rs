@@ -56,6 +56,7 @@ fn declared_binary_skips_probe() {
 
 #[test]
 fn real_and_missing_binaries() {
+    let _g = ENV_LOCK.lock().unwrap();
     let c = CmdChecker::new();
     // `sh` exists on any unix PATH
     assert!(c.check(&claim("sh -c true")).unwrap().is_none());
@@ -82,6 +83,7 @@ fn slash_binary_resolves_as_path() {
 
 #[test]
 fn allow_exec_off_never_executes() {
+    let _g = ENV_LOCK.lock().unwrap();
     // `sh -c false` exits 1 — but with allow_exec off (default)
     // the PATH probe alone verifies it: no violation.
     let c = CmdChecker::new();
@@ -90,6 +92,7 @@ fn allow_exec_off_never_executes() {
 
 #[test]
 fn allow_exec_refutes_failing_command() {
+    let _g = ENV_LOCK.lock().unwrap();
     let mut c = CmdChecker::new();
     c.allow_exec = true;
     // resolves on PATH and exits 0 → silence
@@ -102,6 +105,7 @@ fn allow_exec_refutes_failing_command() {
 
 #[test]
 fn allow_exec_bounds_runtime() {
+    let _g = ENV_LOCK.lock().unwrap();
     let mut c = CmdChecker::new();
     c.allow_exec = true;
     c.exec_timeout = std::time::Duration::from_millis(100);
@@ -111,6 +115,7 @@ fn allow_exec_bounds_runtime() {
 
 #[test]
 fn allow_exec_still_probes_path_first() {
+    let _g = ENV_LOCK.lock().unwrap();
     let mut c = CmdChecker::new();
     c.allow_exec = true;
     // missing binary → PATH violation, exec never attempted
@@ -142,9 +147,8 @@ fn missing_path_env_is_silence_not_panic() {
     std::env::remove_var("PATH");
     // PATH unset → false → violation
     assert!(c.check(&claim("onlybin x")).unwrap().is_some());
-    match old {
-        Some(p) => std::env::set_var("PATH", p),
-        None => {}
+    if let Some(p) = old {
+        std::env::set_var("PATH", p);
     }
     let _ = std::fs::remove_dir_all(&dir);
 }

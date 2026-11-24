@@ -16,13 +16,24 @@
 //! concatenate** (child entries first), tables merge per-key.
 //!
 //! Spike scope: the file-set tier plus the phase-2 predicate tier —
-//! `[path."X"]` tables (`exists`, `contains`, `regex`) and the
-//! `[git]` namespace (`untracked`) are evaluated by
-//! [`Spec::check_repo`]. `providers`, `tamias:` refs, and unknown
-//! top-level keys still deserialize (or are ignored) without
-//! findings — the model does not `deny_unknown_fields`; they land
-//! in [`Spec::extra`] untouched. Unknown keys *inside* a path
-//! table or the `git` table are errors (typo ≠ silent pass).
+//! `[path."X"]` tables (`exists`, `contains`, `regex`), the
+//! `[git]` namespace (`untracked`), and the `[providers.<ns>]`
+//! namespace are evaluated by [`Spec::check_repo`]. `tamias:` refs
+//! and unknown top-level keys still deserialize (or are ignored)
+//! without findings — the model does not `deny_unknown_fields`;
+//! they land in [`Spec::extra`] untouched. Unknown keys *inside* a
+//! path table or the `git` table are errors (typo ≠ silent pass).
+//!
+//! Providers (P-002): each org tool owns a predicate namespace
+//! (`lasius.*`, `bupha.*`, …) declared as `[providers.<ns>]`
+//! tables. At check time the namespace dispatches to the
+//! [`StandardProvider`] registered under that `ns()` in a
+//! [`ProviderSet`]; an unregistered namespace degrades to a
+//! `provider` **warn** violation (`provider-unavailable`) — never
+//! a hard fail, since providers are optional by design. The
+//! claims table passes through to the provider verbatim: unknown
+//! keys inside it are the provider's problem, not the spec
+//! model's.
 //!
 //! Repo enumeration prefers `git -C <repo> ls-files` (tracked files
 //! only — generated dirs like `target/` never appear, so no
@@ -69,9 +80,10 @@ fn default_severity() -> SpecSeverity {
 /// Field names mirror the TOML: `match` is a Rust keyword, so the
 /// repo-name globs live on [`repo_match`](Self::repo_match) via a
 /// serde rename. `path` collects the `[path."X"]` per-path predicate
-/// tables; `extra` catches every other top-level key (`extends` is
-/// consumed by the composer before this point, but `providers`,
-/// `git`, future namespaces, … land here).
+/// tables; `providers` collects the `[providers.<ns>]` claim
+/// tables (P-002); `extra` catches every other top-level key
+/// (`extends` is consumed by the composer before this point, but
+/// `tamias`, future namespaces, … land here).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Spec {
     /// Spec family name — appears on every violation for
@@ -118,9 +130,17 @@ pub struct Spec {
     /// deserialization (`deny_unknown_fields`) — typo ≠ silent pass.
     #[serde(default)]
     pub git: Option<GitPredicates>,
+    /// `[providers.<ns>]` claim tables — namespace → raw claims
+    /// `Value`, passed through to the [`StandardProvider`]
+    /// registered under `ns` at check time. Values stay untyped on
+    /// purpose: each provider owns its claims schema, and unknown
+    /// keys inside a table are the provider's problem. An
+    /// unregistered namespace yields a `provider` warn violation,
+    /// never a load error.
+    #[serde(default)]
+    pub providers: BTreeMap<String, serde_json::Value>,
     /// Unknown top-level keys, preserved verbatim — forward-compat
-    /// for `providers`, `tamias`, and namespaces the evaluator
-    /// doesn't know yet.
+    /// for `tamias` and namespaces the evaluator doesn't know yet.
     #[serde(flatten)]
     pub extra: BTreeMap<String, serde_json::Value>,
 }
@@ -135,6 +155,10 @@ pub enum ViolationKind {
     Unlisted,
     /// A `[path."X"]` predicate or `[git]` rule failed.
     Predicate,
+    /// A `[providers.<ns>]` claim — either the namespace has no
+    /// registered provider (`provider-unavailable`, always warn)
+    /// or a provider reported a finding.
+    Provider,
 }
 
 /// `[git]` namespace predicates — evaluated by
@@ -154,7 +178,7 @@ pub struct GitPredicates {
 /// One file-set finding — spec provenance + severity attached.
 #[derive(Debug, Clone, Serialize)]
 pub struct SpecViolation {
-    /// `missing` or `unlisted`.
+    /// `missing`, `unlisted`, `predicate`, or `provider`.
     pub kind: ViolationKind,
     /// Repo-relative path at fault.
     pub path: String,
@@ -214,6 +238,339 @@ pub enum SpecError {
         /// What was wrong with the value.
         detail: String,
     },
+    /// A registered provider failed while evaluating its
+    /// `[providers.<ns>]` claims table — propagated, never
+    /// silently passed (unlike an *unregistered* namespace, which
+    /// degrades to a warn violation).
+    #[error("provider `{ns}`: {source}")]
+    Provider {
+        /// The `providers.<ns>` namespace that failed.
+        ns: String,
+        /// The provider's own error.
+        source: ProviderError,
+    },
+}
+
+/// A [`StandardProvider`] evaluation failure — provider-internal
+/// (CLI probe failed, claims unparseable, …). Kept a single
+/// message: providers own their diagnostics.
+#[derive(Debug, thiserror::Error)]
+#[error("{0}")]
+pub struct ProviderError(pub String);
+
+/// An org-tool predicate provider (P-002) — owns one
+/// `providers.<ns>` namespace and evaluates its claims table
+/// against a repo. Implementations may shell out to their tool's
+/// CLI (`bupha status --json`-style) or inspect the tree directly;
+/// the port stays I/O-light by contract.
+///
+/// `claims` is the raw `[providers.<ns>]` table from the spec —
+/// untyped on purpose: the provider owns its claims schema, and
+/// unknown keys inside it are the provider's problem, not the
+/// spec model's. Returned violations keep whatever `spec`/
+/// `severity` the provider sets; the evaluator passes them
+/// through verbatim.
+pub trait StandardProvider {
+    /// Namespace prefix — `"bupha"`, `"lasius"`, … — matched
+    /// against the key under `providers.` in the spec.
+    fn ns(&self) -> &str;
+
+    /// Evaluate one claims table against `repo`.
+    ///
+    /// # Errors
+    /// [`ProviderError`] on provider-internal failure — surfaces
+    /// as [`SpecError::Provider`] at check time.
+    fn check(
+        &self,
+        repo: &Path,
+        claims: &serde_json::Value,
+    ) -> Result<Vec<SpecViolation>, ProviderError>;
+}
+
+/// The registered [`StandardProvider`]s, keyed by [`ns()`](StandardProvider::ns).
+///
+/// Empty by default — every `providers.<ns>` claim then degrades
+/// to a `provider` warn violation. Real providers (lasius, bupha,
+/// …) register here as they land; see `mimus standard`.
+#[derive(Default)]
+pub struct ProviderSet {
+    providers: Vec<Box<dyn StandardProvider>>,
+}
+
+impl ProviderSet {
+    /// An empty registry — the default everywhere until real
+    /// providers ship.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Register `provider` under its [`ns()`](StandardProvider::ns).
+    /// Re-registering the same namespace replaces the earlier
+    /// entry (last wins).
+    pub fn register<P: StandardProvider + 'static>(&mut self, provider: P) -> &mut Self {
+        let ns = provider.ns().to_owned();
+        self.providers.retain(|p| p.ns() != ns);
+        self.providers.push(Box::new(provider));
+        self
+    }
+
+    /// The provider registered under `ns`, if any.
+    #[must_use]
+    pub fn get(&self, ns: &str) -> Option<&dyn StandardProvider> {
+        self.providers
+            .iter()
+            .find(|p| p.ns() == ns)
+            .map(|p| p.as_ref())
+    }
+
+    /// Number of registered providers.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.providers.len()
+    }
+
+    /// Whether no providers are registered.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.providers.is_empty()
+    }
+}
+
+/// `cargo` provider — Cargo.toml semantics the regex layer can't
+/// express. Currently one claim:
+///
+/// - `patches = "org-only"` — every `[patch.<src>]` table must
+///   target an org-local source (`crates-io` or a
+///   `github.com/handl-lang/*` URL), and every patch entry must
+///   resolve org-locally: `path = "../…"` sibling checkout or a
+///   `git` URL under `github.com/handl-lang/`. Version-only
+///   entries (no `path`/`git`/`registry`) are allowed — they pin,
+///   they don't relocate.
+/// - `severity = "warn" | "error"` — optional, default `"error"`.
+///
+/// Unknown claim keys are a [`ProviderError`] — a typo'd claim
+/// must not silently pass.
+#[derive(Debug, Default, Clone, Copy)]
+pub struct CargoProvider;
+
+impl StandardProvider for CargoProvider {
+    fn ns(&self) -> &str {
+        "cargo"
+    }
+
+    fn check(
+        &self,
+        repo: &Path,
+        claims: &serde_json::Value,
+    ) -> Result<Vec<SpecViolation>, ProviderError> {
+        let obj = claims
+            .as_object()
+            .ok_or_else(|| ProviderError("`providers.cargo` claims must be a table".into()))?;
+        for key in obj.keys() {
+            if !matches!(key.as_str(), "patches" | "severity") {
+                return Err(ProviderError(format!(
+                    "unknown `providers.cargo` claim `{key}`"
+                )));
+            }
+        }
+        let patches = obj
+            .get("patches")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("");
+        if patches != "org-only" {
+            return Err(ProviderError(format!(
+                "`providers.cargo.patches` must be \"org-only\", got {patches:?}"
+            )));
+        }
+        let severity = match obj.get("severity").and_then(serde_json::Value::as_str) {
+            None | Some("error") => mimus_core::Severity::Error,
+            Some("warn") => mimus_core::Severity::Warn,
+            Some(other) => {
+                return Err(ProviderError(format!(
+                    "`providers.cargo.severity` must be \"warn\" or \"error\", got {other:?}"
+                )));
+            }
+        };
+
+        let manifest = repo.join("Cargo.toml");
+        let text = match std::fs::read_to_string(&manifest) {
+            Ok(t) => t,
+            Err(err) => {
+                return Err(ProviderError(format!(
+                    "cannot read {}: {err}",
+                    manifest.display()
+                )));
+            }
+        };
+        let doc: toml::Value = text
+            .parse()
+            .map_err(|err| ProviderError(format!("Cargo.toml parse: {err}")))?;
+        let Some(patch) = doc.get("patch").and_then(toml::Value::as_table) else {
+            return Ok(Vec::new());
+        };
+
+        let mut out = Vec::new();
+        let mut violate = |detail: String| {
+            out.push(SpecViolation {
+                kind: ViolationKind::Provider,
+                path: "Cargo.toml".into(),
+                spec: "cargo".into(),
+                severity,
+                detail,
+            });
+        };
+        for (src, entries) in patch {
+            let org_src = src == "crates-io" || src.contains("github.com/handl-lang/");
+            if !org_src {
+                violate(format!(
+                    "`[patch.{src}]` source is not org-local — patches may only target \
+                     `crates-io` or `github.com/handl-lang/*`"
+                ));
+            }
+            let Some(entries) = entries.as_table() else {
+                violate(format!("`[patch.{src}]` is not a table"));
+                continue;
+            };
+            for (name, entry) in entries {
+                let Some(entry) = entry.as_table() else {
+                    violate(format!("`[patch.{src}] {name}` is not a table"));
+                    continue;
+                };
+                if let Some(path) = entry.get("path").and_then(toml::Value::as_str) {
+                    if !path.starts_with("../") {
+                        violate(format!(
+                            "`[patch.{src}] {name}` path {path:?} is not a `../` sibling checkout"
+                        ));
+                    }
+                } else if let Some(git) = entry.get("git").and_then(toml::Value::as_str) {
+                    if !git.contains("github.com/handl-lang/") {
+                        violate(format!(
+                            "`[patch.{src}] {name}` git {git:?} is not `github.com/handl-lang/*`"
+                        ));
+                    }
+                } else if entry.contains_key("registry") {
+                    violate(format!(
+                        "`[patch.{src}] {name}` uses an external `registry` source"
+                    ));
+                }
+            }
+        }
+        Ok(out)
+    }
+}
+
+/// `repo` provider — repo-identity checks that need the checkout's
+/// directory name, which path predicates can't see. Currently one
+/// claim:
+///
+/// - `bupha-name = true` — `bupha.toml` must contain a `[[repos]]`
+///   self-entry named `<org>/<dirname>` whose `dir` also ends in
+///   `/<dirname>`. Catches `name =`/`dir =` drift after a rename.
+///   Entries naming *other* repos are ignored — shared watcher
+///   manifests (docs) legitimately list the fleet. Absent
+///   `bupha.toml` is a no-op — the file-set's `missing` finding
+///   already covers that.
+/// - `severity = "warn" | "error"` — optional, default `"warn"`
+///   (identity drift is a floor concern, not a family gate).
+///
+/// Unknown claim keys are a [`ProviderError`].
+#[derive(Debug, Default, Clone, Copy)]
+pub struct RepoProvider;
+
+impl StandardProvider for RepoProvider {
+    fn ns(&self) -> &str {
+        "repo"
+    }
+
+    fn check(
+        &self,
+        repo: &Path,
+        claims: &serde_json::Value,
+    ) -> Result<Vec<SpecViolation>, ProviderError> {
+        let obj = claims
+            .as_object()
+            .ok_or_else(|| ProviderError("`providers.repo` claims must be a table".into()))?;
+        for key in obj.keys() {
+            if !matches!(key.as_str(), "bupha-name" | "severity") {
+                return Err(ProviderError(format!(
+                    "unknown `providers.repo` claim `{key}`"
+                )));
+            }
+        }
+        if obj.get("bupha-name").and_then(serde_json::Value::as_bool) != Some(true) {
+            return Err(ProviderError(
+                "`providers.repo.bupha-name` must be `true`".into(),
+            ));
+        }
+        let severity = match obj.get("severity").and_then(serde_json::Value::as_str) {
+            None | Some("warn") => mimus_core::Severity::Warn,
+            Some("error") => mimus_core::Severity::Error,
+            Some(other) => {
+                return Err(ProviderError(format!(
+                    "`providers.repo.severity` must be \"warn\" or \"error\", got {other:?}"
+                )));
+            }
+        };
+
+        let manifest = repo.join("bupha.toml");
+        let Ok(text) = std::fs::read_to_string(&manifest) else {
+            return Ok(Vec::new()); // missing file → `missing` finding's job
+        };
+        let doc: toml::Value = text
+            .parse()
+            .map_err(|err| ProviderError(format!("bupha.toml parse: {err}")))?;
+        let Some(dirname) = repo.file_name().and_then(|n| n.to_str()) else {
+            return Err(ProviderError(format!(
+                "repo path {} has no usable directory name",
+                repo.display()
+            )));
+        };
+        let mut out = Vec::new();
+        let mut self_entries = 0usize;
+        if let Some(repos) = doc.get("repos").and_then(toml::Value::as_array) {
+            for entry in repos {
+                let name = entry
+                    .get("name")
+                    .and_then(toml::Value::as_str)
+                    .unwrap_or("");
+                if !(name.contains('/') && name.rsplit('/').next() == Some(dirname)) {
+                    continue; // another repo's entry — shared manifests list the fleet
+                }
+                self_entries += 1;
+                let dir = entry
+                    .get("dir")
+                    .and_then(toml::Value::as_str)
+                    .unwrap_or("")
+                    .trim_end_matches('/');
+                if !dir.ends_with(&format!("/{dirname}")) {
+                    out.push(SpecViolation {
+                        kind: ViolationKind::Provider,
+                        path: "bupha.toml".into(),
+                        spec: "repo".into(),
+                        severity,
+                        detail: format!(
+                            "`[[repos]] name = {name:?}` has `dir = {dir:?}` not ending \
+                             in `/{dirname}` — stale after rename?"
+                        ),
+                    });
+                }
+            }
+        }
+        if self_entries == 0 {
+            out.push(SpecViolation {
+                kind: ViolationKind::Provider,
+                path: "bupha.toml".into(),
+                spec: "repo".into(),
+                severity,
+                detail: format!(
+                    "no `[[repos]]` entry named `*/{dirname}` — self-registration missing \
+                     or stale after rename?"
+                ),
+            });
+        }
+        Ok(out)
+    }
 }
 
 impl Spec {
@@ -302,16 +659,42 @@ impl Spec {
 
     /// File-set diff plus the predicate tier: declared-but-absent →
     /// `missing`; tracked-but-uncovered → `unlisted`; `[path."X"]`
-    /// tables → `predicate`; `[git] untracked` globs → `predicate`.
-    /// `check_missing`/`check_unlisted` keep file-set semantics —
-    /// predicate evaluation lives only here.
+    /// tables → `predicate`; `[git] untracked` globs → `predicate`;
+    /// `[providers.<ns>]` tables → `provider`. `check_missing`/
+    /// `check_unlisted` keep file-set semantics — predicate and
+    /// provider evaluation live only here.
+    ///
+    /// Providers run against an **empty** [`ProviderSet`] — every
+    /// declared namespace degrades to a `provider` warn violation.
+    /// Callers holding real providers use
+    /// [`Spec::check_repo_with`].
     ///
     /// # Errors
     /// [`SpecError::Glob`] on a malformed `files`/`cover`/`git`
     /// pattern, [`SpecError::Predicate`] on an unknown path-table
     /// key, [`SpecError::PredicateValue`] on a mistyped predicate
-    /// value or uncompilable regex.
+    /// value or uncompilable regex, [`SpecError::Provider`] when a
+    /// registered provider fails.
     pub fn check_repo(&self, repo: &Path) -> Result<Vec<SpecViolation>, SpecError> {
+        self.check_repo_with(repo, &ProviderSet::new())
+    }
+
+    /// [`Spec::check_repo`] with a provider registry — the
+    /// `[providers.<ns>]` tier dispatches each declared namespace
+    /// to the [`StandardProvider`] registered under it. Runs last,
+    /// after file-set + path predicates. An unregistered namespace
+    /// yields a `provider` **warn** violation regardless of the
+    /// spec's own severity (providers are optional by design —
+    /// degrade, never fail).
+    ///
+    /// # Errors
+    /// Same as [`Spec::check_repo`], plus [`SpecError::Provider`]
+    /// when a registered provider's `check` fails.
+    pub fn check_repo_with(
+        &self,
+        repo: &Path,
+        providers: &ProviderSet,
+    ) -> Result<Vec<SpecViolation>, SpecError> {
         let tracked = repo_files(repo);
         let coverage = self.coverage_set()?;
         let sev = self.severity.to_core();
@@ -346,6 +729,39 @@ impl Spec {
         }
         out.extend(self.check_path_predicates(repo)?);
         out.extend(self.check_git_untracked(repo)?);
+        out.extend(self.check_providers(repo, providers)?);
+        Ok(out)
+    }
+
+    /// `[providers.<ns>]` dispatch — each declared namespace routes
+    /// to the registered [`StandardProvider`]; unregistered
+    /// namespaces degrade to a `provider` warn violation
+    /// (`provider-unavailable`), never a hard fail.
+    fn check_providers(
+        &self,
+        repo: &Path,
+        providers: &ProviderSet,
+    ) -> Result<Vec<SpecViolation>, SpecError> {
+        let mut out = Vec::new();
+        for (ns, claims) in &self.providers {
+            match providers.get(ns) {
+                Some(p) => {
+                    let vs = p.check(repo, claims).map_err(|err| SpecError::Provider {
+                        ns: ns.clone(),
+                        source: err,
+                    })?;
+                    out.extend(vs);
+                }
+                None => out.push(self.violation(
+                    ViolationKind::Provider,
+                    &format!("providers.{ns}"),
+                    mimus_core::Severity::Warn,
+                    format!(
+                        "provider namespace `{ns}` has no registered provider — claims not evaluated"
+                    ),
+                )),
+            }
+        }
         Ok(out)
     }
 
@@ -823,7 +1239,11 @@ regex.forbid = ['^\[patch\.']
         )
         .unwrap();
         assert!(s.path.contains_key("Cargo.toml"));
-        assert!(s.extra.contains_key("providers"));
+        // `providers` is a typed field now — the `<ns>` claims
+        // tables land in `Spec::providers`, not `extra`
+        let lasius = s.providers.get("lasius").unwrap();
+        assert_eq!(lasius["require"], "clean-clone");
+        assert!(!s.extra.contains_key("providers"));
         // `git` is a typed field now — untracked globs deserialize
         let git = s.git.as_ref().unwrap();
         assert_eq!(git.untracked, vec!["Cargo.lock".to_string()]);
@@ -878,5 +1298,328 @@ regex.forbid = ['^\[patch\.']
         // empty match applies to all
         let all = Spec::parse("family='x'\n").unwrap();
         assert!(all.matches_repo("anything"));
+    }
+
+    // --- P-002 provider tier ------------------------------------
+
+    /// Records the claims `Value` it was called with; returns one
+    /// fixed provider finding so tests can assert pass-through.
+    struct FakeProvider {
+        ns: &'static str,
+        seen: std::sync::Arc<std::sync::Mutex<Option<serde_json::Value>>>,
+    }
+
+    impl StandardProvider for FakeProvider {
+        fn ns(&self) -> &str {
+            self.ns
+        }
+
+        fn check(
+            &self,
+            _repo: &Path,
+            claims: &serde_json::Value,
+        ) -> Result<Vec<SpecViolation>, ProviderError> {
+            *self.seen.lock().unwrap() = Some(claims.clone());
+            Ok(vec![SpecViolation {
+                kind: ViolationKind::Provider,
+                path: format!("providers.{}", self.ns),
+                spec: "fake-provider".into(),
+                severity: mimus_core::Severity::Error,
+                detail: "fake finding".into(),
+            }])
+        }
+    }
+
+    #[test]
+    fn providers_table_parses() {
+        let s = Spec::parse(
+            r#"
+family = "t"
+
+[providers.bupha]
+context = "ci/bupha"
+
+[providers.lasius]
+clone = "present"
+"#,
+        )
+        .unwrap();
+        assert_eq!(s.providers.len(), 2);
+        assert_eq!(s.providers["bupha"]["context"], "ci/bupha");
+        assert_eq!(s.providers["lasius"]["clone"], "present");
+        assert!(s.extra.is_empty());
+    }
+
+    #[test]
+    fn unregistered_provider_ns_warns_never_fails() {
+        // severity=fail spec, but provider-unavailable is always
+        // warn — providers are optional by design
+        let s = Spec::parse(
+            r#"
+family = "t"
+severity = "fail"
+files = ["a.txt"]
+
+[providers.bupha]
+context = "ci/bupha"
+"#,
+        )
+        .unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("a.txt"), "x").unwrap();
+        let vs = s.check_repo(dir.path()).unwrap();
+        assert_eq!(vs.len(), 1, "{vs:?}");
+        assert_eq!(vs[0].kind, ViolationKind::Provider);
+        assert_eq!(vs[0].severity, mimus_core::Severity::Warn);
+        assert_eq!(vs[0].path, "providers.bupha");
+        assert!(vs[0].detail.contains("bupha"));
+    }
+
+    #[test]
+    fn registered_provider_gets_claims_verbatim() {
+        let s = Spec::parse(
+            r#"
+family = "t"
+files = ["a.txt"]
+
+[providers.fake]
+known = "yes"
+unknown.typo = "provider's problem, not ours"
+"#,
+        )
+        .unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("a.txt"), "x").unwrap();
+        let seen = std::sync::Arc::new(std::sync::Mutex::new(None));
+        let mut set = ProviderSet::new();
+        set.register(FakeProvider {
+            ns: "fake",
+            seen: seen.clone(),
+        });
+        let vs = s.check_repo_with(dir.path(), &set).unwrap();
+        // the provider's own violation passes through untouched —
+        // its spec/severity are the provider's to set
+        assert_eq!(vs.len(), 1, "{vs:?}");
+        assert_eq!(vs[0].kind, ViolationKind::Provider);
+        assert_eq!(vs[0].spec, "fake-provider");
+        assert_eq!(vs[0].severity, mimus_core::Severity::Error);
+        // claims Value arrived verbatim, unknown keys included
+        let got = seen.lock().unwrap().clone().unwrap();
+        assert_eq!(got["known"], "yes");
+        assert_eq!(got["unknown"]["typo"], "provider's problem, not ours");
+    }
+
+    #[test]
+    fn provider_error_surfaces_as_spec_error() {
+        struct Boom;
+        impl StandardProvider for Boom {
+            fn ns(&self) -> &str {
+                "boom"
+            }
+            fn check(
+                &self,
+                _repo: &Path,
+                _claims: &serde_json::Value,
+            ) -> Result<Vec<SpecViolation>, ProviderError> {
+                Err(ProviderError("probe failed".into()))
+            }
+        }
+        let s = Spec::parse("family='t'\nfiles=['a.txt']\n\n[providers.boom]\nx = 1\n").unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("a.txt"), "x").unwrap();
+        let mut set = ProviderSet::new();
+        set.register(Boom);
+        let err = s.check_repo_with(dir.path(), &set).unwrap_err();
+        match err {
+            SpecError::Provider { ns, source } => {
+                assert_eq!(ns, "boom");
+                assert_eq!(source.to_string(), "probe failed");
+            }
+            other => panic!("expected Provider error, got {other}"),
+        }
+    }
+
+    #[test]
+    fn provider_set_register_replaces_same_ns() {
+        let mut set = ProviderSet::new();
+        assert!(set.is_empty());
+        set.register(FakeProvider {
+            ns: "fake",
+            seen: std::sync::Arc::new(std::sync::Mutex::new(None)),
+        });
+        set.register(FakeProvider {
+            ns: "fake",
+            seen: std::sync::Arc::new(std::sync::Mutex::new(None)),
+        });
+        assert_eq!(set.len(), 1);
+        assert!(set.get("fake").is_some());
+        assert!(set.get("other").is_none());
+    }
+
+    fn cargo_claims() -> serde_json::Value {
+        serde_json::json!({ "patches": "org-only" })
+    }
+
+    #[test]
+    fn cargo_provider_accepts_org_local_patches() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            r#"
+[package]
+name = "x"
+
+[patch."https://github.com/handl-lang/kernel"]
+handl-language = { path = "../kernel/crates/language" }
+other = { git = "ssh://git@github.com/handl-lang/engine.git" }
+pinned = { version = "1.2.3" }
+
+[patch.crates-io]
+serde = { git = "https://github.com/handl-lang/serde-shim.git" }
+"#,
+        )
+        .unwrap();
+        let vs = CargoProvider.check(dir.path(), &cargo_claims()).unwrap();
+        assert!(vs.is_empty(), "{vs:?}");
+    }
+
+    #[test]
+    fn cargo_provider_flags_external_patch_source() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            "[patch.\"https://github.com/rust-lang/crates.io-index\"]\nfoo = { git = \"https://github.com/evil/x.git\" }\n",
+        )
+        .unwrap();
+        let vs = CargoProvider.check(dir.path(), &cargo_claims()).unwrap();
+        assert_eq!(vs.len(), 2, "{vs:?}"); // bad src + bad git entry
+        assert!(vs.iter().all(|v| v.kind == ViolationKind::Provider));
+        assert!(vs.iter().all(|v| v.severity == mimus_core::Severity::Error));
+    }
+
+    #[test]
+    fn cargo_provider_flags_non_sibling_path_and_registry() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            r#"
+[patch."https://github.com/handl-lang/kernel"]
+a = { path = "vendor/kernel" }
+b = { registry = "https://example.com" }
+"#,
+        )
+        .unwrap();
+        let vs = CargoProvider.check(dir.path(), &cargo_claims()).unwrap();
+        assert_eq!(vs.len(), 2, "{vs:?}");
+    }
+
+    #[test]
+    fn cargo_provider_no_patch_table_is_clean() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("Cargo.toml"), "[package]\nname = \"x\"\n").unwrap();
+        let vs = CargoProvider.check(dir.path(), &cargo_claims()).unwrap();
+        assert!(vs.is_empty(), "{vs:?}");
+    }
+
+    #[test]
+    fn cargo_provider_rejects_bad_claims() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("Cargo.toml"), "[package]\nname=\"x\"\n").unwrap();
+        for claims in [
+            serde_json::json!({ "patches": "anything" }),
+            serde_json::json!({ "patches": "org-only", "bogus": 1 }),
+            serde_json::json!({ "severity": "warn" }),
+            serde_json::json!("nope"),
+        ] {
+            assert!(
+                CargoProvider.check(dir.path(), &claims).is_err(),
+                "{claims}"
+            );
+        }
+        // severity warn downgrades
+        let vs = CargoProvider
+            .check(
+                dir.path(),
+                &serde_json::json!({ "patches": "org-only", "severity": "warn" }),
+            )
+            .unwrap();
+        assert!(vs.is_empty());
+    }
+
+    #[test]
+    fn repo_provider_bupha_name_matches_dirname() {
+        let dir = tempfile::tempdir().unwrap();
+        // tempdir name is random — create a named child dir instead
+        let repo = dir.path().join("my-repo");
+        std::fs::create_dir(&repo).unwrap();
+        std::fs::write(
+            repo.join("bupha.toml"),
+            "[[repos]]\nname = \"handl-lang/my-repo\"\ndir = \"~/GitHub/handl-lang/my-repo\"\n",
+        )
+        .unwrap();
+        let claims = serde_json::json!({ "bupha-name": true });
+        assert!(RepoProvider.check(&repo, &claims).unwrap().is_empty());
+    }
+
+    #[test]
+    fn repo_provider_bupha_name_flags_stale() {
+        let dir = tempfile::tempdir().unwrap();
+        let repo = dir.path().join("new-name");
+        std::fs::create_dir(&repo).unwrap();
+        // self-entry under the OLD name — the rename-drift case
+        std::fs::write(
+            repo.join("bupha.toml"),
+            "[[repos]]\nname = \"handl-lang/old-name\"\ndir = \"~/GitHub/handl-lang/old-name\"\n",
+        )
+        .unwrap();
+        let vs = RepoProvider
+            .check(&repo, &serde_json::json!({ "bupha-name": true }))
+            .unwrap();
+        assert_eq!(vs.len(), 1, "{vs:?}");
+        assert_eq!(vs[0].severity, mimus_core::Severity::Warn);
+        assert!(vs[0].detail.contains("new-name"));
+    }
+
+    #[test]
+    fn repo_provider_bupha_dir_drift_flagged() {
+        let dir = tempfile::tempdir().unwrap();
+        let repo = dir.path().join("my-repo");
+        std::fs::create_dir(&repo).unwrap();
+        std::fs::write(
+            repo.join("bupha.toml"),
+            "[[repos]]\nname = \"handl-lang/my-repo\"\ndir = \"~/GitHub/handl-lang/other-dir\"\n",
+        )
+        .unwrap();
+        let vs = RepoProvider
+            .check(&repo, &serde_json::json!({ "bupha-name": true }))
+            .unwrap();
+        assert_eq!(vs.len(), 1, "{vs:?}");
+        assert!(vs[0].detail.contains("other-dir"));
+    }
+
+    #[test]
+    fn repo_provider_shared_manifest_ignores_other_repos() {
+        let dir = tempfile::tempdir().unwrap();
+        let repo = dir.path().join("docs");
+        std::fs::create_dir(&repo).unwrap();
+        std::fs::write(
+            repo.join("bupha.toml"),
+            "[[repos]]\nname = \"handl-lang/host\"\ndir = \"~/GitHub/handl-lang/host\"\n\n\
+             [[repos]]\nname = \"handl-lang/docs\"\ndir = \"~/GitHub/handl-lang/docs\"\n",
+        )
+        .unwrap();
+        let vs = RepoProvider
+            .check(&repo, &serde_json::json!({ "bupha-name": true }))
+            .unwrap();
+        assert!(vs.is_empty(), "{vs:?}");
+    }
+
+    #[test]
+    fn repo_provider_absent_bupha_is_noop() {
+        let dir = tempfile::tempdir().unwrap();
+        let vs = RepoProvider
+            .check(dir.path(), &serde_json::json!({ "bupha-name": true }))
+            .unwrap();
+        assert!(vs.is_empty(), "{vs:?}");
     }
 }

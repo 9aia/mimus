@@ -22,6 +22,11 @@ api:
   file: project/proposals/proposal-0001-standard-tier-declarative-repo-conformance-for-the-org-fleet.md
   line: 2
   module: project
+- name: P-002
+  kind: record
+  file: project/proposals/proposal-0002-standard-providers-org-tool-predicate-namespaces.md
+  line: 2
+  module: project
 - name: T-001
   kind: record
   file: project/DONE.md
@@ -144,8 +149,13 @@ api:
   module: project
 - name: T-025
   kind: record
-  file: project/TODO.md
-  line: 6
+  file: project/DONE.md
+  line: 13
+  module: project
+- name: T-026
+  kind: record
+  file: project/DONE.md
+  line: 14
   module: project
 deps: []
 notes: ''
@@ -159,6 +169,7 @@ verify:
 - project/handoffs/archive/T-021.md
 - project/index.md
 - project/proposals/proposal-0001-standard-tier-declarative-repo-conformance-for-the-org-fleet.md
+- project/proposals/proposal-0002-standard-providers-org-tool-predicate-namespaces.md
 provenance:
   files:
   - project/BACKLOG.md
@@ -170,16 +181,18 @@ provenance:
   - project/handoffs/archive/T-021.md
   - project/index.md
   - project/proposals/proposal-0001-standard-tier-declarative-repo-conformance-for-the-org-fleet.md
+  - project/proposals/proposal-0002-standard-providers-org-tool-predicate-namespaces.md
   hashes:
   - 4a002c8107e1175b9427a5bca4334514d263d7ce
-  - 8b82d0a13fb2c0b2ce67d8e0097fee6a0f7d6994
-  - 9a6c3a99495cb6a7fd17cbe50567288bf7a88704
+  - 2cf4a5bfe86d766377f526c9788b107fe43569aa
+  - 1588257d7efc48e775cace547d9cb8096c723114
   - 5672348fae080d3dbf36879f156071ff7097f8ce
   - 50da40ffdcc62983e15380efd539c00b0bcb082c
   - 95e89a42bc05e7839025e1486618c84d0d2fe40b
   - 9b8f11818e849fc06efdc0597b7cb44f944c5dfd
   - e5a284a8a41bcb4413d537a00fb50e503cef2fed
   - a6a50fd4915dec5116d1a1a90ef691ef5035e501
-  commit_sha: ed65452cfc7d8ce73e80d8d07848e63a01ad7a38
-  generated_at: '1795488163'
+  - 5f5714cad48b175b09952380a5090ec714adf928
+  commit_sha: 5562a48ee91d18e91761185daa0c08c531ca7d7b
+  generated_at: '1795529214'
   generator: kuda-template/0.1.4

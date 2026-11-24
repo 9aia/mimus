@@ -4,12 +4,13 @@
 //! `run()` is the compat CLI's whole body; drivers (mimus bin,
 //! tamias-driver-mimus `run`) split it into [`parse`]/[`parse_from`]
 //! + [`dispatch`] — argv in, exit code out, ops callable as
-//! `dispatch(&cli)`.
+//!   `dispatch(&cli)`.
 //!
 //! mimus — spots the cuckoo eggs in your repo. Composition root:
 //! parses mimus.toml, wires checker adapters, runs subcommands.
 
 use clap::{Parser, Subcommand};
+use lasius_vcs::Vcs;
 use mimus_check::{Checker, GraphChecker};
 use mimus_config::ConfigSource;
 use mimus_config::FileSource;
@@ -82,7 +83,7 @@ enum Cmd {
         all: bool,
     },
     /// Standard-tier repo conformance — declarative spec file-set
-    /// diff (P-001 spike: file-set only, no predicates/providers).
+    /// diff plus predicate/provider tiers (P-001/P-002).
     Standard {
         /// Repo path to check.
         #[arg(long)]
@@ -247,7 +248,7 @@ fn doc_claims(cfg: &Config, root: &Path) -> Vec<mimus_core::Claim> {
     // semantic tier verifies against the code they sit on.
     if cfg.sources.comments {
         for pat in ["crates/**/*.rs", "src/**/*.rs", "**/*.py", "**/*.ts"] {
-            for p in mimus_rules::matching_files(&root, pat) {
+            for p in mimus_rules::matching_files(root, pat) {
                 let noisy = p.components().any(|c| {
                     matches!(
                         c.as_os_str().to_str(),
@@ -335,7 +336,7 @@ fn coverage(cli: &Cli) -> i32 {
                 .push(name.clone());
         }
     }
-    let pct = if total > 0 { covered * 100 / total } else { 0 };
+    let pct = (covered * 100).checked_div(total).unwrap_or(0);
     println!("{covered}/{total} symbols named in docs ({pct}%)");
     for (m, names) in &by_mod {
         let list: Vec<_> = names.iter().take(12).collect();
@@ -356,6 +357,17 @@ fn coverage(cli: &Cli) -> i32 {
         });
     }
     0
+}
+
+/// Provider registry for `mimus standard` — `cargo` ships built-in
+/// (org-local `[patch]` enforcement); lasius/bupha/etc. register
+/// here as they land. Every declared `providers.<ns>` with no
+/// registered provider degrades to a warn violation.
+fn spec_providers() -> mimus_spec::ProviderSet {
+    let mut set = mimus_spec::ProviderSet::new();
+    set.register(mimus_spec::CargoProvider);
+    set.register(mimus_spec::RepoProvider);
+    set
 }
 
 /// `mimus standard` — P-001 spike: declarative file-set conformance.
@@ -395,27 +407,31 @@ fn standard(cli: &Cli, repo: &str, specs: &[String]) -> i32 {
         Vec<mimus_spec::SpecViolation>,
     )> = Vec::new();
     let mut failed = false;
+    let providers = spec_providers();
     for spec in &matched {
         match spec.check_missing(repo_path) {
             Ok(mut vs) => {
+                // predicate + provider tiers are per-spec — run the
+                // full check and keep everything except `missing`
+                // (already collected above) and `unlisted`
+                // (union-owned for composed runs; per-spec only
+                // when this spec is the whole match set).
+                match spec.check_repo_with(repo_path, &providers) {
+                    Ok(all) => {
+                        vs.extend(all.into_iter().filter(|v| {
+                            v.kind == mimus_spec::ViolationKind::Predicate
+                                || v.kind == mimus_spec::ViolationKind::Provider
+                                || (matched.len() == 1
+                                    && v.kind == mimus_spec::ViolationKind::Unlisted)
+                        }));
+                    }
+                    Err(e) => {
+                        eprintln!("spec `{}`: {e}", spec.family);
+                        return 2;
+                    }
+                }
                 if vs.iter().any(|v| v.severity == mimus_core::Severity::Error) {
                     failed = true;
-                }
-                // per-spec unlisted only when this spec is alone —
-                // the union pass below owns it for composed runs
-                if matched.len() == 1 {
-                    match spec.check_repo(repo_path) {
-                        Ok(all) => {
-                            vs.extend(
-                                all.into_iter()
-                                    .filter(|v| v.kind == mimus_spec::ViolationKind::Unlisted),
-                            );
-                        }
-                        Err(e) => {
-                            eprintln!("spec `{}`: {e}", spec.family);
-                            return 2;
-                        }
-                    }
                 }
                 rows.push((spec.family.clone(), spec.severity, vs));
             }
@@ -487,6 +503,7 @@ fn standard(cli: &Cli, repo: &str, specs: &[String]) -> i32 {
                         mimus_spec::ViolationKind::Missing => "missing",
                         mimus_spec::ViolationKind::Unlisted => "unlisted",
                         mimus_spec::ViolationKind::Predicate => "predicate",
+                        mimus_spec::ViolationKind::Provider => "provider",
                     },
                     v.path,
                     v.detail,
@@ -731,38 +748,17 @@ fn collect(
     Some((root, violations))
 }
 
-/// `git -C <root>` — one spawn-error arm for every call site.
-fn git(root: &Path, args: &[&str]) -> Result<std::process::Output, String> {
-    std::process::Command::new("git")
-        .arg("-C")
-        .arg(root)
-        .args(args)
-        .output()
-        .map_err(|e| format!("git {}: {e}", args.first().unwrap_or(&"")))
-}
-
-/// `git diff --name-only <spec>` — changed files as canonical
-/// paths rooted at the repo toplevel.
+/// `git diff --name-only <spec>` via the lasius-vcs port — changed
+/// files as canonical paths rooted at the repo toplevel.
 fn diff_files(root: &Path, spec: &str) -> Result<std::collections::BTreeSet<PathBuf>, String> {
-    let top = git(root, &["rev-parse", "--show-toplevel"])?;
-    if !top.status.success() {
-        return Err(format!(
-            "--diff needs a git repo: {}",
-            String::from_utf8_lossy(&top.stderr).trim()
-        ));
-    }
-    let top = PathBuf::from(String::from_utf8_lossy(&top.stdout).trim());
-    let out = git(root, &["diff", "--name-only", spec])?;
-    if !out.status.success() {
-        return Err(format!(
-            "git diff {spec}: {}",
-            String::from_utf8_lossy(&out.stderr).trim()
-        ));
-    }
-    Ok(String::from_utf8_lossy(&out.stdout)
-        .lines()
-        .map(|l| canon(&top.join(l)))
-        .collect())
+    let vcs = lasius_vcs_git::GitVcs;
+    let top = vcs
+        .repo_root(root)
+        .ok_or_else(|| "--diff needs a git repo".to_owned())?;
+    let names = vcs
+        .diff_names(root, spec)
+        .map_err(|e| format!("git diff {spec}: {e}"))?;
+    Ok(names.iter().map(|l| canon(&top.join(l))).collect())
 }
 
 /// Canonical path when it exists, else normalized `.`/`..`.
@@ -1050,15 +1046,8 @@ fn audit(cli: &Cli) -> i32 {
                 score = "contradicted";
                 break;
             }
-            let cur = std::process::Command::new("git")
-                .arg("-C")
-                .arg(&root)
-                .args(["hash-object"])
-                .arg(f)
-                .output()
-                .ok()
-                .filter(|o| o.status.success())
-                .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_owned())
+            let cur = lasius_vcs_git::GitVcs
+                .hash_object(&root, f)
                 .unwrap_or_default();
             if cur != *h {
                 score = "drifted";
@@ -1084,7 +1073,7 @@ fn emit(violations: &[Violation], format: &str) {
         return;
     }
     if violations.is_empty() {
-        println!("no violations — {} claims checked", "all");
+        println!("no violations — all claims checked");
         return;
     }
     for v in violations {
@@ -1190,17 +1179,21 @@ fn doctor(cli: &Cli) -> i32 {
 /// during the transition. Writes land in cuora (`env` refuses
 /// `set`, cuora is the first writable store). The acp adapter
 /// (semantic tier) resolves provider keys through this.
-fn secrets() -> mimus_secret::Chain {
-    mimus_secret::Chain::new(vec![
-        Box::new(mimus_secret::EnvSecrets),
-        Box::new(mimus_cuora::CuoraSecrets::default()),
-        Box::new(mimus_keyring::KeyringSecrets::default()),
-        Box::new(mimus_dotenv::DotenvSecrets {
-            path: std::env::var("HOME")
+fn secrets() -> cuora_secret::Chain {
+    cuora_secret::Chain::new(vec![
+        Box::new(cuora_secret::EnvSecrets),
+        Box::new(cuora_secret_cuora::CuoraSecrets::from_env(
+            "mimus",
+            "MIMUS_CUORA_BIN",
+            "MIMUS_CUORA_TRANSPORT",
+        )),
+        Box::new(cuora_secret_keyring::KeyringSecrets::new("mimus")),
+        Box::new(cuora_secret_dotenv::DotenvSecrets::new(
+            std::env::var("HOME")
                 .map(PathBuf::from)
                 .unwrap_or_else(|_| PathBuf::from("."))
                 .join(".config/mimus/env"),
-        }),
+        )),
     ])
 }
 

@@ -2,50 +2,185 @@ name: mimus-spec
 path: crates/mimus-spec/Cargo.toml
 purpose: 'Standard tier: declarative repo conformance specs (P-001) — spec loading via scarab-compose + file-set diff'
 api:
+- name: Boom
+  kind: type
+  file: crates/mimus-spec/src/lib.rs
+  line: 1391
+  module: mimus-spec
+- name: CargoProvider
+  kind: type
+  file: crates/mimus-spec/src/lib.rs
+  line: 355
+  module: mimus-spec
+- name: FakeProvider
+  kind: type
+  file: crates/mimus-spec/src/lib.rs
+  line: 1284
+  module: mimus-spec
+- name: GitPredicates
+  kind: type
+  file: crates/mimus-spec/src/lib.rs
+  line: 169
+  module: mimus-spec
+- name: ProviderError
+  kind: type
+  file: crates/mimus-spec/src/lib.rs
+  line: 259
+  module: mimus-spec
+- name: ProviderSet
+  kind: type
+  file: crates/mimus-spec/src/lib.rs
+  line: 296
+  module: mimus-spec
+- name: RepoProvider
+  kind: type
+  file: crates/mimus-spec/src/lib.rs
+  line: 477
+  module: mimus-spec
 - name: Spec
   kind: type
   file: crates/mimus-spec/src/lib.rs
-  line: 74
+  line: 88
   module: mimus-spec
 - name: SpecError
   kind: type
   file: crates/mimus-spec/src/lib.rs
-  line: 133
+  line: 195
   module: mimus-spec
 - name: SpecSeverity
   kind: type
   file: crates/mimus-spec/src/lib.rs
-  line: 43
+  line: 56
   module: mimus-spec
 - name: SpecViolation
   kind: type
   file: crates/mimus-spec/src/lib.rs
-  line: 118
+  line: 180
+  module: mimus-spec
+- name: StandardProvider
+  kind: trait
+  file: crates/mimus-spec/src/lib.rs
+  line: 273
   module: mimus-spec
 - name: ViolationKind
   kind: type
   file: crates/mimus-spec/src/lib.rs
-  line: 109
+  line: 151
   module: mimus-spec
 - name: bad_glob_errors
   kind: function
   file: crates/mimus-spec/tests/conformance.rs
   line: 211
   module: mimus-spec
+- name: bad_regex_pattern_errors
+  kind: function
+  file: crates/mimus-spec/tests/conformance.rs
+  line: 396
+  module: mimus-spec
+- name: cargo_claims
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 1436
+  module: mimus-spec
+- name: cargo_provider_accepts_org_local_patches
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 1441
+  module: mimus-spec
+- name: cargo_provider_flags_external_patch_source
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 1464
+  module: mimus-spec
+- name: cargo_provider_flags_non_sibling_path_and_registry
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 1478
+  module: mimus-spec
+- name: cargo_provider_no_patch_table_is_clean
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 1494
+  module: mimus-spec
+- name: cargo_provider_rejects_bad_claims
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 1502
+  module: mimus-spec
+- name: check
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 362
+  module: mimus-spec
+- name: check
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 484
+  module: mimus-spec
+- name: check
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 1294
+  module: mimus-spec
+- name: check
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 1396
+  module: mimus-spec
+- name: check_git_untracked
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 925
+  module: mimus-spec
+- name: check_missing
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 606
+  module: mimus-spec
+- name: check_path_predicates
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 761
+  module: mimus-spec
+- name: check_providers
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 717
+  module: mimus-spec
+- name: check_regex
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 841
+  module: mimus-spec
 - name: check_repo
   kind: function
   file: crates/mimus-spec/src/lib.rs
-  line: 213
+  line: 655
+  module: mimus-spec
+- name: check_repo_with
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 670
+  module: mimus-spec
+- name: check_unlisted
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 1009
+  module: mimus-spec
+- name: cover_whitelists_without_requiring
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 1237
   module: mimus-spec
 - name: coverage_set
   kind: function
   file: crates/mimus-spec/src/lib.rs
-  line: 275
+  line: 967
   module: mimus-spec
 - name: default_severity
   kind: function
   file: crates/mimus-spec/src/lib.rs
-  line: 61
+  line: 74
   module: mimus-spec
 - name: dirs_cover_nested_files
   kind: function
@@ -57,158 +192,26 @@ api:
   file: crates/mimus-spec/tests/conformance.rs
   line: 43
   module: mimus-spec
+- name: get
+  kind: function
+  file: crates/mimus-spec/src/lib.rs
+  line: 320
+  module: mimus-spec
 - name: git
   kind: function
   file: crates/mimus-spec/tests/conformance.rs
   line: 10
   module: mimus-spec
-- name: git_ls_files
-  kind: function
-  file: crates/mimus-spec/src/lib.rs
-  line: 321
-  module: mimus-spec
-- name: include_fragment_merges
-  kind: function
-  file: crates/mimus-spec/tests/conformance.rs
-  line: 82
-  module: mimus-spec
-- name: is_glob
-  kind: function
-  file: crates/mimus-spec/src/lib.rs
-  line: 309
-  module: mimus-spec
-- name: kinds
-  kind: function
-  file: crates/mimus-spec/tests/conformance.rs
-  line: 38
-  module: mimus-spec
-- name: load
-  kind: function
-  file: crates/mimus-spec/src/lib.rs
-  line: 170
-  module: mimus-spec
-- name: load_specs
-  kind: function
-  file: crates/mimus-spec/src/lib.rs
-  line: 382
-  module: mimus-spec
-- name: match_globs_repo_name
-  kind: function
-  file: crates/mimus-spec/src/lib.rs
-  line: 451
-  module: mimus-spec
-- name: matches_repo
-  kind: function
-  file: crates/mimus-spec/src/lib.rs
-  line: 196
-  module: mimus-spec
-- name: mimus-spec
-  kind: module
-  file: crates/mimus-spec/Cargo.toml
-  line: 1
-  module: mimus-spec
-- name: missing_and_unlisted
-  kind: function
-  file: crates/mimus-spec/tests/conformance.rs
-  line: 101
-  module: mimus-spec
-- name: missing_dir_flagged
-  kind: function
-  file: crates/mimus-spec/tests/conformance.rs
-  line: 139
-  module: mimus-spec
-- name: non_git_dir_falls_back_to_walk
-  kind: function
-  file: crates/mimus-spec/tests/conformance.rs
-  line: 168
-  module: mimus-spec
-- name: parse
-  kind: function
-  file: crates/mimus-spec/src/lib.rs
-  line: 189
-  module: mimus-spec
-- name: parse_minimal
-  kind: function
-  file: crates/mimus-spec/src/lib.rs
-  line: 409
-  module: mimus-spec
-- name: parse_toml
-  kind: function
-  file: crates/mimus-spec/src/lib.rs
-  line: 179
-  module: mimus-spec
-- name: path_tables_and_unknown_keys_deserialize
-  kind: function
-  file: crates/mimus-spec/src/lib.rs
-  line: 426
-  module: mimus-spec
-- name: repo
-  kind: function
-  file: crates/mimus-spec/tests/conformance.rs
-  line: 21
-  module: mimus-spec
-- name: repo_files
-  kind: function
-  file: crates/mimus-spec/src/lib.rs
-  line: 315
-  module: mimus-spec
-- name: repo_name
-  kind: function
-  file: crates/mimus-spec/src/lib.rs
-  line: 368
-  module: mimus-spec
-- name: repo_name_and_load_specs_dir
-  kind: function
-  file: crates/mimus-spec/tests/conformance.rs
-  line: 181
-  module: mimus-spec
-- name: severity_warn_maps
-  kind: function
-  file: crates/mimus-spec/src/lib.rs
-  line: 445
-  module: mimus-spec
-- name: tests
-  kind: module
-  file: crates/mimus-spec/src/lib.rs
-  line: 404
-  module: mimus-spec
-- name: to_core
-  kind: function
-  file: crates/mimus-spec/src/lib.rs
-  line: 53
-  module: mimus-spec
-- name: unlisted_flags_uncovered_tracked_file
-  kind: function
-  file: crates/mimus-spec/tests/conformance.rs
-  line: 119
-  module: mimus-spec
-- name: untracked_files_are_invisible
-  kind: function
-  file: crates/mimus-spec/tests/conformance.rs
-  line: 157
-  module: mimus-spec
-- name: violation
-  kind: function
-  file: crates/mimus-spec/src/lib.rs
-  line: 290
-  module: mimus-spec
-- name: walk_files
-  kind: function
-  file: crates/mimus-spec/src/lib.rs
-  line: 343
-  module: mimus-spec
-- name: warn_severity_maps
-  kind: function
-  file: crates/mimus-spec/tests/conformance.rs
-  line: 148
-  module: mimus-spec
+api_omitted: 57
 deps:
 - globset
 - mimus-core
+- regex
 - scarab-compose
 - serde
 - serde_json
 - thiserror
+- toml
 - tempfile
 - globset
 - scarab_compose
@@ -224,9 +227,9 @@ provenance:
   - crates/mimus-spec/src/lib.rs
   - crates/mimus-spec/tests/conformance.rs
   hashes:
-  - 475f3f4327e5de3c3b0ef958e22e16e8b274e2ed
-  - 56d654622f0ad19f5bf5c5da0d07bca704253424
-  - 8e7d73232c90f00ab6a3b8b43818d8b41c35574c
-  commit_sha: ed65452cfc7d8ce73e80d8d07848e63a01ad7a38
-  generated_at: '1795488163'
+  - 241da66a4604c46143a9bfcbdf834248f06abba7
+  - f5a2446438fb5759f72cfcdd03dd18994688ceb9
+  - 39c61be825725f2a39ba47d0632b2448b920e523
+  commit_sha: 5562a48ee91d18e91761185daa0c08c531ca7d7b
+  generated_at: '1795529214'
   generator: kuda-template/0.1.4

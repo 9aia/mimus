@@ -11,10 +11,6 @@ members = [
     "crates/mimus-check-graph",
     "crates/mimus-check-acp",
     "crates/mimus-rules",
-    "crates/mimus-secret",
-    "crates/mimus-keyring",
-    "crates/mimus-dotenv",
-    "crates/mimus-cuora",
     "crates/mimus-config",
     "crates/mimus-spec",
     "crates/mimus-driver",
@@ -43,10 +39,10 @@ mimus-check-symbol = { path = "crates/mimus-check-symbol", version = "0.1.0" }
 mimus-check-graph = { path = "crates/mimus-check-graph", version = "0.1.0" }
 mimus-check-acp = { path = "crates/mimus-check-acp", version = "0.1.0" }
 mimus-rules = { path = "crates/mimus-rules", version = "0.1.0" }
-mimus-secret = { path = "crates/mimus-secret", version = "0.1.0" }
-mimus-keyring = { path = "crates/mimus-keyring", version = "0.1.0" }
-mimus-dotenv = { path = "crates/mimus-dotenv", version = "0.1.0" }
-mimus-cuora = { path = "crates/mimus-cuora", version = "0.1.0" }
+cuora-secret = { git = "ssh://git@github.com/9aia/cuora.git", rev = "f81164366bd436a7d4cf204c6e7a83555f50302f" }
+cuora-secret-cuora = { git = "ssh://git@github.com/9aia/cuora.git", rev = "f81164366bd436a7d4cf204c6e7a83555f50302f" }
+cuora-secret-keyring = { git = "ssh://git@github.com/9aia/cuora.git", rev = "f81164366bd436a7d4cf204c6e7a83555f50302f" }
+cuora-secret-dotenv = { git = "ssh://git@github.com/9aia/cuora.git", rev = "f81164366bd436a7d4cf204c6e7a83555f50302f" }
 mimus-config = { path = "crates/mimus-config", version = "0.1.0" }
 mimus-spec = { path = "crates/mimus-spec", version = "0.1.0" }
 mimus-driver = { path = "crates/mimus-driver", version = "0.1.0" }
@@ -62,6 +58,9 @@ scarab-validate = { git = "ssh://git@github.com/9aia/scarab.git", rev = "85e50d5
 globset = "0.4"
 thiserror = "2"
 tempfile = "3"
+sepia-acp = { git = "ssh://git@github.com/9aia/sepia.git", rev = "c6f66e48050a76e24f4149438d6c20ab21bbbd91", version = "0.2.0" }
+lasius-vcs = { git = "ssh://git@github.com/9aia/lasius.git", rev = "351857536395951d5f6f8502cdaf86a737520b02", version = "0.4" }
+lasius-vcs-git = { git = "ssh://git@github.com/9aia/lasius.git", rev = "351857536395951d5f6f8502cdaf86a737520b02", version = "0.4" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "0.8"

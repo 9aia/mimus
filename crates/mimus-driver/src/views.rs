@@ -21,6 +21,7 @@
 //! history — there is no `mimus:verdicts`/`mimus:history` view to
 //! build. `mimus:status` says so.
 
+use lasius_vcs::Vcs;
 use pavo_driver_kit as kit;
 use pavo_protocol::{Contribution, DriverManifest, QueryBinding, ViewNode, ViewSpec};
 use serde_json::{json, Map, Value};
@@ -359,10 +360,10 @@ struct CardRow {
     files: usize,
 }
 
-/// Batch `git hash-object` for the provenance files that exist —
-/// one spawn for the whole card set. Returns file → hash; a file
-/// missing from the map counts as "" (drifted), matching the CLI's
-/// `.ok().filter(success)` fallback.
+/// Batch `git hash-object` (via the lasius-vcs port) for the
+/// provenance files that exist — one spawn for the whole card set.
+/// Returns file → hash; a file missing from the map counts as ""
+/// (drifted), matching the CLI's fallback.
 fn hash_objects(root: &std::path::Path, files: &[String]) -> Map<String, Value> {
     let mut out = Map::new();
     let existing: Vec<&String> = files
@@ -372,25 +373,12 @@ fn hash_objects(root: &std::path::Path, files: &[String]) -> Map<String, Value> 
     if existing.is_empty() {
         return out;
     }
-    let mut cmd = std::process::Command::new("git");
-    cmd.arg("-C")
-        .arg(root)
-        .arg("hash-object")
-        .arg("--")
-        .args(existing.iter().map(|s| s.as_str()));
-    let hashes = cmd
-        .output()
-        .ok()
-        .filter(|o| o.status.success())
-        .map(|o| {
-            String::from_utf8_lossy(&o.stdout)
-                .lines()
-                .map(str::to_owned)
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
+    let paths: Vec<&str> = existing.iter().map(|s| s.as_str()).collect();
+    let hashes = lasius_vcs_git::GitVcs.hash_objects(root, &paths);
     for (f, h) in existing.iter().zip(hashes) {
-        out.insert((*f).clone(), json!(h));
+        if let Some(h) = h {
+            out.insert((*f).clone(), json!(h));
+        }
     }
     out
 }

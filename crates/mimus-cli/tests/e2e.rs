@@ -701,7 +701,8 @@ for line in sys.stdin:
         ans = pop()
         if ans != "NORESULT":
             send({"jsonrpc": "2.0", "method": "session/update",
-                  "params": {"update": {"content": {"text": ans}}}})
+                  "params": {"update": {"sessionUpdate": "agent_message_chunk",
+                                        "content": {"text": ans}}}})
         send({"jsonrpc": "2.0", "id": mid, "result": {}})
 "#;
 

@@ -9,7 +9,12 @@
 use mimus_check::Checker;
 use mimus_check_acp::{probe, propose, AcpChecker};
 use mimus_core::{Claim, ClaimKind, Severity};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+
+/// env mutation (`MIMUS_ACP_TIMEOUT_SECS`, PATH) is process-global
+/// and every spawned client reads the timeout — serialize the
+/// whole binary (plain `cargo test` shares the process).
+static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 const STUB: &str = r#"import json, sys
 
@@ -49,9 +54,11 @@ for line in sys.stdin:
         send({"jsonrpc": "2.0", "id": 902 + (mid or 0), "method": "agent/no_such_method"})
         send({"jsonrpc": "2.0", "id": 4242, "result": {}})  # stray response — id never matches
         send({"jsonrpc": "2.0", "method": "session/update",
-              "params": {"update": {"content": [{"text": ""}, {"type": "image"}]}}})
+              "params": {"update": {"sessionUpdate": "agent_message_chunk",
+                                    "content": [{"text": ""}, {"type": "image"}]}}})
         send({"jsonrpc": "2.0", "method": "session/update",
-              "params": {"update": {"content": "a bare string, not text-or-blocks"}}})
+              "params": {"update": {"sessionUpdate": "agent_message_chunk",
+                                    "content": "a bare string, not text-or-blocks"}}})
         sys.stdout.write("not json\n")
         sys.stdout.flush()
         ans = pop()
@@ -60,7 +67,8 @@ for line in sys.stdin:
             continue
         if ans != "NORESULT":
             send({"jsonrpc": "2.0", "method": "session/update",
-                  "params": {"update": {"content": {"text": ans}}}})
+                  "params": {"update": {"sessionUpdate": "agent_message_chunk",
+                                        "content": {"text": ans}}}})
         send({"jsonrpc": "2.0", "id": mid, "result": {}})
 "#;
 
@@ -104,7 +112,8 @@ while True:
         content = ans.get("result", {}).get("content", "")
         verdict = "REFUTED: doc.md contradicts the claim" if content else "VERIFIED"
         send({"jsonrpc": "2.0", "method": "session/update",
-              "params": {"update": {"content": {"text": verdict}}}})
+              "params": {"update": {"sessionUpdate": "agent_message_chunk",
+                                    "content": {"text": verdict}}}})
         send({"jsonrpc": "2.0", "id": mid, "result": {"stopReason": "end_turn"}})
 "#;
 
@@ -150,7 +159,8 @@ for line in sys.stdin:
         send({"jsonrpc": "2.0", "id": mid, "result": {}})
     elif method == "session/prompt":
         send({"jsonrpc": "2.0", "method": "session/update",
-              "params": {"update": {"content": {"text": "VERIFIED"}}}})
+              "params": {"update": {"sessionUpdate": "agent_message_chunk",
+                                    "content": {"text": "VERIFIED"}}}})
         send({"jsonrpc": "2.0", "id": mid, "result": {}})
 "#;
 
@@ -203,7 +213,7 @@ fn tmp(tag: &str) -> PathBuf {
 }
 
 /// `(cmd, queue_path)` — cmd runs the stub against `queue`'s file.
-fn agent(dir: &PathBuf, answers: &[&str]) -> String {
+fn agent(dir: &Path, answers: &[&str]) -> String {
     let stub = dir.join("agent.py");
     std::fs::write(&stub, STUB).unwrap();
     let queue = dir.join("queue");
@@ -222,6 +232,7 @@ fn claim(text: &str, source: &str, line: u32) -> Claim {
 
 #[test]
 fn handles_and_dead_path_triage() {
+    let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tmp("triage");
     // cmd `false` — if the agent were spawned it would fail; triage
     // must decide without it.
@@ -250,6 +261,7 @@ fn handles_and_dead_path_triage() {
 
 #[test]
 fn check_verdicts_and_cache() {
+    let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tmp("verdicts");
     std::fs::write(dir.join("doc.md"), "x").unwrap();
     std::fs::create_dir_all(dir.join("real")).unwrap();
@@ -298,6 +310,7 @@ fn check_verdicts_and_cache() {
 
 #[test]
 fn verdicts_cache_file_loading() {
+    let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     // corrupt cache file → treated as empty
     let dir = tmp("corrupt");
     std::fs::create_dir_all(dir.join(".mimus")).unwrap();
@@ -320,6 +333,7 @@ fn verdicts_cache_file_loading() {
 
 #[test]
 fn batch_singles_and_early_return() {
+    let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tmp("batch");
     std::fs::write(dir.join("doc.md"), "x").unwrap();
     let c = AcpChecker::new(agent(&dir, &["VERIFIED"]), &dir);
@@ -341,6 +355,7 @@ fn batch_singles_and_early_return() {
 
 #[test]
 fn batch_numbered_verdicts_and_clusters() {
+    let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tmp("numbered");
     std::fs::write(dir.join("doc.md"), "x").unwrap();
     let c = AcpChecker::new(
@@ -391,6 +406,7 @@ fn batch_numbered_verdicts_and_clusters() {
 
 #[test]
 fn batch_contradiction_and_dead_agent() {
+    let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tmp("contradict");
     std::fs::write(dir.join("doc.md"), "x").unwrap();
     let c = AcpChecker::new(
@@ -440,6 +456,7 @@ fn batch_contradiction_and_dead_agent() {
 /// non-numeric ids, out-of-range/zero indexes, empty what.
 #[test]
 fn vs_line_rejects_malformed_shapes() {
+    let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tmp("vsmalformed");
     std::fs::write(dir.join("doc.md"), "x").unwrap();
     let c = AcpChecker::new(
@@ -464,6 +481,7 @@ fn vs_line_rejects_malformed_shapes() {
 /// check still completes normally.
 #[test]
 fn session_without_id_falls_back() {
+    let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tmp("nosid");
     let c = AcpChecker::new(stub_agent(&dir, NOSID_STUB), &dir);
     assert!(c
@@ -477,6 +495,7 @@ fn session_without_id_falls_back() {
 /// surfaces as the check error, not a hang or a panic.
 #[test]
 fn invalid_utf8_agent_output_errors() {
+    let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tmp("badutf8");
     let c = AcpChecker::new(stub_agent(&dir, BADUTF8_STUB), &dir);
     assert!(c
@@ -489,6 +508,7 @@ fn invalid_utf8_agent_output_errors() {
 /// error surfaces from check/probe.
 #[test]
 fn session_new_failure_errors() {
+    let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tmp("halfhand");
     let cmd = stub_agent(&dir, HALF_STUB);
     assert!(probe(&cmd, &dir).is_err());
@@ -501,6 +521,7 @@ fn session_new_failure_errors() {
 
 #[test]
 fn batch_connect_failure() {
+    let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tmp("connfail");
     let c = AcpChecker::new("false", &dir);
     let out = c.check_batch(&[
@@ -514,6 +535,7 @@ fn batch_connect_failure() {
 
 #[test]
 fn error_response_propagates() {
+    let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tmp("jrpcerr");
     std::fs::write(dir.join("doc.md"), "x").unwrap();
     let c = AcpChecker::new(agent(&dir, &["ERROR"]), &dir);
@@ -526,6 +548,7 @@ fn error_response_propagates() {
 
 #[test]
 fn probe_and_propose() {
+    let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     // ok
     let dir = tmp("probeok");
     let cmd = agent(&dir, &["ok"]);
@@ -570,7 +593,7 @@ fn probe_and_propose() {
     let _ = std::fs::remove_dir_all(tmp("proposeempty").as_path());
 }
 
-fn stub_agent(dir: &PathBuf, stub: &str) -> String {
+fn stub_agent(dir: &Path, stub: &str) -> String {
     let path = dir.join("agent.py");
     std::fs::write(&path, stub).unwrap();
     format!("python3 {}", path.display())
@@ -580,6 +603,7 @@ fn stub_agent(dir: &PathBuf, stub: &str) -> String {
 /// completes — this used to deadlock `mimus report` forever.
 #[test]
 fn tool_enabled_agent_completes() {
+    let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tmp("toolagent");
     std::fs::write(dir.join("doc.md"), "the doc says otherwise").unwrap();
     let c = AcpChecker::new(stub_agent(&dir, TOOL_STUB), &dir);
@@ -595,6 +619,7 @@ fn tool_enabled_agent_completes() {
 /// request timeout instead of hanging forever.
 #[test]
 fn blocked_agent_times_out() {
+    let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tmp("silent");
     unsafe {
         std::env::set_var("MIMUS_ACP_TIMEOUT_SECS", "3");
@@ -603,7 +628,7 @@ fn blocked_agent_times_out() {
     let t0 = std::time::Instant::now();
     let r = c.check(&claim("the engine is very fast indeed", "doc.md", 1));
     let e = r.expect_err("silent agent must surface an error, not hang");
-    assert!(e.contains("blocked"), "{e}");
+    assert!(e.contains("timed out"), "{e}");
     assert!(t0.elapsed().as_secs() < 60, "{:?}", t0.elapsed());
     unsafe {
         std::env::remove_var("MIMUS_ACP_TIMEOUT_SECS");
@@ -616,6 +641,7 @@ fn blocked_agent_times_out() {
 /// triage decided nothing (agent spawn would fail → Err).
 #[test]
 fn comment_slash_pairs_are_not_paths() {
+    let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tmp("comments");
     let c = AcpChecker::new("false", &dir);
     for text in [
@@ -654,6 +680,7 @@ fn comment_slash_pairs_are_not_paths() {
 /// just whole-claim text — the same suppression docs already got.
 #[test]
 fn ignore_prefixes_cover_comment_claim_tokens() {
+    let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tmp("ignpref");
     let mut c = AcpChecker::new("false", &dir);
     c.ignore_prefixes = vec!["api/".into(), "internal/".into()];
@@ -687,6 +714,7 @@ fn ignore_prefixes_cover_comment_claim_tokens() {
 /// agent preamble ("Identifying contradictions") is not a finding.
 #[test]
 fn contradiction_needs_structured_line() {
+    let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = tmp("vsline");
     std::fs::write(dir.join("doc.md"), "x").unwrap();
     let c = AcpChecker::new(
