@@ -213,3 +213,265 @@ fn bad_glob_errors() {
     let r = repo(&["a"]);
     assert!(s.check_repo(r.path()).is_err());
 }
+
+// --- phase-2 predicate tier -------------------------------------
+
+fn predicate_violations(vs: &[mimus_spec::SpecViolation]) -> Vec<&mimus_spec::SpecViolation> {
+    vs.iter()
+        .filter(|v| v.kind == ViolationKind::Predicate)
+        .collect()
+}
+
+#[test]
+fn path_contains_hit_and_miss() {
+    let r = repo(&["LICENSE", "README.md"]);
+    std::fs::write(r.path().join("LICENSE"), "MIT License\n").unwrap();
+    let s = Spec::parse(
+        r#"
+family = "t"
+files  = ["LICENSE", "README.md"]
+
+[path."LICENSE"]
+contains = "MIT"
+
+[path."README.md"]
+contains = "nonexistent-substring"
+"#,
+    )
+    .unwrap();
+    let vs = s.check_repo(r.path()).unwrap();
+    let pv = predicate_violations(&vs);
+    assert_eq!(pv.len(), 1, "{vs:?}");
+    assert_eq!(pv[0].path, "README.md");
+    assert_eq!(pv[0].severity, mimus_core::Severity::Error);
+    assert_eq!(pv[0].spec, "t");
+}
+
+#[test]
+fn path_exists_true_and_false() {
+    let r = repo(&["present.txt"]);
+    std::fs::write(r.path().join("stray-untracked.txt"), "x").unwrap();
+    let s = Spec::parse(
+        r#"
+family = "t"
+files  = ["present.txt"]
+
+[path."present.txt"]
+exists = true
+
+[path."stray-untracked.txt"]
+exists = false
+
+[path."absent.txt"]
+exists = false
+"#,
+    )
+    .unwrap();
+    let vs = s.check_repo(r.path()).unwrap();
+    let pv = predicate_violations(&vs);
+    // exists=false fires on the untracked-but-present file; the
+    // absent path is satisfied (no violation, no missing either)
+    assert_eq!(pv.len(), 1, "{vs:?}");
+    assert_eq!(pv[0].path, "stray-untracked.txt");
+    assert!(pv.iter().all(|v| v.path != "absent.txt"));
+}
+
+#[test]
+fn path_regex_require_and_forbid() {
+    let r = repo(&["Cargo.toml"]);
+    std::fs::write(r.path().join("Cargo.toml"), "[package]\nname = \"x\"\n").unwrap();
+    let s = Spec::parse(
+        r#"
+family = "t"
+files  = ["Cargo.toml", "deny.toml"]
+
+[path."Cargo.toml"]
+regex = '^\[package\]'
+
+[path."deny.toml"]
+regex.forbid = ['secret']
+regex.require = ['allowed']
+"#,
+    )
+    .unwrap();
+    std::fs::write(r.path().join("deny.toml"), "allowed\n").unwrap();
+    git(r.path(), &["add", "-A"]);
+    git(r.path(), &["commit", "-qm", "add deny"]);
+
+    let vs = s.check_repo(r.path()).unwrap();
+    assert!(vs.is_empty(), "{vs:?}");
+
+    // now violate both: forbid hit + require miss
+    std::fs::write(r.path().join("deny.toml"), "secret\n").unwrap();
+    let vs = s.check_repo(r.path()).unwrap();
+    let pv = predicate_violations(&vs);
+    assert_eq!(pv.len(), 2, "{vs:?}");
+    assert!(pv.iter().all(|v| v.path == "deny.toml"));
+}
+
+#[test]
+fn path_regex_string_form_miss() {
+    let r = repo(&["a.txt"]);
+    std::fs::write(r.path().join("a.txt"), "hello\n").unwrap();
+    let s = Spec::parse(
+        r#"
+family = "t"
+files  = ["a.txt"]
+
+[path."a.txt"]
+regex = '^goodbye'
+"#,
+    )
+    .unwrap();
+    let vs = s.check_repo(r.path()).unwrap();
+    let pv = predicate_violations(&vs);
+    assert_eq!(pv.len(), 1, "{vs:?}");
+    assert_eq!(pv[0].path, "a.txt");
+}
+
+#[test]
+fn path_predicates_skip_absent_files() {
+    // a path-table-only absent file produces nothing — no missing,
+    // no predicate noise (exists=false is satisfied by absence)
+    let r = repo(&["a.txt"]);
+    let s = Spec::parse(
+        r#"
+family = "t"
+files  = ["a.txt"]
+cover  = ["**"]
+
+[path."ghost.txt"]
+exists = true
+contains = "x"
+regex.require = ['y']
+"#,
+    )
+    .unwrap();
+    let vs = s.check_repo(r.path()).unwrap();
+    assert!(vs.is_empty(), "{vs:?}");
+}
+
+#[test]
+fn unknown_path_table_key_errors() {
+    let r = repo(&["a.txt"]);
+    let s = Spec::parse(
+        r#"
+family = "t"
+files  = ["a.txt"]
+
+[path."a.txt"]
+manifest.license = "MIT"
+"#,
+    )
+    .unwrap();
+    // load succeeds (forward-compat) — the typo surfaces at check
+    let err = s.check_repo(r.path()).unwrap_err();
+    match err {
+        mimus_spec::SpecError::Predicate { path, key } => {
+            assert_eq!(path, "a.txt");
+            assert_eq!(key, "manifest");
+        }
+        other => panic!("expected Predicate error, got {other}"),
+    }
+}
+
+#[test]
+fn unknown_regex_subkey_errors() {
+    let r = repo(&["a.txt"]);
+    let s = Spec::parse(
+        r#"
+family = "t"
+files  = ["a.txt"]
+
+[path."a.txt"]
+regex.requrie = ['x']
+"#,
+    )
+    .unwrap();
+    let err = s.check_repo(r.path()).unwrap_err();
+    assert!(matches!(err, mimus_spec::SpecError::Predicate { .. }));
+}
+
+#[test]
+fn bad_regex_pattern_errors() {
+    let r = repo(&["a.txt"]);
+    let s = Spec::parse(
+        r#"
+family = "t"
+files  = ["a.txt"]
+
+[path."a.txt"]
+regex = '[unclosed'
+"#,
+    )
+    .unwrap();
+    assert!(s.check_repo(r.path()).is_err());
+}
+
+#[test]
+fn git_untracked_flags_untracked_files() {
+    let r = repo(&["Cargo.toml", ".gitignore"]);
+    std::fs::write(r.path().join(".gitignore"), "ignored/\n").unwrap();
+    git(r.path(), &["add", "-A"]);
+    git(r.path(), &["commit", "-qm", "gitignore"]);
+    // untracked: matches pattern; ignored/: excluded by
+    // --exclude-standard; tracked: never listed
+    std::fs::write(r.path().join("notes.scratch"), "x").unwrap();
+    std::fs::create_dir_all(r.path().join("ignored")).unwrap();
+    std::fs::write(r.path().join("ignored/junk.txt"), "x").unwrap();
+
+    let s = Spec::parse(
+        r#"
+family = "t"
+files  = ["Cargo.toml", ".gitignore"]
+
+git.untracked = ["*.scratch"]
+"#,
+    )
+    .unwrap();
+    let vs = s.check_repo(r.path()).unwrap();
+    let pv = predicate_violations(&vs);
+    assert_eq!(pv.len(), 1, "{vs:?}");
+    assert_eq!(pv[0].path, "notes.scratch");
+    assert_eq!(pv[0].kind, ViolationKind::Predicate);
+}
+
+#[test]
+fn git_untracked_skips_non_git_repo() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join("a.txt"), "x").unwrap();
+    let s = Spec::parse(
+        r#"
+family = "t"
+files  = ["a.txt"]
+cover  = ["**"]
+
+git.untracked = ["*"]
+"#,
+    )
+    .unwrap();
+    // non-git → git ls-files fails → predicate tier skips silently
+    let vs = s.check_repo(dir.path()).unwrap();
+    assert!(vs.is_empty(), "{vs:?}");
+}
+
+#[test]
+fn warn_severity_applies_to_predicates() {
+    let r = repo(&["a.txt"]);
+    let s = Spec::parse(
+        r#"
+family = "t"
+severity = "warn"
+files  = ["a.txt"]
+cover  = ["**"]
+
+[path."a.txt"]
+contains = "absent"
+"#,
+    )
+    .unwrap();
+    let vs = s.check_repo(r.path()).unwrap();
+    let pv = predicate_violations(&vs);
+    assert_eq!(pv.len(), 1);
+    assert_eq!(pv[0].severity, mimus_core::Severity::Warn);
+}

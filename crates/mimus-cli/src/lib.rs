@@ -486,6 +486,7 @@ fn standard(cli: &Cli, repo: &str, specs: &[String]) -> i32 {
                     match v.kind {
                         mimus_spec::ViolationKind::Missing => "missing",
                         mimus_spec::ViolationKind::Unlisted => "unlisted",
+                        mimus_spec::ViolationKind::Predicate => "predicate",
                     },
                     v.path,
                     v.detail,
