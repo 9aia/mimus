@@ -358,11 +358,14 @@ fn coverage(cli: &Cli) -> i32 {
     0
 }
 
-/// Provider registry for `mimus standard` — empty until the first
-/// org-tool providers (lasius, bupha, …) land; every declared
-/// `providers.<ns>` then degrades to a warn violation.
+/// Provider registry for `mimus standard` — `cargo` ships built-in
+/// (org-local `[patch]` enforcement); lasius/bupha/etc. register
+/// here as they land. Every declared `providers.<ns>` with no
+/// registered provider degrades to a warn violation.
 fn spec_providers() -> mimus_spec::ProviderSet {
-    mimus_spec::ProviderSet::new()
+    let mut set = mimus_spec::ProviderSet::new();
+    set.register(mimus_spec::CargoProvider);
+    set
 }
 
 /// `mimus standard` — P-001 spike: declarative file-set conformance.

@@ -337,6 +337,129 @@ impl ProviderSet {
     }
 }
 
+/// `cargo` provider — Cargo.toml semantics the regex layer can't
+/// express. Currently one claim:
+///
+/// - `patches = "org-only"` — every `[patch.<src>]` table must
+///   target an org-local source (`crates-io` or a
+///   `github.com/handl-lang/*` URL), and every patch entry must
+///   resolve org-locally: `path = "../…"` sibling checkout or a
+///   `git` URL under `github.com/handl-lang/`. Version-only
+///   entries (no `path`/`git`/`registry`) are allowed — they pin,
+///   they don't relocate.
+/// - `severity = "warn" | "error"` — optional, default `"error"`.
+///
+/// Unknown claim keys are a [`ProviderError`] — a typo'd claim
+/// must not silently pass.
+#[derive(Debug, Default, Clone, Copy)]
+pub struct CargoProvider;
+
+impl StandardProvider for CargoProvider {
+    fn ns(&self) -> &str {
+        "cargo"
+    }
+
+    fn check(
+        &self,
+        repo: &Path,
+        claims: &serde_json::Value,
+    ) -> Result<Vec<SpecViolation>, ProviderError> {
+        let obj = claims
+            .as_object()
+            .ok_or_else(|| ProviderError("`providers.cargo` claims must be a table".into()))?;
+        for key in obj.keys() {
+            if !matches!(key.as_str(), "patches" | "severity") {
+                return Err(ProviderError(format!(
+                    "unknown `providers.cargo` claim `{key}`"
+                )));
+            }
+        }
+        let patches = obj
+            .get("patches")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("");
+        if patches != "org-only" {
+            return Err(ProviderError(format!(
+                "`providers.cargo.patches` must be \"org-only\", got {patches:?}"
+            )));
+        }
+        let severity = match obj.get("severity").and_then(serde_json::Value::as_str) {
+            None | Some("error") => mimus_core::Severity::Error,
+            Some("warn") => mimus_core::Severity::Warn,
+            Some(other) => {
+                return Err(ProviderError(format!(
+                    "`providers.cargo.severity` must be \"warn\" or \"error\", got {other:?}"
+                )));
+            }
+        };
+
+        let manifest = repo.join("Cargo.toml");
+        let text = match std::fs::read_to_string(&manifest) {
+            Ok(t) => t,
+            Err(err) => {
+                return Err(ProviderError(format!(
+                    "cannot read {}: {err}",
+                    manifest.display()
+                )));
+            }
+        };
+        let doc: toml::Value = text
+            .parse()
+            .map_err(|err| ProviderError(format!("Cargo.toml parse: {err}")))?;
+        let Some(patch) = doc.get("patch").and_then(toml::Value::as_table) else {
+            return Ok(Vec::new());
+        };
+
+        let mut out = Vec::new();
+        let mut violate = |detail: String| {
+            out.push(SpecViolation {
+                kind: ViolationKind::Provider,
+                path: "Cargo.toml".into(),
+                spec: "cargo".into(),
+                severity,
+                detail,
+            });
+        };
+        for (src, entries) in patch {
+            let org_src = src == "crates-io" || src.contains("github.com/handl-lang/");
+            if !org_src {
+                violate(format!(
+                    "`[patch.{src}]` source is not org-local — patches may only target \
+                     `crates-io` or `github.com/handl-lang/*`"
+                ));
+            }
+            let Some(entries) = entries.as_table() else {
+                violate(format!("`[patch.{src}]` is not a table"));
+                continue;
+            };
+            for (name, entry) in entries {
+                let Some(entry) = entry.as_table() else {
+                    violate(format!("`[patch.{src}] {name}` is not a table"));
+                    continue;
+                };
+                if let Some(path) = entry.get("path").and_then(toml::Value::as_str) {
+                    if !path.starts_with("../") {
+                        violate(format!(
+                            "`[patch.{src}] {name}` path {path:?} is not a `../` sibling checkout"
+                        ));
+                    }
+                } else if let Some(git) = entry.get("git").and_then(toml::Value::as_str) {
+                    if !git.contains("github.com/handl-lang/") {
+                        violate(format!(
+                            "`[patch.{src}] {name}` git {git:?} is not `github.com/handl-lang/*`"
+                        ));
+                    }
+                } else if entry.contains_key("registry") {
+                    violate(format!(
+                        "`[patch.{src}] {name}` uses an external `registry` source"
+                    ));
+                }
+            }
+        }
+        Ok(out)
+    }
+}
+
 impl Spec {
     /// Load + resolve a spec file — extension dispatch like
     /// `Composer::resolve_file` (`.toml` → TOML, `.json` → JSON,
@@ -1218,5 +1341,95 @@ unknown.typo = "provider's problem, not ours"
         assert_eq!(set.len(), 1);
         assert!(set.get("fake").is_some());
         assert!(set.get("other").is_none());
+    }
+
+    fn cargo_claims() -> serde_json::Value {
+        serde_json::json!({ "patches": "org-only" })
+    }
+
+    #[test]
+    fn cargo_provider_accepts_org_local_patches() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            r#"
+[package]
+name = "x"
+
+[patch."https://github.com/handl-lang/kernel"]
+handl-language = { path = "../kernel/crates/language" }
+other = { git = "ssh://git@github.com/handl-lang/engine.git" }
+pinned = { version = "1.2.3" }
+
+[patch.crates-io]
+serde = { git = "https://github.com/handl-lang/serde-shim.git" }
+"#,
+        )
+        .unwrap();
+        let vs = CargoProvider.check(dir.path(), &cargo_claims()).unwrap();
+        assert!(vs.is_empty(), "{vs:?}");
+    }
+
+    #[test]
+    fn cargo_provider_flags_external_patch_source() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            "[patch.\"https://github.com/rust-lang/crates.io-index\"]\nfoo = { git = \"https://github.com/evil/x.git\" }\n",
+        )
+        .unwrap();
+        let vs = CargoProvider.check(dir.path(), &cargo_claims()).unwrap();
+        assert_eq!(vs.len(), 2, "{vs:?}"); // bad src + bad git entry
+        assert!(vs.iter().all(|v| v.kind == ViolationKind::Provider));
+        assert!(vs.iter().all(|v| v.severity == mimus_core::Severity::Error));
+    }
+
+    #[test]
+    fn cargo_provider_flags_non_sibling_path_and_registry() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            r#"
+[patch."https://github.com/handl-lang/kernel"]
+a = { path = "vendor/kernel" }
+b = { registry = "https://example.com" }
+"#,
+        )
+        .unwrap();
+        let vs = CargoProvider.check(dir.path(), &cargo_claims()).unwrap();
+        assert_eq!(vs.len(), 2, "{vs:?}");
+    }
+
+    #[test]
+    fn cargo_provider_no_patch_table_is_clean() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("Cargo.toml"), "[package]\nname = \"x\"\n").unwrap();
+        let vs = CargoProvider.check(dir.path(), &cargo_claims()).unwrap();
+        assert!(vs.is_empty(), "{vs:?}");
+    }
+
+    #[test]
+    fn cargo_provider_rejects_bad_claims() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("Cargo.toml"), "[package]\nname=\"x\"\n").unwrap();
+        for claims in [
+            serde_json::json!({ "patches": "anything" }),
+            serde_json::json!({ "patches": "org-only", "bogus": 1 }),
+            serde_json::json!({ "severity": "warn" }),
+            serde_json::json!("nope"),
+        ] {
+            assert!(
+                CargoProvider.check(dir.path(), &claims).is_err(),
+                "{claims}"
+            );
+        }
+        // severity warn downgrades
+        let vs = CargoProvider
+            .check(
+                dir.path(),
+                &serde_json::json!({ "patches": "org-only", "severity": "warn" }),
+            )
+            .unwrap();
+        assert!(vs.is_empty());
     }
 }
