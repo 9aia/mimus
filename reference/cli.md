@@ -15,6 +15,7 @@ Spots the cuckoo eggs in your repo — claim verification: docs-as-tests, memory
 * [`mimus doctor`↴](#mimus-doctor)
 * [`mimus coverage`↴](#mimus-coverage)
 * [`mimus claims`↴](#mimus-claims)
+* [`mimus standard`↴](#mimus-standard)
 
 ## `mimus`
 
@@ -32,6 +33,7 @@ Spots the cuckoo eggs in your repo — claim verification: docs-as-tests, memory
 * `doctor` — Checker/config/kuda-index health
 * `coverage` — Doc coverage — which indexed symbols no doc ever names. The reverse direction of `check`: code has it, docs silent
 * `claims` — Dump extracted claims (kind/source/line) — tuning aid for the extractor's precision on real docs
+* `standard` — Standard-tier repo conformance — declarative spec file-set diff plus predicate/provider tiers (P-001/P-002)
 
 ###### **Options:**
 
@@ -140,4 +142,18 @@ Dump extracted claims (kind/source/line) — tuning aid for the extractor's prec
 * `--all` — Include card-prose Behavior claims too
 * `--config <CONFIG>` — Config path (else $MIMUS_CONFIG, ./mimus.toml, ~/.config/mimus/mimus.toml)
 * `--format <FORMAT>` — Output format: human | json [default: human]
+* `-h, --help` — Print help
+
+## `mimus standard`
+
+Standard-tier repo conformance — declarative spec file-set diff plus predicate/provider tiers (P-001/P-002)
+
+**Usage:** `mimus standard [OPTIONS] --repo <REPO> --spec <SPECS>`
+
+###### **Options:**
+
+* `--config <CONFIG>` — Config path (else $MIMUS_CONFIG, ./mimus.toml, ~/.config/mimus/mimus.toml)
+* `--repo <REPO>` — Repo path to check
+* `--format <FORMAT>` — Output format: human | json [default: human]
+* `--spec <SPECS>` — Spec file or directory of specs — repeatable. Specs whose `match` globs don't cover the repo name are skipped; empty `match` applies to every repo
 * `-h, --help` — Print help
