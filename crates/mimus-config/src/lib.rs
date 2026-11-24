@@ -218,6 +218,7 @@ dir = "rules"
 
     #[test]
     fn candidates_in_probes_dir_then_user() {
+        let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         let dir = scratch("in");
         std::fs::write(dir.join("mimus.toml"), CFG).unwrap();
         let saved_cfg = std::env::var("MIMUS_CONFIG").ok();

@@ -7,7 +7,7 @@ use mimus_check::Checker;
 use mimus_core::{Claim, ClaimKind, Severity, Violation};
 use serde_json::{json, Value};
 use std::io::{BufRead, BufReader, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdin, Command, Stdio};
 use std::sync::Mutex;
 
@@ -175,7 +175,7 @@ fn refuted_violation(root: &std::path::Path, claim: &Claim, verdict: &str) -> Op
 
 /// `mimus doctor` probe — spawn the agent, send one canned
 /// prompt, confirm text actually streams back (P6).
-pub fn probe(cmd: &str, root: &PathBuf) -> Result<String, String> {
+pub fn probe(cmd: &str, root: &Path) -> Result<String, String> {
     let (mut client, sid) = AcpChecker::connect(cmd, root)?;
     let (_res, prose) = client.request(
         "session/prompt",
@@ -190,12 +190,7 @@ pub fn probe(cmd: &str, root: &PathBuf) -> Result<String, String> {
 
 /// `mimus fix --semantic` — propose a corrected claim line (P4).
 /// Single prompt, no session state needed beyond connect.
-pub fn propose(
-    cmd: &str,
-    root: &PathBuf,
-    claim_text: &str,
-    evidence: &str,
-) -> Result<String, String> {
+pub fn propose(cmd: &str, root: &Path, claim_text: &str, evidence: &str) -> Result<String, String> {
     let (mut client, sid) = AcpChecker::connect(cmd, root)?;
     let prompt = format!(
         "This claim about the repository is FALSE.\n\
@@ -266,7 +261,7 @@ impl AcpChecker {
     }
 
     /// Spawn + handshake + session — shared by check/check_batch.
-    fn connect(cmd: &str, root: &PathBuf) -> Result<(AcpClient, String), String> {
+    fn connect(cmd: &str, root: &Path) -> Result<(AcpClient, String), String> {
         let mut client = AcpClient::spawn(cmd, root)?;
         client.request(
             "initialize",
@@ -279,7 +274,7 @@ impl AcpChecker {
 }
 
 impl AcpClient {
-    fn spawn(cmd: &str, root: &PathBuf) -> Result<Self, String> {
+    fn spawn(cmd: &str, root: &Path) -> Result<Self, String> {
         let mut child = Command::new("sh")
             .args(["-c", cmd])
             .stdin(Stdio::piped())
@@ -321,7 +316,7 @@ impl AcpClient {
             lines,
             id: 0,
             timeout: request_timeout(),
-            root: root.clone(),
+            root: root.to_path_buf(),
         })
     }
 
@@ -727,11 +722,17 @@ impl Checker for AcpChecker {
 mod tests {
     use super::*;
 
+    /// env/cwd mutation is process-global — serialize the tests
+    /// that spawn clients or touch PATH/MIMUS_ACP_TIMEOUT_SECS
+    /// (plain `cargo test` shares the process).
+    static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
     /// The pump's arms: Ok(_) send when the receiver is alive, the
     /// send-error `break` once it's dead, and the `Err(e)` read arm
     /// on non-UTF-8 output — all deterministic via a delayed agent.
     #[test]
     fn pump_breaks_after_client_drop() {
+        let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         // Agent echoes "a" immediately, "b" after a delay. The "a"
         // line lands a successful send; the receiver swap happens in
         // the quiet window; "b" then lands on a dead channel →
@@ -764,7 +765,7 @@ mod tests {
         // Err(e) arm: invalid UTF-8 on stdout → read_line errors →
         // send(Err) → break. recv the Err line so the arm provably
         // ran before the client drops (a bare drop races the pump).
-        let mut client =
+        let client =
             AcpClient::spawn("printf '\\377'", &PathBuf::from(".")).expect("spawn binary junk");
         let msg = client
             .lines
@@ -787,6 +788,7 @@ mod tests {
     /// falls back to the 240s default rather than panicking.
     #[test]
     fn garbage_timeout_env_falls_back() {
+        let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         unsafe {
             std::env::set_var("MIMUS_ACP_TIMEOUT_SECS", "not-a-number");
         }
@@ -801,6 +803,7 @@ mod tests {
     /// and `request` propagates the Err.
     #[test]
     fn send_to_closed_stdin_errors() {
+        let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         let mut client =
             AcpClient::spawn("exec 0<&-; sleep 5", &PathBuf::from(".")).expect("spawn");
         std::thread::sleep(std::time::Duration::from_millis(150));
@@ -813,6 +816,7 @@ mod tests {
     /// degrade to no-cache rather than failing.
     #[test]
     fn poisoned_verdicts_lock_skips_prune() {
+        let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         let dir = std::env::temp_dir().join(format!("mimus-acp-poison-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
@@ -857,6 +861,7 @@ mod tests {
     /// going (to the dead agent, here).
     #[test]
     fn poisoned_session_lock_paths() {
+        let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         let dir = std::env::temp_dir().join(format!("mimus-acp-poison2-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();

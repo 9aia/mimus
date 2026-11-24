@@ -4,7 +4,7 @@
 //! `run()` is the compat CLI's whole body; drivers (mimus bin,
 //! tamias-driver-mimus `run`) split it into [`parse`]/[`parse_from`]
 //! + [`dispatch`] — argv in, exit code out, ops callable as
-//! `dispatch(&cli)`.
+//!   `dispatch(&cli)`.
 //!
 //! mimus — spots the cuckoo eggs in your repo. Composition root:
 //! parses mimus.toml, wires checker adapters, runs subcommands.
@@ -247,7 +247,7 @@ fn doc_claims(cfg: &Config, root: &Path) -> Vec<mimus_core::Claim> {
     // semantic tier verifies against the code they sit on.
     if cfg.sources.comments {
         for pat in ["crates/**/*.rs", "src/**/*.rs", "**/*.py", "**/*.ts"] {
-            for p in mimus_rules::matching_files(&root, pat) {
+            for p in mimus_rules::matching_files(root, pat) {
                 let noisy = p.components().any(|c| {
                     matches!(
                         c.as_os_str().to_str(),
@@ -335,7 +335,7 @@ fn coverage(cli: &Cli) -> i32 {
                 .push(name.clone());
         }
     }
-    let pct = if total > 0 { covered * 100 / total } else { 0 };
+    let pct = (covered * 100).checked_div(total).unwrap_or(0);
     println!("{covered}/{total} symbols named in docs ({pct}%)");
     for (m, names) in &by_mod {
         let list: Vec<_> = names.iter().take(12).collect();
@@ -1084,7 +1084,7 @@ fn emit(violations: &[Violation], format: &str) {
         return;
     }
     if violations.is_empty() {
-        println!("no violations — {} claims checked", "all");
+        println!("no violations — all claims checked");
         return;
     }
     for v in violations {

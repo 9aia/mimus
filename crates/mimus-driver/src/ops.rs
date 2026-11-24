@@ -37,7 +37,7 @@ const SKIP_PARAMS: &[&str] = &[];
 /// Read-only verbs — `init` writes config, `check`/`report` write
 /// the `.mimus/` triples cache, `fix` rewrites claims. Mutators
 /// belong behind a deliberate trigger, not ambient view polling.
-const READ_ONLY: &[&str] = &["audit", "claims", "coverage", "doctor"];
+const READ_ONLY: &[&str] = &["audit", "claims", "coverage", "doctor", "standard"];
 
 /// `(name, clap spec)` for every leaf verb. Hidden plumbing
 /// (`gen-cli-docs`) is a docs-pipeline verb, not an engine op —

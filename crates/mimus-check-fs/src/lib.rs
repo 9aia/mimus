@@ -133,7 +133,7 @@ mod tests {
     fn leading_slash_is_silence() {
         let c = FsChecker::new(".");
         for t in ["/channel", "/users", "/consulta-tuss", "/etc/passwd"] {
-            assert_eq!(c.check(&claim(t)).unwrap().is_none(), true, "{t}");
+            assert!(c.check(&claim(t)).unwrap().is_none(), "{t}");
         }
     }
 
@@ -146,7 +146,7 @@ mod tests {
             "resources/read",
             "@scope/pkg",
         ] {
-            assert_eq!(c.check(&claim(t)).unwrap().is_none(), true, "{t}");
+            assert!(c.check(&claim(t)).unwrap().is_none(), "{t}");
         }
     }
 
