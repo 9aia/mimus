@@ -258,7 +258,7 @@ provenance:
   - modules/dagger/dagger/src/mimus/main.py
   - modules/dagger/tests/test_self_patch.py
   hashes:
-  - d35524ff7e0a09d0a1139374d9ca1f3d87e7c16b
+  - 911c4976f333747536c5a6c9ff240ac05ad017e0
   - cb3f6438ead264926f39ee1800187cd0bc1dd95c
   - 39c6226209044db33ef04014e64d2169870a6de3
   - e1575f1cd039e7d7df8ff90c20a93bde52f78da7
@@ -267,6 +267,6 @@ provenance:
   - 4093067c2bfef36b97a7be4448a54a5439d61d91
   - 912bc128df92503a9353c765bd892d9ec84c537e
   - d515a59e736b23d553075159e989585bba9ca252
-  commit_sha: 578cb9545a1f8324c79f8cc83eb473a89d114f6d
-  generated_at: '1795553857'
+  commit_sha: bc555ba1c52f006261399e5533c309c41d766b2f
+  generated_at: '1795562809'
   generator: kuda-template/0.1.4

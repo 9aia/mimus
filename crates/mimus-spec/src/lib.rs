@@ -46,6 +46,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use globset::{Glob, GlobSet, GlobSetBuilder};
+use lasius_vcs::Vcs;
 use scarab_compose::Composer;
 use serde::{Deserialize, Serialize};
 
@@ -724,14 +725,10 @@ impl StandardProvider for LasiusProvider {
         if flag("remote_org") {
             match ws.org.as_deref() {
                 Some(org) => {
-                    let url = std::process::Command::new("git")
-                        .arg("-C")
-                        .arg(repo)
-                        .args(["remote", "get-url", "origin"])
-                        .output();
+                    let url =
+                        lasius_vcs_git::GitVcs.exec_out(repo, &["remote", "get-url", "origin"]);
                     match url {
-                        Ok(o) if o.status.success() => {
-                            let remote = String::from_utf8_lossy(&o.stdout);
+                        Ok(remote) => {
                             // https://github.com/<org>/… and
                             // git@github.com:<org>/… (scp-like ssh)
                             // are both org-local.
@@ -739,12 +736,11 @@ impl StandardProvider for LasiusProvider {
                             let ssh = format!("github.com:{org}/");
                             if !remote.contains(&https) && !remote.contains(&ssh) {
                                 violate(format!(
-                                    "origin remote `{}` is not under github.com/{org}/",
-                                    remote.trim()
+                                    "origin remote `{remote}` is not under github.com/{org}/"
                                 ));
                             }
                         }
-                        _ => violate("no `origin` remote — cannot verify org".into()),
+                        Err(_) => violate("no `origin` remote — cannot verify org".into()),
                     }
                 }
                 None => violate("workspace lasius.toml has no `org` key".into()),
@@ -1634,45 +1630,32 @@ fn repo_files(repo: &Path) -> Vec<String> {
     git_ls_files(repo).unwrap_or_else(|| walk_files(repo))
 }
 
-/// `git -C <repo> ls-files` — tracked files only. `None` when git
-/// is missing, the spawn fails, or the path isn't a repo.
+/// `git -C <repo> ls-files` via the lasius-vcs port — tracked files
+/// only. `None` when git is missing, the spawn fails, or the path
+/// isn't a repo.
 fn git_ls_files(repo: &Path) -> Option<Vec<String>> {
-    let out = std::process::Command::new("git")
-        .arg("-C")
-        .arg(repo)
-        .args(["ls-files", "-z"])
-        .output()
+    let out = lasius_vcs_git::GitVcs
+        .exec_out(repo, &["ls-files", "-z"])
         .ok()?;
-    if !out.status.success() {
-        return None;
-    }
     Some(
-        out.stdout
-            .split(|b| *b == 0)
+        out.split('\0')
             .filter(|s| !s.is_empty())
-            .map(|s| String::from_utf8_lossy(s).into_owned())
+            .map(str::to_owned)
             .collect(),
     )
 }
 
-/// `git -C <repo> ls-files --others --exclude-standard` — untracked,
-/// non-ignored files. `None` when git is missing, the spawn fails,
-/// or the path isn't a repo.
+/// `git -C <repo> ls-files --others --exclude-standard` via the
+/// lasius-vcs port — untracked, non-ignored files. `None` when git
+/// is missing, the spawn fails, or the path isn't a repo.
 fn git_ls_files_others(repo: &Path) -> Option<Vec<String>> {
-    let out = std::process::Command::new("git")
-        .arg("-C")
-        .arg(repo)
-        .args(["ls-files", "--others", "--exclude-standard", "-z"])
-        .output()
+    let out = lasius_vcs_git::GitVcs
+        .exec_out(repo, &["ls-files", "--others", "--exclude-standard", "-z"])
         .ok()?;
-    if !out.status.success() {
-        return None;
-    }
     Some(
-        out.stdout
-            .split(|b| *b == 0)
+        out.split('\0')
             .filter(|s| !s.is_empty())
-            .map(|s| String::from_utf8_lossy(s).into_owned())
+            .map(str::to_owned)
             .collect(),
     )
 }

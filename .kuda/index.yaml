@@ -20,7 +20,7 @@ modules:
 commands:
 - cargo check
 - cargo test --workspace
-tree_digest: 95ec9a434a60c06fb0dfabec8a6df40006921e32
+tree_digest: 98eb44887c2ec5e87ccb493fcf3ce66b7cfaea35
 files_total: 81
 provenance:
   files:
@@ -41,7 +41,7 @@ provenance:
   - crates/mimus-spec/Cargo.toml
   - modules/dagger/dagger/pyproject.toml
   hashes:
-  - d35524ff7e0a09d0a1139374d9ca1f3d87e7c16b
+  - 911c4976f333747536c5a6c9ff240ac05ad017e0
   - 8d45094eb8f169d3aa740870e7f478b1418aa175
   - e7348ffc0841bbee8073e26c5481cd858fd776ba
   - 1003e5c4379fa549285c6c962da0b65881ad5327
@@ -55,8 +55,8 @@ provenance:
   - 6b7185a94a97d0e4ebf63efd7a95dd2800f0bc41
   - 32b0dcef9d25773dc1a2bd8c4d56c1f0a2955f33
   - b1cf727ea9ec71dccd378bea295d8def00f34840
-  - ed42998d176a080c2540bdde7be12d339e1a7227
+  - 9502d50f05f8f1573fed8bb41f5ffd89c853bf95
   - 6391d6a9586b1a42d2e3b1270cd9a441f321af68
-  commit_sha: 578cb9545a1f8324c79f8cc83eb473a89d114f6d
-  generated_at: '1795553857'
+  commit_sha: bc555ba1c52f006261399e5533c309c41d766b2f
+  generated_at: '1795562809'
   generator: kuda/0.1.0

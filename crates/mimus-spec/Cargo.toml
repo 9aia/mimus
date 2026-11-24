@@ -20,6 +20,8 @@ regex.workspace = true
 thiserror.workspace = true
 toml.workspace = true
 serde_yaml.workspace = true
+lasius-vcs.workspace = true
+lasius-vcs-git.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

@@ -623,6 +623,8 @@ name = "mimus-spec"
 version = "1.0.0"
 dependencies = [
  "globset",
+ "lasius-vcs",
+ "lasius-vcs-git",
  "mimus-core",
  "regex",
  "scarab-compose",
