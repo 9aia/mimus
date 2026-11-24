@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# mimus gate — the compile floor plus the org conformance leg.
+# scripts/check.sh is the repo's own pre-push floor ("there is no
+# hosted CI by design" — the gate now runs the same floor in a
+# detached worktree); the mimus-standard leg rides the tail like
+# every other gated repo.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+
+# 16 cores / ~11 GiB RAM — cargo jobs OOM under earlyoom on this host.
+export CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-2}"
+export RUSTC_WRAPPER="${RUSTC_WRAPPER:-sccache}"
+export SCCACHE_CONF="${SCCACHE_CONF:-file://$HOME/.cache/sccache}"
+
+bash scripts/check.sh
+
+# Org docs contract — cypera check + docs/ drift gate.
+bash scripts/docs-check.sh
+
+# --- mimus standard: org conformance leg (9aia-standard pack) ------
+# Specs + runner ship in the 9aia-standard tamias pack; `tamias
+# install` is a cache hit after the first fetch. Missing tooling
+# skips with a warning; fail-severity spec violations fail the gate.
+export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+if command -v tamias >/dev/null 2>&1 && command -v mimus >/dev/null 2>&1; then
+  _std_label="$(tamias install --no-bins 'git:github.com/9aia/workspace//libraries/9aia-standard' 2>/dev/null | sed -n 's/^installed \([^ ]*\).*/\1/p' | tail -1)"
+  _std_dir=""
+  [ -n "$_std_label" ] && _std_dir="$(tamias info "$_std_label" --json 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("dir",""))' 2>/dev/null || true)"
+  # Offline rerun fallback: whatever single install already exists.
+  [ -z "$_std_dir" ] && _std_dir="$(tamias info 9aia-standard --json 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("dir",""))' 2>/dev/null || true)"
+  if [ -n "$_std_dir" ] && [ -f "$_std_dir/ci-standard.sh" ]; then
+    bash "$_std_dir/ci-standard.sh"
+  else
+    echo "ci-standard: 9aia-standard pack unavailable — leg skipped" >&2
+  fi
+else
+  echo "ci-standard: tamias/mimus not on PATH — leg skipped" >&2
+fi

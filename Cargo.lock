@@ -483,7 +483,7 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 
 [[package]]
 name = "mimus"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "clap",
  "clap-markdown",
@@ -511,14 +511,14 @@ dependencies = [
 
 [[package]]
 name = "mimus-check"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "mimus-core",
 ]
 
 [[package]]
 name = "mimus-check-acp"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "mimus-check",
  "mimus-core",
@@ -528,7 +528,7 @@ dependencies = [
 
 [[package]]
 name = "mimus-check-cmd"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "mimus-check",
  "mimus-core",
@@ -536,7 +536,7 @@ dependencies = [
 
 [[package]]
 name = "mimus-check-fs"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "glob",
  "mimus-check",
@@ -545,7 +545,7 @@ dependencies = [
 
 [[package]]
 name = "mimus-check-graph"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "mimus-check",
  "mimus-claims",
@@ -555,7 +555,7 @@ dependencies = [
 
 [[package]]
 name = "mimus-check-symbol"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "mimus-check",
  "mimus-core",
@@ -564,14 +564,14 @@ dependencies = [
 
 [[package]]
 name = "mimus-claims"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "mimus-core",
 ]
 
 [[package]]
 name = "mimus-config"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "mimus-core",
  "scarab-config",
@@ -580,7 +580,7 @@ dependencies = [
 
 [[package]]
 name = "mimus-core"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -589,7 +589,7 @@ dependencies = [
 
 [[package]]
 name = "mimus-driver"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "clap",
  "lasius-vcs",
@@ -609,7 +609,7 @@ dependencies = [
 
 [[package]]
 name = "mimus-rules"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "glob",
  "mimus-core",
@@ -620,7 +620,7 @@ dependencies = [
 
 [[package]]
 name = "mimus-spec"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "globset",
  "mimus-core",
