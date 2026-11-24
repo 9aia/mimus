@@ -70,6 +70,7 @@ ops surface).
 | `mimus-claims` | claim extraction from markdown/comments/cards |
 | `mimus-rules` | `rules/*.toml` conventions as data |
 | `mimus-config` | `mimus.toml` loading via scarab-config |
+| `mimus-spec` | `mimus standard` — declarative repo-conformance specs (P-001): file-set diff + path/git predicates + `providers.<ns>` dispatch (`cargo`, `repo`, `lasius` built in) |
 | `cuora-secret` + `-cuora`/`-keyring`/`-dotenv` (git deps) | secrets chain — env → cuora vaults → keyring → dotenv file |
 | `rules/` | the repo's own convention rules (`no-todos`, `no-unwrap-in-checkers`) |
 | `libraries/mimus` | the tamias pack — `bins[]` shim + driver payload |
@@ -121,3 +122,13 @@ Style opinions are never emitted — evidence or silence.
 explanation) → GitHub Pages at `9aia.com/mimus`. `cypera gen` (driven by `cypera.toml`)
 renders cli/config/crate-map from source — keep `lib.rs` module
 docs accurate.
+
+## Specs
+
+`specs/<name>.toml` is this repo's mimus-standard conformance spec —
+approval-gated. Any change requires a live org proposal
+(`proposal-NNNN`, status open|done) referenced in the spec header or
+commit range, and no coverage regression vs merge-base. Guard:
+workspace `../../scripts/spec-guard.py`; sweep:
+`../../scripts/standard.sh`; regenerate coverage only via
+`../../scripts/gen-repo-specs.py`.
