@@ -11,3 +11,4 @@
 - T-007 mimus check — mechanical tier, CI-gateable output
 - T-008 mimus report — violations with claim+evidence+fix
 - T-025 standard tier spike: engine spec + file-set-diff checker vs handl-lang clones (blocked on scarab-compose publish/dep) · owner:devin · created:2026-11-24 · links:P-001 · done:2026-11-24
+- T-026 clippy 1.99 pre-existing failures: mimus-check-acp ptr\_arg + 4 lints in mimus-cli (lines 7,250,338,1042) — cleanup pass · pri:low · owner:devin · created:2026-11-24 · done:2026-11-24
