@@ -166,12 +166,16 @@ ports-and-adapters topology:
 | docs predicates | cypera check | provider namespace, not reimpl |
 | git/clone facts, repo discovery | lasius | provider + `--repos`/`lasius status --json` |
 | card freshness | kuda | provider namespace |
-| spec schema + merge | peregrin `include:`/config-merge | **do not couple** — same pattern, different domain (node graphs vs predicate tables); reuse tamias ref-resolution, own the ~100-line merge |
+| spec schema + merge | scarab-template COMPOSITION.md | **reuse contract** — `extends`/`merge`/ancestor-order/diamond-collapse already specified, tamias-install already materializes parents |
+| document-level composition kernel | peregrin-loader-yaml `expand.rs`+`tamias.rs` (~850 ln, Value-tree generic) | **re-home in scarab** as `scarab-compose` — not a peregrin extraction; scarab owns config/template expertise |
 | fleet enumeration | lasius | delegate when available; `--root`/`--repos` for v1 |
 
-Spec schema lives as `mimus-spec` crate inside mimus behind a
-port — extract to `9aia/spec` only when a second consumer
-(e.g. `lasius check --domain standard`) actually appears.
+Spec resolution delegates to `scarab-compose` (document-level
+`include:`/`extends:`/`deep_merge` over `Value` trees +
+`tamias:` refs, COMPOSITION.md semantics). Spec *schema* +
+predicate evaluation live in `mimus-spec` inside mimus behind a
+port — extract to a shared crate only when a second evaluator
+(lasius/cypera) actually consumes it.
 
 ### Placement
 
