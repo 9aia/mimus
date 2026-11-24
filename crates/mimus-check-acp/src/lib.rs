@@ -2,21 +2,26 @@
 //! to verify prose `behavior` claims a mechanical checker can't
 //! reach: card prose, doc assertions about behavior. Advisory
 //! tier only — every violation is `Warn`, never gates `check`.
+//!
+//! Transport is `sepia-acp`'s blocking client — spawn,
+//! initialize, session/new, session/prompt, cancel, permission
+//! auto-approval and `fs/read_text_file` serving are canonical
+//! there; this crate keeps only the mimus side: verdict prompts,
+//! the claims cache, and violation mapping.
 
 use mimus_check::Checker;
 use mimus_core::{Claim, ClaimKind, Severity, Violation};
-use serde_json::{json, Value};
-use std::io::{BufRead, BufReader, Write};
-use std::path::{Path, PathBuf};
-use std::process::{Child, ChildStdin, Command, Stdio};
+use sepia_acp::blocking::{Client, ClientOptions};
+use std::path::PathBuf;
 use std::sync::Mutex;
+use std::time::Duration;
 
 /// Checks `ClaimKind::Behavior` — `new(acp_cmd, repo_root)`.
 /// One agent session is reused across claims.
 pub struct AcpChecker {
     cmd: String,
     root: PathBuf,
-    inner: Mutex<Option<(AcpClient, String)>>,
+    inner: Mutex<Option<(Client, String)>>,
     /// claim-key -> verdict line — `.mimus/verdicts.json`; an
     /// unchanged claim on an unchanged file never re-prompts.
     verdicts: Mutex<std::collections::HashMap<String, String>>,
@@ -26,34 +31,14 @@ pub struct AcpChecker {
     pub ignore_prefixes: Vec<String>,
 }
 
-struct AcpClient {
-    child: Child,
-    stdin: ChildStdin,
-    /// agent stdout, pumped by a reader thread — recv_timeout keeps
-    /// a blocked agent (permission it never gets, userActionRequired,
-    /// a wedged tool call) from hanging `mimus report` forever.
-    lines: std::sync::mpsc::Receiver<Option<std::io::Result<String>>>,
-    id: u64,
-    timeout: std::time::Duration,
-    /// repo root — `fs/read_text_file` requests resolve against it
-    root: PathBuf,
-}
-
-impl Drop for AcpClient {
-    fn drop(&mut self) {
-        let _ = self.child.kill();
-        let _ = self.child.wait();
-    }
-}
-
 /// `MIMUS_ACP_TIMEOUT_SECS`, default 240 — generous for real agents,
 /// overridable so tests don't sit on a silent stub.
-fn request_timeout() -> std::time::Duration {
+fn request_timeout() -> Duration {
     std::env::var("MIMUS_ACP_TIMEOUT_SECS")
         .ok()
         .and_then(|v| v.parse::<u64>().ok())
-        .map(std::time::Duration::from_secs)
-        .unwrap_or(std::time::Duration::from_secs(240))
+        .map(Duration::from_secs)
+        .unwrap_or(Duration::from_secs(240))
 }
 
 /// REFUTED verdicts must cite grounded evidence — a path-like
@@ -175,11 +160,11 @@ fn refuted_violation(root: &std::path::Path, claim: &Claim, verdict: &str) -> Op
 
 /// `mimus doctor` probe — spawn the agent, send one canned
 /// prompt, confirm text actually streams back (P6).
-pub fn probe(cmd: &str, root: &Path) -> Result<String, String> {
-    let (mut client, sid) = AcpChecker::connect(cmd, root)?;
-    let (_res, prose) = client.request(
-        "session/prompt",
-        json!({"sessionId": sid, "prompt":[{"type":"text","text":"Reply with only the word: ok"}]}),
+pub fn probe(cmd: &str, root: &PathBuf) -> Result<String, String> {
+    let (client, sid) = AcpChecker::connect(cmd, root)?;
+    let (_res, prose) = client.prompt_text(
+        &sid,
+        "Reply with only the word: ok",
     )?;
     if prose.trim().is_empty() {
         Err("agent answered but streamed no text".into())
@@ -190,18 +175,20 @@ pub fn probe(cmd: &str, root: &Path) -> Result<String, String> {
 
 /// `mimus fix --semantic` — propose a corrected claim line (P4).
 /// Single prompt, no session state needed beyond connect.
-pub fn propose(cmd: &str, root: &Path, claim_text: &str, evidence: &str) -> Result<String, String> {
-    let (mut client, sid) = AcpChecker::connect(cmd, root)?;
+pub fn propose(
+    cmd: &str,
+    root: &PathBuf,
+    claim_text: &str,
+    evidence: &str,
+) -> Result<String, String> {
+    let (client, sid) = AcpChecker::connect(cmd, root)?;
     let prompt = format!(
         "This claim about the repository is FALSE.\n\
          Claim: \"{claim_text}\"\nEvidence: {evidence}\n\n\
          Write the corrected claim text — one line, same style, \
          grounded in the actual code. No preamble, no quotes."
     );
-    let (_res, prose) = client.request(
-        "session/prompt",
-        json!({"sessionId": sid, "prompt":[{"type":"text","text":prompt}]}),
-    )?;
+    let (_res, prose) = client.prompt_text(&sid, &prompt)?;
     let line = prose
         .lines()
         .map(str::trim)
@@ -261,171 +248,30 @@ impl AcpChecker {
     }
 
     /// Spawn + handshake + session — shared by check/check_batch.
-    fn connect(cmd: &str, root: &Path) -> Result<(AcpClient, String), String> {
-        let mut client = AcpClient::spawn(cmd, root)?;
-        client.request(
-            "initialize",
-            json!({"protocolVersion":1,"clientCapabilities":{},"clientInfo":{"name":"mimus","version":"0.1.0"}}),
+    /// `fs_root` advertises the fs capability and serves
+    /// `fs/read_text_file` under the repo root for agents that read
+    /// through the client instead of shell tools.
+    fn connect(cmd: &str, root: &PathBuf) -> Result<(Client, String), String> {
+        let client = Client::connect_shell(
+            cmd,
+            root,
+            &ClientOptions {
+                // The pre-sepia transport inherited the whole parent
+                // env — agents may need arbitrary auth/config vars.
+                inherit_env: true,
+                call_timeout: Some(request_timeout()),
+                client_name: Some("mimus".into()),
+                fs_root: Some(root.clone()),
+                ..Default::default()
+            },
         )?;
-        let (session, _) = client.request("session/new", json!({"cwd": root, "mcpServers": []}))?;
-        let sid = session["sessionId"].as_str().unwrap_or("mimus").to_owned();
+        let sid = client.new_session()?;
+        let sid = if sid.is_empty() {
+            "mimus".to_owned()
+        } else {
+            sid
+        };
         Ok((client, sid))
-    }
-}
-
-impl AcpClient {
-    fn spawn(cmd: &str, root: &Path) -> Result<Self, String> {
-        let mut child = Command::new("sh")
-            .args(["-c", cmd])
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .spawn()
-            .map_err(|e| format!("spawn {cmd}: {e}"))?;
-        // stdio is piped above — take() can't return None here
-        let stdin = child.stdin.take().expect("stdin piped");
-        let mut reader = BufReader::new(child.stdout.take().expect("stdout piped"));
-        // pump stdout on its own thread so reads can time out —
-        // a blocked BufReader::read_line has no deadline otherwise
-        let (tx, lines) = std::sync::mpsc::channel();
-        std::thread::spawn(move || {
-            let mut line = String::new();
-            loop {
-                line.clear();
-                match reader.read_line(&mut line) {
-                    // None = clean EOF — the agent closed stdout
-                    Ok(0) => {
-                        let _ = tx.send(None);
-                        break;
-                    }
-                    Ok(_) => {
-                        if tx.send(Some(Ok(line.clone()))).is_err() {
-                            break; // client dropped — stop pumping
-                        }
-                    }
-                    Err(e) => {
-                        let _ = tx.send(Some(Err(e)));
-                        break;
-                    }
-                }
-            }
-        });
-        Ok(Self {
-            child,
-            stdin,
-            lines,
-            id: 0,
-            timeout: request_timeout(),
-            root: root.to_path_buf(),
-        })
-    }
-
-    fn send(&mut self, msg: &Value) -> Result<(), String> {
-        writeln!(self.stdin, "{msg}")
-            .and_then(|_| self.stdin.flush())
-            .map_err(|e| e.to_string())
-    }
-
-    /// `Ok(result)` / `Err(error-object)` for an agent→client call.
-    /// Answering is load-bearing: an unanswered request stalls the
-    /// agent — that was the `request_permission` deadlock.
-    fn agent_request_result(&self, method: &str, params: &Value) -> Result<Value, Value> {
-        match method {
-            // tool-enabled agents gate on permission; auto-answer or
-            // the prompt stalls. Prefer an allow-kind option over a
-            // reject — a checker that denies every tool call gets
-            // nothing back.
-            "session/request_permission" => {
-                let opt = params["options"]
-                    .as_array()
-                    .and_then(|os| {
-                        os.iter()
-                            .find(|o| {
-                                o["kind"]
-                                    .as_str()
-                                    .map(|k| k.starts_with("allow"))
-                                    .unwrap_or(false)
-                            })
-                            .or_else(|| os.first())
-                    })
-                    .and_then(|o| o["optionId"].as_str())
-                    .unwrap_or("allow_once");
-                Ok(json!({"outcome":{"outcome":"selected","optionId":opt}}))
-            }
-            // agents that read via the client's fs capability instead
-            // of shell tools — serve reads under root, refuse the rest
-            "fs/read_text_file" => {
-                let path = params["path"].as_str().unwrap_or("");
-                match std::fs::read_to_string(self.root.join(path)) {
-                    Ok(content) => Ok(json!({"content": content})),
-                    Err(e) => Err(json!({"code":-32602,"message":e.to_string()})),
-                }
-            }
-            _ => Err(json!({"code":-32601,"message":"method not found"})),
-        }
-    }
-
-    fn request(&mut self, method: &str, params: Value) -> Result<(Value, String), String> {
-        self.id += 1;
-        let id = self.id;
-        self.send(&json!({"jsonrpc":"2.0","id":id,"method":method,"params":params}))?;
-        let mut chunks = String::new();
-        loop {
-            let line = match self.lines.recv_timeout(self.timeout) {
-                Ok(Some(Ok(l))) => l,
-                Ok(Some(Err(e))) => return Err(e.to_string()),
-                // EOF or a dead pump thread — the agent is gone
-                Ok(None) | Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
-                    return Err("agent closed stdout".into());
-                }
-                // a blocked agent (permission nobody answers,
-                // userActionRequired, a wedged tool) degrades to an
-                // error — never an infinite hang
-                Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
-                    return Err(format!(
-                        "{method}: no agent reply within {}s — agent blocked",
-                        self.timeout.as_secs()
-                    ));
-                }
-            };
-            let Ok(msg) = serde_json::from_str::<Value>(line.trim()) else {
-                continue;
-            };
-            // agent -> client request (permission prompts, fs reads):
-            // it has BOTH an id and a method — and the id may be a
-            // STRING, so match presence, not `as_u64()` (the old code
-            // let string-id permissions through → agent waited forever)
-            if msg["method"].is_string() && msg.get("id").is_some() && !msg["id"].is_null() {
-                let rid = msg["id"].clone(); // echo verbatim — any JSON id type
-                let m = msg["method"].as_str().unwrap_or("");
-                let resp = match self.agent_request_result(m, &msg["params"]) {
-                    Ok(result) => json!({"jsonrpc":"2.0","id":rid,"result":result}),
-                    Err(error) => json!({"jsonrpc":"2.0","id":rid,"error":error}),
-                };
-                let _ = self.send(&resp);
-                continue;
-            }
-            if msg["method"].as_str() == Some("session/update") {
-                let content = &msg["params"]["update"]["content"];
-                // a chunk is one content block or a list of them
-                if let Some(t) = content["text"].as_str() {
-                    chunks.push_str(t);
-                } else if let Some(blocks) = content.as_array() {
-                    for b in blocks {
-                        if let Some(t) = b["text"].as_str() {
-                            chunks.push_str(t);
-                        }
-                    }
-                }
-                continue;
-            }
-            if msg["id"].as_u64() == Some(id) {
-                if let Some(err) = msg.get("error") {
-                    return Err(format!("{method}: {err}"));
-                }
-                return Ok((msg["result"].clone(), chunks));
-            }
-        }
     }
 }
 
@@ -488,15 +334,11 @@ impl Checker for AcpChecker {
                 if guard.is_none() {
                     *guard = Some(Self::connect(&self.cmd, &self.root)?);
                 }
-                let (client, sid) = guard.as_mut().unwrap();
+                let (client, sid) = guard.as_mut().ok_or("agent session lost")?;
                 // debounce — one agent, many claims; be polite to
                 // the provider (rate limits) rather than fanning out
-                std::thread::sleep(std::time::Duration::from_millis(1500));
-                let (_res, prose) = client.request(
-                    "session/prompt",
-                    json!({"sessionId": sid.as_str(),
-                           "prompt":[{"type":"text","text":verify_prompt(claim)}]}),
-                )?;
+                std::thread::sleep(Duration::from_millis(1500));
+                let (_res, prose) = client.prompt_text(sid.as_str(), &verify_prompt(claim))?;
                 let v = prose
                     .lines()
                     .find(|l| !l.trim().is_empty())
@@ -597,12 +439,8 @@ impl Checker for AcpChecker {
         }
         let (client, sid) = guard.as_mut().unwrap();
         std::thread::sleep(std::time::Duration::from_millis(1500));
-        let prose = match client.request(
-            "session/prompt",
-            json!({"sessionId": sid.as_str(),
-                   "prompt":[{"type":"text","text":prompt}]}),
-        ) {
-            Ok((_, prose)) => prose,
+        let prose = match client.prompt_text(sid.as_str(), &prompt) {
+            Ok((_res, prose)) => prose,
             Err(e) => return vec![Err(e)],
         };
         // parse numbered verdicts back — cache every verdict,
@@ -681,11 +519,7 @@ impl Checker for AcpChecker {
             );
             let (client, sid) = guard.as_mut().unwrap(); // connected above
             std::thread::sleep(std::time::Duration::from_millis(1500));
-            let Ok((_, ans)) = client.request(
-                "session/prompt",
-                json!({"sessionId": sid.as_str(),
-                       "prompt":[{"type":"text","text":q}]}),
-            ) else {
+            let Ok((_res, ans)) = client.prompt_text(sid.as_str(), &q) else {
                 break;
             };
             for l in ans.lines() {
@@ -722,93 +556,42 @@ impl Checker for AcpChecker {
 mod tests {
     use super::*;
 
-    /// env/cwd mutation is process-global — serialize the tests
-    /// that spawn clients or touch PATH/MIMUS_ACP_TIMEOUT_SECS
-    /// (plain `cargo test` shares the process).
-    static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
-
-    /// The pump's arms: Ok(_) send when the receiver is alive, the
-    /// send-error `break` once it's dead, and the `Err(e)` read arm
-    /// on non-UTF-8 output — all deterministic via a delayed agent.
-    #[test]
-    fn pump_breaks_after_client_drop() {
-        let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
-        // Agent echoes "a" immediately, "b" after a delay. The "a"
-        // line lands a successful send; the receiver swap happens in
-        // the quiet window; "b" then lands on a dead channel →
-        // is_err → break. No sleeps needed for ordering.
-        let mut client = AcpClient::spawn("echo a; sleep 1; echo b; sleep 60", &PathBuf::from("."))
-            .expect("spawn echoer");
-        let first = client
-            .lines
-            .recv_timeout(std::time::Duration::from_secs(5))
-            .expect("a line arrives");
-        assert!(first.is_some());
-        let (_tx, dead) = std::sync::mpsc::channel();
-        let gone = std::mem::replace(&mut client.lines, dead);
-        drop(gone);
-        // the delayed "b" send now fails for sure; give the pump a
-        // beat to observe it before the client (and its stdin) drop
-        std::thread::sleep(std::time::Duration::from_millis(1500));
-        drop(client);
-        // belt & suspenders: the flood variant too
-        for _ in 0..3 {
-            let client = AcpClient::spawn(
-                "head -c 100000000 /dev/zero | tr '\\0' 'x'",
-                &PathBuf::from("."),
-            )
-            .expect("spawn flooder");
-            std::thread::sleep(std::time::Duration::from_millis(10));
-            drop(client);
-            std::thread::sleep(std::time::Duration::from_millis(20));
-        }
-        // Err(e) arm: invalid UTF-8 on stdout → read_line errors →
-        // send(Err) → break. recv the Err line so the arm provably
-        // ran before the client drops (a bare drop races the pump).
-        let client =
-            AcpClient::spawn("printf '\\377'", &PathBuf::from(".")).expect("spawn binary junk");
-        let msg = client
-            .lines
-            .recv_timeout(std::time::Duration::from_secs(5))
-            .expect("the bad byte surfaces");
-        assert!(matches!(msg, Some(Err(_))), "{msg:?}");
-        drop(client);
-        // `sh` can't be spawned with an empty PATH → connect fails
-        // at the spawn `?`. Env mutation lives inside this test so
-        // sibling tests (which tolerate spawn failure) stay sane.
-        let old_path = std::env::var("PATH").unwrap_or_default();
-        std::env::set_var("PATH", "");
-        let root = PathBuf::from(".");
-        assert!(AcpClient::spawn("anything", &root).is_err());
-        assert!(AcpChecker::connect("anything", &root).is_err());
-        std::env::set_var("PATH", old_path);
-    }
-
     /// `MIMUS_ACP_TIMEOUT_SECS` set to garbage → parse fails →
     /// falls back to the 240s default rather than panicking.
     #[test]
     fn garbage_timeout_env_falls_back() {
-        let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         unsafe {
             std::env::set_var("MIMUS_ACP_TIMEOUT_SECS", "not-a-number");
         }
-        let c = AcpClient::spawn("sleep 2", &PathBuf::from(".")).expect("spawn");
-        assert_eq!(c.timeout, std::time::Duration::from_secs(240));
+        assert_eq!(request_timeout(), Duration::from_secs(240));
+        unsafe {
+            std::env::set_var("MIMUS_ACP_TIMEOUT_SECS", "5");
+        }
+        assert_eq!(request_timeout(), Duration::from_secs(5));
         unsafe {
             std::env::remove_var("MIMUS_ACP_TIMEOUT_SECS");
         }
     }
 
-    /// Writing to an agent that closed its stdin → `send` fails,
-    /// and `request` propagates the Err.
+    /// A dead agent command → connect fails and the error surfaces
+    /// through `check`/`check_batch` rather than hanging.
     #[test]
-    fn send_to_closed_stdin_errors() {
-        let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
-        let mut client =
-            AcpClient::spawn("exec 0<&-; sleep 5", &PathBuf::from(".")).expect("spawn");
-        std::thread::sleep(std::time::Duration::from_millis(150));
-        assert!(client.send(&json!({"x":1})).is_err());
-        assert!(client.request("initialize", json!({})).is_err());
+    fn dead_agent_surfaces_as_error() {
+        let dir = std::env::temp_dir().join(format!("mimus-acp-dead-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let c = AcpChecker::new("false", &dir);
+        let cl = Claim {
+            kind: ClaimKind::Behavior,
+            text: "the engine is very fast indeed".into(),
+            source: "doc.md".into(),
+            line: 1,
+        };
+        assert!(c.check(&cl).is_err());
+        let out = c.check_batch(&[cl.clone(), cl]);
+        assert_eq!(out.len(), 1);
+        assert!(out[0].is_err());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     /// A poisoned `verdicts` lock — the batch cache-prune block is
@@ -816,7 +599,6 @@ mod tests {
     /// degrade to no-cache rather than failing.
     #[test]
     fn poisoned_verdicts_lock_skips_prune() {
-        let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         let dir = std::env::temp_dir().join(format!("mimus-acp-poison-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
@@ -861,7 +643,6 @@ mod tests {
     /// going (to the dead agent, here).
     #[test]
     fn poisoned_session_lock_paths() {
-        let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         let dir = std::env::temp_dir().join(format!("mimus-acp-poison2-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();

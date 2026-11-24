@@ -54,9 +54,11 @@ for line in sys.stdin:
         send({"jsonrpc": "2.0", "id": 902 + (mid or 0), "method": "agent/no_such_method"})
         send({"jsonrpc": "2.0", "id": 4242, "result": {}})  # stray response — id never matches
         send({"jsonrpc": "2.0", "method": "session/update",
-              "params": {"update": {"content": [{"text": ""}, {"type": "image"}]}}})
+              "params": {"update": {"sessionUpdate": "agent_message_chunk",
+                                    "content": [{"text": ""}, {"type": "image"}]}}})
         send({"jsonrpc": "2.0", "method": "session/update",
-              "params": {"update": {"content": "a bare string, not text-or-blocks"}}})
+              "params": {"update": {"sessionUpdate": "agent_message_chunk",
+                                    "content": "a bare string, not text-or-blocks"}}})
         sys.stdout.write("not json\n")
         sys.stdout.flush()
         ans = pop()
@@ -65,7 +67,8 @@ for line in sys.stdin:
             continue
         if ans != "NORESULT":
             send({"jsonrpc": "2.0", "method": "session/update",
-                  "params": {"update": {"content": {"text": ans}}}})
+                  "params": {"update": {"sessionUpdate": "agent_message_chunk",
+                                        "content": {"text": ans}}}})
         send({"jsonrpc": "2.0", "id": mid, "result": {}})
 "#;
 
@@ -109,7 +112,8 @@ while True:
         content = ans.get("result", {}).get("content", "")
         verdict = "REFUTED: doc.md contradicts the claim" if content else "VERIFIED"
         send({"jsonrpc": "2.0", "method": "session/update",
-              "params": {"update": {"content": {"text": verdict}}}})
+              "params": {"update": {"sessionUpdate": "agent_message_chunk",
+                                    "content": {"text": verdict}}}})
         send({"jsonrpc": "2.0", "id": mid, "result": {"stopReason": "end_turn"}})
 "#;
 
@@ -155,7 +159,8 @@ for line in sys.stdin:
         send({"jsonrpc": "2.0", "id": mid, "result": {}})
     elif method == "session/prompt":
         send({"jsonrpc": "2.0", "method": "session/update",
-              "params": {"update": {"content": {"text": "VERIFIED"}}}})
+              "params": {"update": {"sessionUpdate": "agent_message_chunk",
+                                    "content": {"text": "VERIFIED"}}}})
         send({"jsonrpc": "2.0", "id": mid, "result": {}})
 "#;
 
@@ -623,7 +628,7 @@ fn blocked_agent_times_out() {
     let t0 = std::time::Instant::now();
     let r = c.check(&claim("the engine is very fast indeed", "doc.md", 1));
     let e = r.expect_err("silent agent must surface an error, not hang");
-    assert!(e.contains("blocked"), "{e}");
+    assert!(e.contains("timed out"), "{e}");
     assert!(t0.elapsed().as_secs() < 60, "{:?}", t0.elapsed());
     unsafe {
         std::env::remove_var("MIMUS_ACP_TIMEOUT_SECS");
