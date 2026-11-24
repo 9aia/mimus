@@ -92,6 +92,18 @@ pub struct Spec {
     /// Literal paths only — no glob semantics.
     #[serde(default)]
     pub dirs: Vec<String>,
+    /// Coverage-only directories — whitelist tracked files beneath
+    /// them for the `unlisted` check but never produce `missing`
+    /// (the optional counterpart of `dirs`; lets a base spec name
+    /// every plausible tree without requiring all of them).
+    #[serde(default)]
+    pub cover_dirs: Vec<String>,
+    /// Coverage-only globs — whitelist tracked files for the
+    /// `unlisted` check but never produce `missing` (the optional
+    /// counterpart of glob `files` entries; keeps catch-alls like
+    /// `*.toml` out of the required set).
+    #[serde(default)]
+    pub cover: Vec<String>,
     /// `[path."X"]` per-path predicate tables — deserialized for
     /// forward-compat, **not evaluated** in this spike.
     #[serde(default)]
@@ -204,22 +216,16 @@ impl Spec {
         })
     }
 
-    /// File-set diff: declared-but-absent → `missing`; tracked-but-
-    /// uncovered → `unlisted`. Only the file-set tier runs —
-    /// `[path.*]` predicates and provider namespaces are inert.
+    /// Declared-but-absent check only: exact `files` entries (no
+    /// glob metachars) must exist on disk; every `dirs` entry must
+    /// be a directory. Glob `files`/`cover*` entries are
+    /// coverage-only — zero matches is not a violation.
     ///
     /// # Errors
-    /// [`SpecError::Glob`] on a malformed `files` pattern.
-    pub fn check_repo(&self, repo: &Path) -> Result<Vec<SpecViolation>, SpecError> {
-        let tracked = repo_files(repo);
-        let coverage = self.coverage_set()?;
+    /// [`SpecError::Glob`] on a malformed `files`/`cover` pattern.
+    pub fn check_missing(&self, repo: &Path) -> Result<Vec<SpecViolation>, SpecError> {
         let sev = self.severity.to_core();
         let mut out = Vec::new();
-
-        // missing — exact `files` entries (no glob metachars) must
-        // exist on disk; every `dirs` entry must be a directory.
-        // Glob `files` entries are coverage-only: zero matches is
-        // not a violation (a spec can't require "some .rs file").
         for entry in &self.files {
             if is_glob(entry) {
                 continue;
@@ -245,16 +251,36 @@ impl Spec {
                 ));
             }
         }
+        Ok(out)
+    }
+
+    /// File-set diff: declared-but-absent → `missing`; tracked-but-
+    /// uncovered → `unlisted`. Only the file-set tier runs —
+    /// `[path.*]` predicates and provider namespaces are inert.
+    ///
+    /// # Errors
+    /// [`SpecError::Glob`] on a malformed `files` pattern.
+    pub fn check_repo(&self, repo: &Path) -> Result<Vec<SpecViolation>, SpecError> {
+        let tracked = repo_files(repo);
+        let coverage = self.coverage_set()?;
+        let sev = self.severity.to_core();
+        let mut out = self.check_missing(repo)?;
 
         // unlisted — every enumerated file must be covered by a
-        // `files` glob or live under a declared `dirs` entry.
+        // `files`/`cover` glob or live under a declared `dirs` /
+        // `cover_dirs` entry. Single-spec callers check against
+        // their own coverage; [`check_unlisted`] unions coverage
+        // across a matched spec set for the composed standard.
+        let covered_dirs: Vec<&str> = self
+            .dirs
+            .iter()
+            .chain(self.cover_dirs.iter())
+            .map(|d| d.trim_end_matches('/'))
+            .filter(|d| !d.is_empty())
+            .collect();
         for f in &tracked {
-            let covered = coverage.is_match(f)
-                || self
-                    .dirs
-                    .iter()
-                    .map(|d| d.trim_end_matches('/'))
-                    .any(|d| !d.is_empty() && Path::new(f).starts_with(d));
+            let covered =
+                coverage.is_match(f) || covered_dirs.iter().any(|d| Path::new(f).starts_with(d));
             if !covered {
                 out.push(self.violation(
                     ViolationKind::Unlisted,
@@ -274,7 +300,7 @@ impl Spec {
     /// globs, so literals and patterns share the set.
     fn coverage_set(&self) -> Result<GlobSet, SpecError> {
         let mut b = GlobSetBuilder::new();
-        for pat in &self.files {
+        for pat in self.files.iter().chain(self.cover.iter()) {
             let g = Glob::new(pat).map_err(|err| SpecError::Glob {
                 pattern: pat.clone(),
                 err,
@@ -302,6 +328,71 @@ impl Spec {
             detail,
         }
     }
+}
+
+/// `unlisted` check against the **union** of a matched spec set —
+/// the composed standard. A tracked file is a violation only when
+/// *no* matched spec covers it; per-spec `check_repo` would
+/// double-report files a sibling spec legitimately whitelists.
+/// Severity is the strictest among `specs`; `spec` names the
+/// strictest spec (the violation belongs to the composition, not
+/// one pack).
+///
+/// # Errors
+/// [`SpecError::Glob`] on a malformed pattern in any spec.
+pub fn check_unlisted(repo: &Path, specs: &[&Spec]) -> Result<Vec<SpecViolation>, SpecError> {
+    if specs.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut b = GlobSetBuilder::new();
+    for s in specs {
+        for pat in s.files.iter().chain(s.cover.iter()) {
+            let g = Glob::new(pat).map_err(|err| SpecError::Glob {
+                pattern: pat.clone(),
+                err,
+            })?;
+            b.add(g);
+        }
+    }
+    let coverage = b.build().map_err(|err| SpecError::Glob {
+        pattern: "<union>".into(),
+        err,
+    })?;
+    let dirs: Vec<&str> = specs
+        .iter()
+        .flat_map(|s| s.dirs.iter().chain(s.cover_dirs.iter()))
+        .map(|d| d.trim_end_matches('/'))
+        .filter(|d| !d.is_empty())
+        .collect();
+    // strictest severity wins — Error > Warn
+    let sev = if specs.iter().any(|s| s.severity == SpecSeverity::Fail) {
+        mimus_core::Severity::Error
+    } else {
+        mimus_core::Severity::Warn
+    };
+    let anchor = specs
+        .iter()
+        .find(|s| s.severity == SpecSeverity::Fail)
+        .or_else(|| specs.first())
+        .map_or_else(|| "<union>".to_owned(), |s| s.family.clone());
+    let tracked = repo_files(repo);
+    let mut out = Vec::new();
+    for f in &tracked {
+        let covered = coverage.is_match(f) || dirs.iter().any(|d| Path::new(f).starts_with(d));
+        if !covered {
+            out.push(SpecViolation {
+                kind: ViolationKind::Unlisted,
+                path: f.clone(),
+                spec: anchor.clone(),
+                severity: sev,
+                detail: format!(
+                    "tracked file not covered by any of {} matched spec(s)",
+                    specs.len()
+                ),
+            });
+        }
+    }
+    Ok(out)
 }
 
 /// Glob metacharacters — decides whether a `files` entry is an
@@ -445,6 +536,31 @@ regex.forbid = ['^\[patch\.']
     fn severity_warn_maps() {
         let s = Spec::parse("family='x'\nseverity='warn'\n").unwrap();
         assert_eq!(s.severity.to_core(), mimus_core::Severity::Warn);
+    }
+
+    #[test]
+    fn cover_whitelists_without_requiring() {
+        let s = Spec::parse("family='x'\nfiles=['README.md']\ncover=['optional.toml','*.lock']\n")
+            .unwrap();
+        assert!(s.cover.contains(&"optional.toml".to_string()));
+        // cover entries join the coverage set — a repo carrying only
+        // covered files reports no `unlisted`
+        let dir = tempfile::tempdir().unwrap();
+        let repo = dir.path();
+        std::fs::write(repo.join("README.md"), "x").unwrap();
+        std::fs::write(repo.join("optional.toml"), "x").unwrap();
+        std::fs::write(repo.join("Cargo.lock"), "x").unwrap();
+        let violations = s.check_repo(repo).unwrap();
+        assert!(
+            violations.iter().all(|v| v.kind != ViolationKind::Unlisted),
+            "{violations:?}"
+        );
+        // …but cover never produces `missing` — drop README, keep
+        // the covered files: only `missing` fires, no unlisted
+        std::fs::remove_file(repo.join("README.md")).unwrap();
+        let violations = s.check_repo(repo).unwrap();
+        assert_eq!(violations.len(), 1);
+        assert_eq!(violations[0].kind, ViolationKind::Missing);
     }
 
     #[test]

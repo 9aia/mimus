@@ -364,6 +364,10 @@ fn coverage(cli: &Cli) -> i32 {
 /// against the repo's tracked file set.
 fn standard(cli: &Cli, repo: &str, specs: &[String]) -> i32 {
     let repo_path = Path::new(repo);
+    if !repo_path.is_dir() {
+        eprintln!("repo `{repo}` is not a directory");
+        return 2;
+    }
     let name = mimus_spec::repo_name(repo_path);
     let mut all = Vec::new();
     for s in specs {
@@ -380,16 +384,40 @@ fn standard(cli: &Cli, repo: &str, specs: &[String]) -> i32 {
         eprintln!("no spec matched repo `{name}` ({} loaded)", all.len());
         return 1;
     }
-    // (spec, violations) per matched spec
-    let mut rows = Vec::new();
+    // (family, severity, violations) per matched spec — `missing`
+    // is per-spec; `unlisted` runs once against the union of all
+    // matched coverage (composition: a file covered by ANY spec is
+    // listed). Rows own their labels so the union pass can append a
+    // synthetic `<union>` row.
+    let mut rows: Vec<(
+        String,
+        mimus_spec::SpecSeverity,
+        Vec<mimus_spec::SpecViolation>,
+    )> = Vec::new();
     let mut failed = false;
     for spec in &matched {
-        match spec.check_repo(repo_path) {
-            Ok(vs) => {
+        match spec.check_missing(repo_path) {
+            Ok(mut vs) => {
                 if vs.iter().any(|v| v.severity == mimus_core::Severity::Error) {
                     failed = true;
                 }
-                rows.push((spec, vs));
+                // per-spec unlisted only when this spec is alone —
+                // the union pass below owns it for composed runs
+                if matched.len() == 1 {
+                    match spec.check_repo(repo_path) {
+                        Ok(all) => {
+                            vs.extend(
+                                all.into_iter()
+                                    .filter(|v| v.kind == mimus_spec::ViolationKind::Unlisted),
+                            );
+                        }
+                        Err(e) => {
+                            eprintln!("spec `{}`: {e}", spec.family);
+                            return 2;
+                        }
+                    }
+                }
+                rows.push((spec.family.clone(), spec.severity, vs));
             }
             Err(e) => {
                 eprintln!("spec `{}`: {e}", spec.family);
@@ -397,12 +425,33 @@ fn standard(cli: &Cli, repo: &str, specs: &[String]) -> i32 {
             }
         }
     }
+    if matched.len() > 1 {
+        match mimus_spec::check_unlisted(repo_path, &matched) {
+            Ok(vs) => {
+                if vs.iter().any(|v| v.severity == mimus_core::Severity::Error) {
+                    failed = true;
+                }
+                if !vs.is_empty() {
+                    let sev = if vs.iter().any(|v| v.severity == mimus_core::Severity::Error) {
+                        mimus_spec::SpecSeverity::Fail
+                    } else {
+                        mimus_spec::SpecSeverity::Warn
+                    };
+                    rows.push(("<union>".to_owned(), sev, vs));
+                }
+            }
+            Err(e) => {
+                eprintln!("unlisted check: {e}");
+                return 2;
+            }
+        }
+    }
     if cli.format == "json" {
         let report = serde_json::json!({
             "repo": name,
-            "specs": rows.iter().map(|(s, vs)| serde_json::json!({
-                "family": s.family,
-                "severity": s.severity,
+            "specs": rows.iter().map(|(family, sev, vs)| serde_json::json!({
+                "family": family,
+                "severity": sev,
                 "violations": vs,
             })).collect::<Vec<_>>(),
         });
@@ -412,7 +461,7 @@ fn standard(cli: &Cli, repo: &str, specs: &[String]) -> i32 {
         );
     } else {
         println!("repo {name} — {} spec(s)", rows.len());
-        for (spec, vs) in &rows {
+        for (family, _sev, vs) in &rows {
             let (errs, warns) = vs.iter().fold((0usize, 0usize), |(e, w), v| {
                 if v.severity == mimus_core::Severity::Error {
                     (e + 1, w)
@@ -427,12 +476,7 @@ fn standard(cli: &Cli, repo: &str, specs: &[String]) -> i32 {
             } else {
                 "ok"
             };
-            println!(
-                "  {:<24} {:<5} {} violation(s)",
-                spec.family,
-                status,
-                vs.len()
-            );
+            println!("  {:<24} {:<5} {} violation(s)", family, status, vs.len());
             if errs + warns > 0 {
                 println!("    ({errs} error, {warns} warn)");
             }
