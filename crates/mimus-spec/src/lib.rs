@@ -342,11 +342,13 @@ impl ProviderSet {
 ///
 /// - `patches = "org-only"` — every `[patch.<src>]` table must
 ///   target an org-local source (`crates-io` or a
-///   `github.com/handl-lang/*` URL), and every patch entry must
+///   `github.com/<org>/*` URL), and every patch entry must
 ///   resolve org-locally: `path = "../…"` sibling checkout or a
-///   `git` URL under `github.com/handl-lang/`. Version-only
+///   `git` URL under `github.com/<org>/`. Version-only
 ///   entries (no `path`/`git`/`registry`) are allowed — they pin,
 ///   they don't relocate.
+/// - `org = "<github-org>"` — optional, default `"handl-lang"`.
+///   Names the org that counts as local for `patches`.
 /// - `severity = "warn" | "error"` — optional, default `"error"`.
 ///
 /// Unknown claim keys are a [`ProviderError`] — a typo'd claim
@@ -368,7 +370,7 @@ impl StandardProvider for CargoProvider {
             .as_object()
             .ok_or_else(|| ProviderError("`providers.cargo` claims must be a table".into()))?;
         for key in obj.keys() {
-            if !matches!(key.as_str(), "patches" | "severity") {
+            if !matches!(key.as_str(), "patches" | "org" | "severity") {
                 return Err(ProviderError(format!(
                     "unknown `providers.cargo` claim `{key}`"
                 )));
@@ -383,6 +385,10 @@ impl StandardProvider for CargoProvider {
                 "`providers.cargo.patches` must be \"org-only\", got {patches:?}"
             )));
         }
+        let org = obj
+            .get("org")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("handl-lang");
         let severity = match obj.get("severity").and_then(serde_json::Value::as_str) {
             None | Some("error") => mimus_core::Severity::Error,
             Some("warn") => mimus_core::Severity::Warn,
@@ -420,12 +426,15 @@ impl StandardProvider for CargoProvider {
                 detail,
             });
         };
+        let org_host = format!("github.com/{org}/");
+        let org_ssh = format!("github.com:{org}/");
+        let is_org_git = |u: &str| u.contains(&org_host) || u.contains(&org_ssh);
         for (src, entries) in patch {
-            let org_src = src == "crates-io" || src.contains("github.com/handl-lang/");
+            let org_src = src == "crates-io" || is_org_git(src);
             if !org_src {
                 violate(format!(
                     "`[patch.{src}]` source is not org-local — patches may only target \
-                     `crates-io` or `github.com/handl-lang/*`"
+                     `crates-io` or `github.com/{org}/*`"
                 ));
             }
             let Some(entries) = entries.as_table() else {
@@ -444,9 +453,9 @@ impl StandardProvider for CargoProvider {
                         ));
                     }
                 } else if let Some(git) = entry.get("git").and_then(toml::Value::as_str) {
-                    if !git.contains("github.com/handl-lang/") {
+                    if !is_org_git(git) {
                         violate(format!(
-                            "`[patch.{src}] {name}` git {git:?} is not `github.com/handl-lang/*`"
+                            "`[patch.{src}] {name}` git {git:?} is not `github.com/{org}/*`"
                         ));
                     }
                 } else if entry.contains_key("registry") {
@@ -569,6 +578,225 @@ impl StandardProvider for RepoProvider {
                 ),
             });
         }
+        Ok(out)
+    }
+}
+
+/// `lasius` provider — lasius-workspace facts the file-set tier
+/// can't see. Locates the workspace root by walking ancestors of
+/// `repo` for a `lasius.toml` (or an explicit `workspace = "<path>"`
+/// claim), then evaluates the enabled claims:
+///
+/// - `remote_org = true` — `git remote get-url origin` must contain
+///   `github.com/<org>/`, where `<org>` comes from the workspace
+///   `lasius.toml` `org = "…"` key.
+/// - `catalog = true` — `<workspace>/projects.yaml` must carry a
+///   `projects:` entry named after the repo directory.
+/// - `policy = true` — enforce the workspace `lasius.toml`
+///   `[policy]` table: every `require_files` entry must exist in
+///   the repo, every `require_worktrees` entry must be a directory.
+/// - `severity = "warn" | "error"` — optional, default `"warn"`.
+///
+/// A workspace that can't be located degrades to one warn
+/// violation — standalone clones still get the file-set tier.
+/// Unknown claim keys are a [`ProviderError`].
+#[derive(Debug, Default, Clone, Copy)]
+pub struct LasiusProvider;
+
+/// What a located lasius workspace tells the provider.
+struct LasiusWorkspace {
+    /// Workspace root (the dir containing `lasius.toml`).
+    root: PathBuf,
+    /// `org = "…"` from lasius.toml, when declared.
+    org: Option<String>,
+    /// `[policy] require_files` entries.
+    require_files: Vec<String>,
+    /// `[policy] require_worktrees` entries.
+    require_worktrees: Vec<String>,
+}
+
+impl LasiusProvider {
+    fn locate_workspace(repo: &Path, explicit: Option<&str>) -> Option<LasiusWorkspace> {
+        let root = match explicit {
+            Some(p) => PathBuf::from(p),
+            None => repo
+                .ancestors()
+                .take(8)
+                .find(|d| d.join("lasius.toml").is_file())?
+                .to_path_buf(),
+        };
+        let text = std::fs::read_to_string(root.join("lasius.toml")).ok()?;
+        let doc: toml::Value = text.parse().ok()?;
+        let org = doc
+            .get("org")
+            .and_then(toml::Value::as_str)
+            .map(str::to_owned);
+        let policy = doc.get("policy").and_then(toml::Value::as_table);
+        let strs = |key: &str| -> Vec<String> {
+            policy
+                .and_then(|p| p.get(key))
+                .and_then(toml::Value::as_array)
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|v| v.as_str().map(str::to_owned))
+                        .collect()
+                })
+                .unwrap_or_default()
+        };
+        Some(LasiusWorkspace {
+            root,
+            org,
+            require_files: strs("require_files"),
+            require_worktrees: strs("require_worktrees"),
+        })
+    }
+}
+
+impl StandardProvider for LasiusProvider {
+    fn ns(&self) -> &str {
+        "lasius"
+    }
+
+    fn check(
+        &self,
+        repo: &Path,
+        claims: &serde_json::Value,
+    ) -> Result<Vec<SpecViolation>, ProviderError> {
+        let obj = claims
+            .as_object()
+            .ok_or_else(|| ProviderError("`providers.lasius` claims must be a table".into()))?;
+        for key in obj.keys() {
+            if !matches!(
+                key.as_str(),
+                "workspace" | "remote_org" | "catalog" | "policy" | "severity"
+            ) {
+                return Err(ProviderError(format!(
+                    "unknown `providers.lasius` claim `{key}`"
+                )));
+            }
+        }
+        let flag = |key: &str| obj.get(key).and_then(serde_json::Value::as_bool) == Some(true);
+        let severity = match obj.get("severity").and_then(serde_json::Value::as_str) {
+            None | Some("warn") => mimus_core::Severity::Warn,
+            Some("error") => mimus_core::Severity::Error,
+            Some(other) => {
+                return Err(ProviderError(format!(
+                    "`providers.lasius.severity` must be \"warn\" or \"error\", got {other:?}"
+                )));
+            }
+        };
+        let explicit = match obj.get("workspace") {
+            None | Some(serde_json::Value::Null) => None,
+            Some(serde_json::Value::String(w)) if w == "auto" => None,
+            Some(serde_json::Value::String(w)) => Some(w.as_str()),
+            Some(_) => {
+                return Err(ProviderError(
+                    "`providers.lasius.workspace` must be a path string or \"auto\"".into(),
+                ))
+            }
+        };
+
+        let Some(ws) = Self::locate_workspace(repo, explicit) else {
+            return Ok(vec![SpecViolation {
+                kind: ViolationKind::Provider,
+                path: "providers.lasius".into(),
+                spec: "lasius".into(),
+                severity,
+                detail: "no lasius.toml found — repo is outside a lasius workspace".into(),
+            }]);
+        };
+
+        let dirname = repo
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let mut out = Vec::new();
+        let mut violate = |detail: String| {
+            out.push(SpecViolation {
+                kind: ViolationKind::Provider,
+                path: "lasius.toml".into(),
+                spec: "lasius".into(),
+                severity,
+                detail,
+            });
+        };
+
+        if flag("remote_org") {
+            match ws.org.as_deref() {
+                Some(org) => {
+                    let url = std::process::Command::new("git")
+                        .arg("-C")
+                        .arg(repo)
+                        .args(["remote", "get-url", "origin"])
+                        .output();
+                    match url {
+                        Ok(o) if o.status.success() => {
+                            let remote = String::from_utf8_lossy(&o.stdout);
+                            // https://github.com/<org>/… and
+                            // git@github.com:<org>/… (scp-like ssh)
+                            // are both org-local.
+                            let https = format!("github.com/{org}/");
+                            let ssh = format!("github.com:{org}/");
+                            if !remote.contains(&https) && !remote.contains(&ssh) {
+                                violate(format!(
+                                    "origin remote `{}` is not under github.com/{org}/",
+                                    remote.trim()
+                                ));
+                            }
+                        }
+                        _ => violate("no `origin` remote — cannot verify org".into()),
+                    }
+                }
+                None => violate("workspace lasius.toml has no `org` key".into()),
+            }
+        }
+
+        if flag("catalog") {
+            let catalog = ws.root.join("projects.yaml");
+            match std::fs::read_to_string(&catalog) {
+                Ok(text) => match serde_yaml::from_str::<serde_yaml::Value>(&text) {
+                    Ok(doc) => {
+                        let listed = doc
+                            .get("projects")
+                            .and_then(serde_yaml::Value::as_sequence)
+                            .is_some_and(|projects| {
+                                projects.iter().any(|p| {
+                                    p.get("name").and_then(serde_yaml::Value::as_str)
+                                        == Some(dirname.as_str())
+                                })
+                            });
+                        if !listed {
+                            violate(format!(
+                                "`{}` has no `projects:` entry named `{dirname}`",
+                                catalog.display()
+                            ));
+                        }
+                    }
+                    Err(err) => {
+                        return Err(ProviderError(format!("{} parse: {err}", catalog.display())))
+                    }
+                },
+                Err(_) => violate(format!("{} absent", catalog.display())),
+            }
+        }
+
+        if flag("policy") {
+            for f in &ws.require_files {
+                if !repo.join(f).exists() {
+                    violate(format!(
+                        "lasius.toml `[policy] require_files` entry `{f}` absent"
+                    ));
+                }
+            }
+            for w in &ws.require_worktrees {
+                if !repo.join(w).is_dir() {
+                    violate(format!(
+                        "lasius.toml `[policy] require_worktrees` entry `{w}` absent"
+                    ));
+                }
+            }
+        }
+
         Ok(out)
     }
 }
@@ -1621,5 +1849,117 @@ b = { registry = "https://example.com" }
             .check(dir.path(), &serde_json::json!({ "bupha-name": true }))
             .unwrap();
         assert!(vs.is_empty(), "{vs:?}");
+    }
+
+    // --- org-parameterized cargo + lasius provider ----------------
+
+    #[test]
+    fn cargo_provider_honors_org_claim() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("Cargo.toml"),
+            r#"
+[patch."https://github.com/9aia/kuda"]
+kuda-core = { path = "../kuda/crates/kuda-core" }
+"#,
+        )
+        .unwrap();
+        // 9aia org → clean
+        let vs = CargoProvider
+            .check(
+                dir.path(),
+                &serde_json::json!({ "patches": "org-only", "org": "9aia" }),
+            )
+            .unwrap();
+        assert!(vs.is_empty(), "{vs:?}");
+        // default org (handl-lang) → the same patch is external
+        let vs = CargoProvider.check(dir.path(), &cargo_claims()).unwrap();
+        assert_eq!(vs.len(), 1, "{vs:?}");
+        assert!(vs[0].detail.contains("9aia"));
+    }
+
+    /// Build `<tmp>/ws/{lasius.toml,projects.yaml,repos/<name>}`.
+    fn lasius_fixture() -> (tempfile::TempDir, PathBuf) {
+        let dir = tempfile::tempdir().unwrap();
+        let ws = dir.path().join("ws");
+        let repo = ws.join("repos").join("my-repo");
+        std::fs::create_dir_all(&repo).unwrap();
+        std::fs::write(
+            ws.join("lasius.toml"),
+            "org = \"9aia\"\n\n[policy]\nrequire_files = [\"AGENTS.md\"]\nrequire_worktrees = [\"project\"]\n",
+        )
+        .unwrap();
+        std::fs::write(
+            ws.join("projects.yaml"),
+            "projects:\n  - name: my-repo\n    tagline: x\n",
+        )
+        .unwrap();
+        (dir, repo)
+    }
+
+    #[test]
+    fn lasius_provider_policy_and_catalog_pass() {
+        let (_dir, repo) = lasius_fixture();
+        std::fs::write(repo.join("AGENTS.md"), "x").unwrap();
+        std::fs::create_dir(repo.join("project")).unwrap();
+        let claims = serde_json::json!({
+            "policy": true,
+            "catalog": true,
+            "remote_org": true,
+        });
+        let vs = LasiusProvider.check(&repo, &claims).unwrap();
+        // remote_org fails — fixture repo has no git remote; the
+        // other two claims are clean
+        assert_eq!(vs.len(), 1, "{vs:?}");
+        assert!(vs[0].detail.contains("origin"));
+        assert_eq!(vs[0].severity, mimus_core::Severity::Warn);
+    }
+
+    #[test]
+    fn lasius_provider_flags_policy_and_catalog_drift() {
+        let (_dir, repo) = lasius_fixture();
+        // AGENTS.md + project/ missing → policy violations; repo not
+        // in projects.yaml? it is — drop catalog check here
+        let claims = serde_json::json!({ "policy": true });
+        let vs = LasiusProvider.check(&repo, &claims).unwrap();
+        assert_eq!(vs.len(), 2, "{vs:?}");
+        assert!(vs.iter().all(|v| v.kind == ViolationKind::Provider));
+    }
+
+    #[test]
+    fn lasius_provider_catalog_flags_unlisted_repo() {
+        let (dir, repo) = lasius_fixture();
+        // rename the repo dir — catalog entry no longer matches
+        let renamed = repo.with_file_name("other-repo");
+        std::fs::rename(&repo, &renamed).unwrap();
+        let claims = serde_json::json!({ "catalog": true });
+        let vs = LasiusProvider.check(&renamed, &claims).unwrap();
+        assert_eq!(vs.len(), 1, "{vs:?}");
+        assert!(vs[0].detail.contains("other-repo"));
+        drop(dir);
+    }
+
+    #[test]
+    fn lasius_provider_outside_workspace_warns() {
+        let dir = tempfile::tempdir().unwrap();
+        let claims = serde_json::json!({ "policy": true });
+        let vs = LasiusProvider.check(dir.path(), &claims).unwrap();
+        assert_eq!(vs.len(), 1, "{vs:?}");
+        assert!(vs[0].detail.contains("lasius.toml"));
+    }
+
+    #[test]
+    fn lasius_provider_rejects_bad_claims() {
+        let dir = tempfile::tempdir().unwrap();
+        for claims in [
+            serde_json::json!({ "bogus": true }),
+            serde_json::json!({ "severity": "fatal" }),
+            serde_json::json!("nope"),
+        ] {
+            assert!(
+                LasiusProvider.check(dir.path(), &claims).is_err(),
+                "{claims}"
+            );
+        }
     }
 }

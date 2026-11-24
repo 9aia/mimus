@@ -367,6 +367,7 @@ fn spec_providers() -> mimus_spec::ProviderSet {
     let mut set = mimus_spec::ProviderSet::new();
     set.register(mimus_spec::CargoProvider);
     set.register(mimus_spec::RepoProvider);
+    set.register(mimus_spec::LasiusProvider);
     set
 }
 

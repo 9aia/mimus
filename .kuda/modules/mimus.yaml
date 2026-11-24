@@ -10,22 +10,22 @@ api:
 - name: Cli
   kind: type
   file: crates/mimus-cli/src/lib.rs
-  line: 27
+  line: 28
   module: mimus
 - name: Cmd
   kind: type
   file: crates/mimus-cli/src/lib.rs
-  line: 42
+  line: 43
   module: mimus
 - name: EXAMPLE_TOML
   kind: const
   file: crates/mimus-cli/src/lib.rs
-  line: 19
+  line: 20
   module: mimus
 - name: GENERIC
   kind: const
   file: crates/mimus-cli/src/lib.rs
-  line: 307
+  line: 308
   module: mimus
 - name: Mimus
   kind: type
@@ -35,17 +35,17 @@ api:
 - name: acp_agent
   kind: function
   file: crates/mimus-cli/tests/e2e.rs
-  line: 711
+  line: 712
   module: mimus
 - name: acp_agent_victim
   kind: function
   file: crates/mimus-cli/tests/e2e.rs
-  line: 715
+  line: 716
   module: mimus
 - name: audit
   kind: function
   file: crates/mimus-cli/src/lib.rs
-  line: 970
+  line: 1012
   module: mimus
 - name: audit_scores_cards
   kind: function
@@ -55,12 +55,12 @@ api:
 - name: canon
   kind: function
   file: crates/mimus-cli/src/lib.rs
-  line: 724
+  line: 766
   module: mimus
 - name: card_prose_claims
   kind: function
   file: crates/mimus-cli/src/lib.rs
-  line: 760
+  line: 802
   module: mimus
 - name: cfg
   kind: function
@@ -70,22 +70,22 @@ api:
 - name: check
   kind: function
   file: crates/mimus-cli/src/lib.rs
-  line: 745
+  line: 787
   module: mimus
 - name: check_all_runs_semantic_tier
   kind: function
   file: crates/mimus-cli/tests/e2e.rs
-  line: 761
+  line: 762
   module: mimus
 - name: check_all_without_acp_cmd
   kind: function
   file: crates/mimus-cli/tests/e2e.rs
-  line: 733
+  line: 734
   module: mimus
 - name: check_bad_rules_toml_skipped
   kind: function
   file: crates/mimus-cli/tests/e2e.rs
-  line: 751
+  line: 752
   module: mimus
 - name: check_comment_claims_and_noise
   kind: function
@@ -95,27 +95,27 @@ api:
 - name: check_diff_bad_spec
   kind: function
   file: crates/mimus-cli/tests/e2e.rs
-  line: 962
+  line: 963
   module: mimus
 - name: check_diff_no_git_binary
   kind: function
   file: crates/mimus-cli/tests/e2e.rs
-  line: 981
+  line: 982
   module: mimus
 - name: check_diff_prose_warm_cache
   kind: function
   file: crates/mimus-cli/tests/e2e.rs
-  line: 1123
+  line: 1124
   module: mimus
 - name: check_diff_requires_git_repo
   kind: function
   file: crates/mimus-cli/tests/e2e.rs
-  line: 950
+  line: 951
   module: mimus
 - name: check_diff_scopes_to_changed_files
   kind: function
   file: crates/mimus-cli/tests/e2e.rs
-  line: 905
+  line: 906
   module: mimus
 - name: check_doc_noise_pruning
   kind: function
@@ -130,12 +130,12 @@ api:
 - name: check_graph_undocumented_fact
   kind: function
   file: crates/mimus-cli/tests/e2e.rs
-  line: 1270
+  line: 1271
   module: mimus
 - name: check_graph_violations
   kind: function
   file: crates/mimus-cli/tests/e2e.rs
-  line: 1230
+  line: 1231
   module: mimus
 - name: check_json_and_clean
   kind: function
@@ -150,7 +150,7 @@ api:
 - name: check_prose_contradictions
   kind: function
   file: crates/mimus-cli/tests/e2e.rs
-  line: 1005
+  line: 1006
   module: mimus
 - name: check_rules_eval
   kind: function
@@ -160,7 +160,7 @@ api:
 - name: check_semantic_candidate_intake
   kind: function
   file: crates/mimus-cli/tests/e2e.rs
-  line: 1086
+  line: 1087
   module: mimus
 - name: check_symbol_checker
   kind: function
@@ -175,7 +175,7 @@ api:
 - name: claims_dump
   kind: function
   file: crates/mimus-cli/src/lib.rs
-  line: 461
+  line: 524
   module: mimus
 - name: claims_dump_with_cards
   kind: function
@@ -185,28 +185,34 @@ api:
 - name: collect
   kind: function
   file: crates/mimus-cli/src/lib.rs
-  line: 494
+  line: 557
   module: mimus
 - name: command
   kind: function
   file: crates/mimus-cli/src/lib.rs
-  line: 121
+  line: 122
   module: mimus
 - name: cov_tests
   kind: module
   file: crates/mimus-cli/src/lib.rs
-  line: 1208
+  line: 1247
   module: mimus
 - name: coverage
   kind: function
   file: crates/mimus-cli/src/lib.rs
-  line: 272
+  line: 273
   module: mimus
 api_omitted: 56
 deps:
 - dagger-io
 - clap
 - clap-markdown
+- cuora-secret
+- cuora-secret-cuora
+- cuora-secret-dotenv
+- cuora-secret-keyring
+- lasius-vcs
+- lasius-vcs-git
 - mimus-check
 - mimus-check-acp
 - mimus-check-cmd
@@ -216,16 +222,13 @@ deps:
 - mimus-claims
 - mimus-config
 - mimus-core
-- mimus-cuora
-- mimus-dotenv
-- mimus-keyring
 - mimus-rules
-- mimus-secret
 - mimus-spec
 - serde_json
 - serde_yaml
 - toml
 - clap
+- lasius_vcs
 - mimus-check
 - mimus-config
 - mimus-core
@@ -255,15 +258,15 @@ provenance:
   - modules/dagger/dagger/src/mimus/main.py
   - modules/dagger/tests/test_self_patch.py
   hashes:
-  - 7240eaf95980951a102bde50ef874daac6c614f9
-  - ca34437371c8798c2a38d9a6e07b061c23a6109a
-  - 1f4fe45d314709986b210632ed8d1ef1d7ddaec7
+  - d35524ff7e0a09d0a1139374d9ca1f3d87e7c16b
+  - cb3f6438ead264926f39ee1800187cd0bc1dd95c
+  - 6cd538de0dff9542fdc4180c205f3548426a0105
   - e1575f1cd039e7d7df8ff90c20a93bde52f78da7
-  - 874f375dedab9bc6436a93187767cea9bcb77d6a
+  - 71c401b4f6ff37f52fe410142cbd60010d17554d
   - 6391d6a9586b1a42d2e3b1270cd9a441f321af68
   - 4093067c2bfef36b97a7be4448a54a5439d61d91
   - 912bc128df92503a9353c765bd892d9ec84c537e
   - d515a59e736b23d553075159e989585bba9ca252
-  commit_sha: ed65452cfc7d8ce73e80d8d07848e63a01ad7a38
-  generated_at: '1795488163'
+  commit_sha: a34be4b15d55a8020d4e0889289c407e08335b3f
+  generated_at: '1795543852'
   generator: kuda-template/0.1.4
