@@ -442,7 +442,9 @@ Three tiers, all declarative:
    across every matched spec: a file covered by *any* spec is
    listed.
 2. **Predicates** — `[path."<glob>"]` tables (`exists`, `contains`,
-   `regex`) and `[git]` claims (`untracked` globs flag
+   `regex`, plus `except` — a repo-name glob list that skips the whole
+   table for matching repos, the per-repo exemption hatch for shared
+   base specs) and `[git]` claims (`untracked` globs flag
    untracked-but-not-ignored files).
 3. **Providers** — `[providers.<ns>]` tables dispatch to a registered
    `StandardProvider`. Built in: `cargo` (org-local `[patch]`

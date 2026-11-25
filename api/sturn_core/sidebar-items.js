@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Op","Verdict"],"fn":["merge","overlay","since_last_snapshot","valid_ws_name"],"mod":["topic"],"struct":["ActorCfg","BusCfg","Config","Event","HooksCfg","Merge","RepoCfg","ReviewCfg","SigningCfg","WalCfg"]};

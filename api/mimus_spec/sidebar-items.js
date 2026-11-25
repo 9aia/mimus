@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["SpecError","SpecSeverity","ViolationKind"],"fn":["check_unlisted","load_specs","repo_name"],"struct":["CargoProvider","CyperaProvider","GitPredicates","KudaProvider","LasiusProvider","MycoProvider","ProviderError","ProviderSet","RepoProvider","Spec","SpecViolation","SturnProvider"],"trait":["StandardProvider"]};
