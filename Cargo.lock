@@ -3,6 +3,12 @@
 version = 4
 
 [[package]]
+name = "adler2"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -77,6 +83,15 @@ name = "bitflags"
 version = "2.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ded4057c258ba199e2d26386d3af3780957ecaee6c4ef4041c6b4b8b97c0b06"
+
+[[package]]
+name = "block-buffer"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2f6c7dbe95a6ed67ad9f18e57daf93a2f034c524b99fd2b76d18fdfeb6660aa"
+dependencies = [
+ "hybrid-array",
+]
 
 [[package]]
 name = "bstr"
@@ -172,14 +187,47 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d07550c9036bf2ae0c684c4297d503f838287c83c53686d05370d0e139ae570"
 
 [[package]]
+name = "const-oid"
+version = "0.10.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be95d4a884358a21a199689323c29e9256b4a1b315e22f183d155422041d3a9a"
+
+[[package]]
+name = "cpufeatures"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ca28b0ae3115b884660db4118d803791fd6756b6e88f39c0f3f7859060d7566"
+dependencies = [
+ "libc",
+]
+
+[[package]]
+name = "crc32fast"
+version = "1.5.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd9ae8fcb3ea71b0b26338b4ffb13006bb175de8fd07921089a906ce7e5e6945"
+dependencies = [
+ "cfg-if",
+]
+
+[[package]]
+name = "crypto-common"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce6e4c961d6cd6c9a86db418387425e8bdeaf05b3c8bc1411e6dca4c252f1453"
+dependencies = [
+ "hybrid-array",
+]
+
+[[package]]
 name = "cuora-secret"
-version = "1.0.4"
-source = "git+ssh://git@github.com/9aia/cuora.git?rev=f81164366bd436a7d4cf204c6e7a83555f50302f#f81164366bd436a7d4cf204c6e7a83555f50302f"
+version = "2.0.0"
+source = "git+ssh://git@github.com/9aia/cuora.git?rev=d979b0f40d06e82d0258121083d7d9c89660cb96#d979b0f40d06e82d0258121083d7d9c89660cb96"
 
 [[package]]
 name = "cuora-secret-cuora"
-version = "1.0.4"
-source = "git+ssh://git@github.com/9aia/cuora.git?rev=f81164366bd436a7d4cf204c6e7a83555f50302f#f81164366bd436a7d4cf204c6e7a83555f50302f"
+version = "2.0.0"
+source = "git+ssh://git@github.com/9aia/cuora.git?rev=d979b0f40d06e82d0258121083d7d9c89660cb96#d979b0f40d06e82d0258121083d7d9c89660cb96"
 dependencies = [
  "cuora-secret",
  "serde_json",
@@ -187,18 +235,29 @@ dependencies = [
 
 [[package]]
 name = "cuora-secret-dotenv"
-version = "1.0.4"
-source = "git+ssh://git@github.com/9aia/cuora.git?rev=f81164366bd436a7d4cf204c6e7a83555f50302f#f81164366bd436a7d4cf204c6e7a83555f50302f"
+version = "2.0.0"
+source = "git+ssh://git@github.com/9aia/cuora.git?rev=d979b0f40d06e82d0258121083d7d9c89660cb96#d979b0f40d06e82d0258121083d7d9c89660cb96"
 dependencies = [
  "cuora-secret",
 ]
 
 [[package]]
 name = "cuora-secret-keyring"
-version = "1.0.4"
-source = "git+ssh://git@github.com/9aia/cuora.git?rev=f81164366bd436a7d4cf204c6e7a83555f50302f#f81164366bd436a7d4cf204c6e7a83555f50302f"
+version = "2.0.0"
+source = "git+ssh://git@github.com/9aia/cuora.git?rev=d979b0f40d06e82d0258121083d7d9c89660cb96#d979b0f40d06e82d0258121083d7d9c89660cb96"
 dependencies = [
  "cuora-secret",
+]
+
+[[package]]
+name = "digest"
+version = "0.11.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1dd6dbb5841937940781866fa1281a1ff7bd3bf827091440879f9994983d5c2"
+dependencies = [
+ "block-buffer",
+ "const-oid",
+ "crypto-common",
 ]
 
 [[package]]
@@ -240,6 +299,17 @@ name = "find-msvc-tools"
 version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1c66915cc5391097de7a2b0b972e8505aa33c0df401fd3a6811dbdb32881ba48"
+
+[[package]]
+name = "flate2"
+version = "1.1.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "626d4928326b646e70f65ed36fc7cf9f206bdb68a0019ee7c6b4709da4e084c4"
+dependencies = [
+ "crc32fast",
+ "miniz_oxide",
+ "zlib-rs",
+]
 
 [[package]]
 name = "foldhash"
@@ -399,6 +469,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
+name = "hybrid-array"
+version = "0.4.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "27f864f10dfb56725ce5ce5472bc52252c8f93a4ab86327122cebf62c5f59a17"
+dependencies = [
+ "typenum",
+]
+
+[[package]]
 name = "indexmap"
 version = "2.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -460,18 +539,20 @@ dependencies = [
 
 [[package]]
 name = "lasius-vcs"
-version = "0.4.0"
-source = "git+ssh://git@github.com/9aia/lasius.git?rev=351857536395951d5f6f8502cdaf86a737520b02#351857536395951d5f6f8502cdaf86a737520b02"
+version = "0.5.0"
+source = "git+ssh://git@github.com/9aia/lasius.git?rev=89e51894b9cd118141fe66d1c8c1d114c60d4ea5#89e51894b9cd118141fe66d1c8c1d114c60d4ea5"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "lasius-vcs-git"
-version = "0.4.0"
-source = "git+ssh://git@github.com/9aia/lasius.git?rev=351857536395951d5f6f8502cdaf86a737520b02#351857536395951d5f6f8502cdaf86a737520b02"
+version = "0.5.0"
+source = "git+ssh://git@github.com/9aia/lasius.git?rev=89e51894b9cd118141fe66d1c8c1d114c60d4ea5#89e51894b9cd118141fe66d1c8c1d114c60d4ea5"
 dependencies = [
+ "flate2",
  "lasius-vcs",
+ "sha1",
 ]
 
 [[package]]
@@ -670,6 +751,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "miniz_oxide"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b63fbc4a50860e98e7b2aa7804ded1db5cbc3aff9193adaff57a6931bf7c4b4c"
+dependencies = [
+ "adler2",
+ "simd-adler32",
+]
+
+[[package]]
 name = "mio"
 version = "1.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -695,7 +786,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 [[package]]
 name = "pavo-driver-kit"
 version = "0.1.0"
-source = "git+https://github.com/9aia/pavo?rev=ca4079d123fe7533210ed698051f5c3a09000911#ca4079d123fe7533210ed698051f5c3a09000911"
+source = "git+https://github.com/9aia/pavo?rev=f6235d10f990e9f7735d8a53495e94a57a640949#f6235d10f990e9f7735d8a53495e94a57a640949"
 dependencies = [
  "pavo-protocol",
  "serde",
@@ -705,7 +796,7 @@ dependencies = [
 [[package]]
 name = "pavo-protocol"
 version = "0.1.0"
-source = "git+https://github.com/9aia/pavo?rev=ca4079d123fe7533210ed698051f5c3a09000911#ca4079d123fe7533210ed698051f5c3a09000911"
+source = "git+https://github.com/9aia/pavo?rev=f6235d10f990e9f7735d8a53495e94a57a640949#f6235d10f990e9f7735d8a53495e94a57a640949"
 dependencies = [
  "serde",
  "serde_json",
@@ -715,7 +806,7 @@ dependencies = [
 [[package]]
 name = "pavo-testkit"
 version = "0.1.0"
-source = "git+https://github.com/9aia/pavo?rev=ca4079d123fe7533210ed698051f5c3a09000911#ca4079d123fe7533210ed698051f5c3a09000911"
+source = "git+https://github.com/9aia/pavo?rev=f6235d10f990e9f7735d8a53495e94a57a640949#f6235d10f990e9f7735d8a53495e94a57a640949"
 dependencies = [
  "pavo-protocol",
  "serde",
@@ -841,8 +932,8 @@ checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
 
 [[package]]
 name = "scarab-compose"
-version = "0.1.0"
-source = "git+ssh://git@github.com/9aia/scarab.git?rev=85e50d57110b2f785a5c11d8cf55de7737d67257#85e50d57110b2f785a5c11d8cf55de7737d67257"
+version = "0.2.0"
+source = "git+ssh://git@github.com/9aia/scarab.git?rev=4e32a347dd775efdccc675d0e1f4a10e7a26153f#4e32a347dd775efdccc675d0e1f4a10e7a26153f"
 dependencies = [
  "serde_json",
  "serde_yaml_ng",
@@ -852,16 +943,16 @@ dependencies = [
 
 [[package]]
 name = "scarab-config"
-version = "0.1.0"
-source = "git+ssh://git@github.com/9aia/scarab.git?rev=9364df88fad0ca46bd838467717a823893f47438#9364df88fad0ca46bd838467717a823893f47438"
+version = "0.2.0"
+source = "git+ssh://git@github.com/9aia/scarab.git?rev=4e32a347dd775efdccc675d0e1f4a10e7a26153f#4e32a347dd775efdccc675d0e1f4a10e7a26153f"
 dependencies = [
  "serde_json",
 ]
 
 [[package]]
 name = "scarab-config-file"
-version = "0.1.0"
-source = "git+ssh://git@github.com/9aia/scarab.git?rev=9364df88fad0ca46bd838467717a823893f47438#9364df88fad0ca46bd838467717a823893f47438"
+version = "0.2.0"
+source = "git+ssh://git@github.com/9aia/scarab.git?rev=4e32a347dd775efdccc675d0e1f4a10e7a26153f#4e32a347dd775efdccc675d0e1f4a10e7a26153f"
 dependencies = [
  "scarab-config",
  "scarab-config-toml",
@@ -872,8 +963,8 @@ dependencies = [
 
 [[package]]
 name = "scarab-config-toml"
-version = "0.1.0"
-source = "git+ssh://git@github.com/9aia/scarab.git?rev=9364df88fad0ca46bd838467717a823893f47438#9364df88fad0ca46bd838467717a823893f47438"
+version = "0.2.0"
+source = "git+ssh://git@github.com/9aia/scarab.git?rev=4e32a347dd775efdccc675d0e1f4a10e7a26153f#4e32a347dd775efdccc675d0e1f4a10e7a26153f"
 dependencies = [
  "scarab-config",
  "serde",
@@ -882,8 +973,8 @@ dependencies = [
 
 [[package]]
 name = "scarab-config-yaml"
-version = "0.1.0"
-source = "git+ssh://git@github.com/9aia/scarab.git?rev=9364df88fad0ca46bd838467717a823893f47438#9364df88fad0ca46bd838467717a823893f47438"
+version = "0.2.0"
+source = "git+ssh://git@github.com/9aia/scarab.git?rev=4e32a347dd775efdccc675d0e1f4a10e7a26153f#4e32a347dd775efdccc675d0e1f4a10e7a26153f"
 dependencies = [
  "scarab-config",
  "serde",
@@ -892,8 +983,8 @@ dependencies = [
 
 [[package]]
 name = "sepia-acp"
-version = "0.2.0"
-source = "git+ssh://git@github.com/9aia/sepia.git?rev=c6f66e48050a76e24f4149438d6c20ab21bbbd91#c6f66e48050a76e24f4149438d6c20ab21bbbd91"
+version = "1.0.0"
+source = "git+ssh://git@github.com/9aia/sepia.git?rev=9e006d22e6fa442197082a2277ca40a01b43e7e3#9e006d22e6fa442197082a2277ca40a01b43e7e3"
 dependencies = [
  "async-trait",
  "futures",
@@ -907,8 +998,8 @@ dependencies = [
 
 [[package]]
 name = "sepia-core"
-version = "0.2.0"
-source = "git+ssh://git@github.com/9aia/sepia.git?rev=c6f66e48050a76e24f4149438d6c20ab21bbbd91#c6f66e48050a76e24f4149438d6c20ab21bbbd91"
+version = "1.0.0"
+source = "git+ssh://git@github.com/9aia/sepia.git?rev=9e006d22e6fa442197082a2277ca40a01b43e7e3#9e006d22e6fa442197082a2277ca40a01b43e7e3"
 dependencies = [
  "async-trait",
  "serde",
@@ -918,8 +1009,8 @@ dependencies = [
 
 [[package]]
 name = "sepia-driver"
-version = "0.2.0"
-source = "git+ssh://git@github.com/9aia/sepia.git?rev=c6f66e48050a76e24f4149438d6c20ab21bbbd91#c6f66e48050a76e24f4149438d6c20ab21bbbd91"
+version = "1.0.0"
+source = "git+ssh://git@github.com/9aia/sepia.git?rev=9e006d22e6fa442197082a2277ca40a01b43e7e3#9e006d22e6fa442197082a2277ca40a01b43e7e3"
 dependencies = [
  "async-trait",
  "sepia-core",
@@ -1010,6 +1101,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha1"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aacc4cc499359472b4abe1bf11d0b12e688af9a805fa5e3016f9a386dc2d0214"
+dependencies = [
+ "cfg-if",
+ "cpufeatures",
+ "digest",
+]
+
+[[package]]
 name = "shlex"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1024,6 +1126,12 @@ dependencies = [
  "errno",
  "libc",
 ]
+
+[[package]]
+name = "simd-adler32"
+version = "0.3.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a219298ac11a56ea9a6d2120044824d6f01aeb034955e7af7bc16858527deea"
 
 [[package]]
 name = "slab"
@@ -1209,6 +1317,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "typenum"
+version = "1.20.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+
+[[package]]
 name = "unicode-ident"
 version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1305,6 +1419,12 @@ checksum = "df79d97927682d2fd8adb29682d1140b343be4ac0f08fd68b7765d9c059d3945"
 dependencies = [
  "memchr",
 ]
+
+[[package]]
+name = "zlib-rs"
+version = "0.6.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa76918995d776d9dd34d371030be228d021137449771493d56e29f77e4148ac"
 
 [[package]]
 name = "zmij"

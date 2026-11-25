@@ -38,10 +38,10 @@ serde_yaml.workspace = true
 # builders over pavo-protocol types. Git deps, not path: a fresh
 # mimus clone has no sibling ../pavo checkout and CI must still
 # resolve (same convention as myco/kuda/cuora/sturn drivers).
-pavo-driver-kit = { git = "https://github.com/9aia/pavo", rev = "ca4079d123fe7533210ed698051f5c3a09000911", version = "0.1.0" }
-pavo-protocol = { git = "https://github.com/9aia/pavo", rev = "ca4079d123fe7533210ed698051f5c3a09000911", version = "0.1.0" }
+pavo-driver-kit = { git = "https://github.com/9aia/pavo", rev = "f6235d10f990e9f7735d8a53495e94a57a640949", version = "0.1.0" }
+pavo-protocol = { git = "https://github.com/9aia/pavo", rev = "f6235d10f990e9f7735d8a53495e94a57a640949", version = "0.1.0" }
 
 [dev-dependencies]
 # Conformance gate — `cargo test` runs pavo's wire-contract suite
 # against this crate's own `tamias-driver-mimus serve` binary.
-pavo-testkit = { git = "https://github.com/9aia/pavo", rev = "ca4079d123fe7533210ed698051f5c3a09000911" }
+pavo-testkit = { git = "https://github.com/9aia/pavo", rev = "f6235d10f990e9f7735d8a53495e94a57a640949" }
