@@ -37,6 +37,7 @@ export default defineConfig({
           { text: "Memory audit", link: "/how-to/kuda-audit" },
           { text: "Authoring rules", link: "/how-to/rules-authoring" },
           { text: "CI gate", link: "/how-to/ci-gate" },
+          { text: "Repo conformance", link: "/how-to/check-repo-conformance" },
         ],
       },
       {

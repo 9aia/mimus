@@ -53,14 +53,17 @@ crates:
 - claim extraction → `mimus-claims`; conventions → `mimus-rules`
   (`rules/*.toml` data, verified by the rules checker)
 - `mimus-config` (port + scarab-config discovery,
-  `mimus.{yaml,yml,toml}`); `mimus-secret` → `mimus-cuora`,
-  `mimus-keyring`, `mimus-dotenv` — the env → cuora → keyring →
-  dotenv chain
-- git is shelled out directly inside `mimus-cli` (`git diff`
-  scope, `hash-object` provenance) — there is no vcs port
+  `mimus.{yaml,yml,toml}`); secrets resolve through cuora's
+  `cuora-secret*` family (git deps — env → cuora vaults →
+  keyring → dotenv)
+- `mimus-spec` — the `mimus standard` tier: declarative
+  repo-conformance specs (file-set diff + path/git predicates +
+  `[providers.<ns>]` dispatch) as data, evaluated in-crate
+- git access goes through the shared `lasius-vcs` port
+  (`lasius-vcs-git` impl), not ad-hoc shell-outs
 
 A new checker = new adapter crate; a new convention = a new
-rule file.
+rule file; a new conformance rule = a spec file.
 
 ## The evidence bar
 

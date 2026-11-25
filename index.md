@@ -54,7 +54,7 @@ kuda's, fixing is reconcile's (planned), distribution is tamias's.
 - **Learn it** → [Getting started](tutorials/getting-started.md) —
   first check, rules, memory audit
 - **Do a task** → [How-to](/how-to/multi-repo) — CI gate, kuda
-  audit, rules authoring, multi-repo
+  audit, rules authoring, repo conformance, multi-repo
 - **Understand why** → [Architecture](explanation/architecture.md),
   [claims & tiers](explanation/claims.md),
   [concepts](explanation/concepts.md),
