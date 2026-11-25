@@ -39,26 +39,26 @@ mimus-check-symbol = { path = "crates/mimus-check-symbol", version = "1.0.0" }
 mimus-check-graph = { path = "crates/mimus-check-graph", version = "1.0.0" }
 mimus-check-acp = { path = "crates/mimus-check-acp", version = "1.0.0" }
 mimus-rules = { path = "crates/mimus-rules", version = "1.0.0" }
-cuora-secret = { git = "ssh://git@github.com/9aia/cuora.git", rev = "d979b0f40d06e82d0258121083d7d9c89660cb96" }
-cuora-secret-cuora = { git = "ssh://git@github.com/9aia/cuora.git", rev = "d979b0f40d06e82d0258121083d7d9c89660cb96" }
-cuora-secret-keyring = { git = "ssh://git@github.com/9aia/cuora.git", rev = "d979b0f40d06e82d0258121083d7d9c89660cb96" }
-cuora-secret-dotenv = { git = "ssh://git@github.com/9aia/cuora.git", rev = "d979b0f40d06e82d0258121083d7d9c89660cb96" }
+cuora-secret = { git = "ssh://git@github.com/9aia/cuora.git", rev = "c3a1e0a9601ec4dd8a3dbbe64c973a4d03418372" }
+cuora-secret-cuora = { git = "ssh://git@github.com/9aia/cuora.git", rev = "c3a1e0a9601ec4dd8a3dbbe64c973a4d03418372" }
+cuora-secret-keyring = { git = "ssh://git@github.com/9aia/cuora.git", rev = "c3a1e0a9601ec4dd8a3dbbe64c973a4d03418372" }
+cuora-secret-dotenv = { git = "ssh://git@github.com/9aia/cuora.git", rev = "c3a1e0a9601ec4dd8a3dbbe64c973a4d03418372" }
 mimus-config = { path = "crates/mimus-config", version = "1.0.0" }
 mimus-spec = { path = "crates/mimus-spec", version = "1.0.0" }
 mimus-driver = { path = "crates/mimus-driver", version = "1.0.0" }
 # P-053 item 1 — kuda index read surface (read-only SqliteStore).
-kuda-core = { git = "ssh://git@github.com/9aia/kuda.git", rev = "aa60c5803cdd356edbf7e14177f465eb43959a63", version = "0.3" }
-kuda-store = { git = "ssh://git@github.com/9aia/kuda.git", rev = "aa60c5803cdd356edbf7e14177f465eb43959a63", version = "0.3" }
-kuda-store-sqlite = { git = "ssh://git@github.com/9aia/kuda.git", rev = "aa60c5803cdd356edbf7e14177f465eb43959a63", version = "0.3" }
-scarab-config = { git = "ssh://git@github.com/9aia/scarab.git", rev = "4e32a347dd775efdccc675d0e1f4a10e7a26153f", version = "0.2.0" }
-scarab-config-file = { git = "ssh://git@github.com/9aia/scarab.git", rev = "4e32a347dd775efdccc675d0e1f4a10e7a26153f", version = "0.2.0" }
+kuda-core = { git = "ssh://git@github.com/9aia/kuda.git", rev = "44953ecc4af348be96c63142715a97bc52139bed", version = "0.3" }
+kuda-store = { git = "ssh://git@github.com/9aia/kuda.git", rev = "44953ecc4af348be96c63142715a97bc52139bed", version = "0.3" }
+kuda-store-sqlite = { git = "ssh://git@github.com/9aia/kuda.git", rev = "44953ecc4af348be96c63142715a97bc52139bed", version = "0.3" }
+scarab-config = { git = "ssh://git@github.com/9aia/scarab.git", rev = "20dabb1ad957b22bc8f3432feeadee09aa69371a", version = "0.2.0" }
+scarab-config-file = { git = "ssh://git@github.com/9aia/scarab.git", rev = "20dabb1ad957b22bc8f3432feeadee09aa69371a", version = "0.2.0" }
 # standard tier (P-001): spec documents resolve extends:/include:
 # through scarab-compose — newer rev than the config crates above.
 # default-features off: the `tamias` feature pulls the tamias
 # store/install crates; `tamias:` spec refs error loudly without
 # it (spike scope — no tamias: resolution yet).
-scarab-compose = { git = "ssh://git@github.com/9aia/scarab.git", rev = "4e32a347dd775efdccc675d0e1f4a10e7a26153f", version = "0.2.0", default-features = false }
-scarab-validate = { git = "ssh://git@github.com/9aia/scarab.git", rev = "4e32a347dd775efdccc675d0e1f4a10e7a26153f", version = "0.1" }
+scarab-compose = { git = "ssh://git@github.com/9aia/scarab.git", rev = "20dabb1ad957b22bc8f3432feeadee09aa69371a", version = "0.2.0", default-features = false }
+scarab-validate = { git = "ssh://git@github.com/9aia/scarab.git", rev = "20dabb1ad957b22bc8f3432feeadee09aa69371a", version = "0.1" }
 globset = "0.4"
 thiserror = "2"
 tempfile = "3"

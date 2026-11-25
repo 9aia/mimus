@@ -222,12 +222,12 @@ dependencies = [
 [[package]]
 name = "cuora-secret"
 version = "2.0.0"
-source = "git+ssh://git@github.com/9aia/cuora.git?rev=d979b0f40d06e82d0258121083d7d9c89660cb96#d979b0f40d06e82d0258121083d7d9c89660cb96"
+source = "git+ssh://git@github.com/9aia/cuora.git?rev=c3a1e0a9601ec4dd8a3dbbe64c973a4d03418372#c3a1e0a9601ec4dd8a3dbbe64c973a4d03418372"
 
 [[package]]
 name = "cuora-secret-cuora"
 version = "2.0.0"
-source = "git+ssh://git@github.com/9aia/cuora.git?rev=d979b0f40d06e82d0258121083d7d9c89660cb96#d979b0f40d06e82d0258121083d7d9c89660cb96"
+source = "git+ssh://git@github.com/9aia/cuora.git?rev=c3a1e0a9601ec4dd8a3dbbe64c973a4d03418372#c3a1e0a9601ec4dd8a3dbbe64c973a4d03418372"
 dependencies = [
  "cuora-secret",
  "serde_json",
@@ -236,7 +236,7 @@ dependencies = [
 [[package]]
 name = "cuora-secret-dotenv"
 version = "2.0.0"
-source = "git+ssh://git@github.com/9aia/cuora.git?rev=d979b0f40d06e82d0258121083d7d9c89660cb96#d979b0f40d06e82d0258121083d7d9c89660cb96"
+source = "git+ssh://git@github.com/9aia/cuora.git?rev=c3a1e0a9601ec4dd8a3dbbe64c973a4d03418372#c3a1e0a9601ec4dd8a3dbbe64c973a4d03418372"
 dependencies = [
  "cuora-secret",
 ]
@@ -244,7 +244,7 @@ dependencies = [
 [[package]]
 name = "cuora-secret-keyring"
 version = "2.0.0"
-source = "git+ssh://git@github.com/9aia/cuora.git?rev=d979b0f40d06e82d0258121083d7d9c89660cb96#d979b0f40d06e82d0258121083d7d9c89660cb96"
+source = "git+ssh://git@github.com/9aia/cuora.git?rev=c3a1e0a9601ec4dd8a3dbbe64c973a4d03418372#c3a1e0a9601ec4dd8a3dbbe64c973a4d03418372"
 dependencies = [
  "cuora-secret",
 ]
@@ -512,7 +512,7 @@ dependencies = [
 [[package]]
 name = "kuda-core"
 version = "0.3.0"
-source = "git+ssh://git@github.com/9aia/kuda.git?rev=aa60c5803cdd356edbf7e14177f465eb43959a63#aa60c5803cdd356edbf7e14177f465eb43959a63"
+source = "git+ssh://git@github.com/9aia/kuda.git?rev=44953ecc4af348be96c63142715a97bc52139bed#44953ecc4af348be96c63142715a97bc52139bed"
 dependencies = [
  "serde",
  "serde_json",
@@ -522,7 +522,7 @@ dependencies = [
 [[package]]
 name = "kuda-store"
 version = "0.3.0"
-source = "git+ssh://git@github.com/9aia/kuda.git?rev=aa60c5803cdd356edbf7e14177f465eb43959a63#aa60c5803cdd356edbf7e14177f465eb43959a63"
+source = "git+ssh://git@github.com/9aia/kuda.git?rev=44953ecc4af348be96c63142715a97bc52139bed#44953ecc4af348be96c63142715a97bc52139bed"
 dependencies = [
  "kuda-core",
 ]
@@ -530,7 +530,7 @@ dependencies = [
 [[package]]
 name = "kuda-store-sqlite"
 version = "0.3.0"
-source = "git+ssh://git@github.com/9aia/kuda.git?rev=aa60c5803cdd356edbf7e14177f465eb43959a63#aa60c5803cdd356edbf7e14177f465eb43959a63"
+source = "git+ssh://git@github.com/9aia/kuda.git?rev=44953ecc4af348be96c63142715a97bc52139bed#44953ecc4af348be96c63142715a97bc52139bed"
 dependencies = [
  "kuda-core",
  "kuda-store",
@@ -786,7 +786,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 [[package]]
 name = "pavo-driver-kit"
 version = "0.1.0"
-source = "git+https://github.com/9aia/pavo?rev=f6235d10f990e9f7735d8a53495e94a57a640949#f6235d10f990e9f7735d8a53495e94a57a640949"
+source = "git+https://github.com/9aia/pavo?rev=44e6ed8cf5307778c4c7559dc214d1f99f9a1e30#44e6ed8cf5307778c4c7559dc214d1f99f9a1e30"
 dependencies = [
  "pavo-protocol",
  "serde",
@@ -796,7 +796,7 @@ dependencies = [
 [[package]]
 name = "pavo-protocol"
 version = "0.1.0"
-source = "git+https://github.com/9aia/pavo?rev=f6235d10f990e9f7735d8a53495e94a57a640949#f6235d10f990e9f7735d8a53495e94a57a640949"
+source = "git+https://github.com/9aia/pavo?rev=44e6ed8cf5307778c4c7559dc214d1f99f9a1e30#44e6ed8cf5307778c4c7559dc214d1f99f9a1e30"
 dependencies = [
  "serde",
  "serde_json",
@@ -806,7 +806,7 @@ dependencies = [
 [[package]]
 name = "pavo-testkit"
 version = "0.1.0"
-source = "git+https://github.com/9aia/pavo?rev=f6235d10f990e9f7735d8a53495e94a57a640949#f6235d10f990e9f7735d8a53495e94a57a640949"
+source = "git+https://github.com/9aia/pavo?rev=44e6ed8cf5307778c4c7559dc214d1f99f9a1e30#44e6ed8cf5307778c4c7559dc214d1f99f9a1e30"
 dependencies = [
  "pavo-protocol",
  "serde",
@@ -933,7 +933,7 @@ checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
 [[package]]
 name = "scarab-compose"
 version = "0.2.0"
-source = "git+ssh://git@github.com/9aia/scarab.git?rev=4e32a347dd775efdccc675d0e1f4a10e7a26153f#4e32a347dd775efdccc675d0e1f4a10e7a26153f"
+source = "git+ssh://git@github.com/9aia/scarab.git?rev=20dabb1ad957b22bc8f3432feeadee09aa69371a#20dabb1ad957b22bc8f3432feeadee09aa69371a"
 dependencies = [
  "serde_json",
  "serde_yaml_ng",
@@ -944,7 +944,7 @@ dependencies = [
 [[package]]
 name = "scarab-config"
 version = "0.2.0"
-source = "git+ssh://git@github.com/9aia/scarab.git?rev=4e32a347dd775efdccc675d0e1f4a10e7a26153f#4e32a347dd775efdccc675d0e1f4a10e7a26153f"
+source = "git+ssh://git@github.com/9aia/scarab.git?rev=20dabb1ad957b22bc8f3432feeadee09aa69371a#20dabb1ad957b22bc8f3432feeadee09aa69371a"
 dependencies = [
  "serde_json",
 ]
@@ -952,7 +952,7 @@ dependencies = [
 [[package]]
 name = "scarab-config-file"
 version = "0.2.0"
-source = "git+ssh://git@github.com/9aia/scarab.git?rev=4e32a347dd775efdccc675d0e1f4a10e7a26153f#4e32a347dd775efdccc675d0e1f4a10e7a26153f"
+source = "git+ssh://git@github.com/9aia/scarab.git?rev=20dabb1ad957b22bc8f3432feeadee09aa69371a#20dabb1ad957b22bc8f3432feeadee09aa69371a"
 dependencies = [
  "scarab-config",
  "scarab-config-toml",
@@ -964,7 +964,7 @@ dependencies = [
 [[package]]
 name = "scarab-config-toml"
 version = "0.2.0"
-source = "git+ssh://git@github.com/9aia/scarab.git?rev=4e32a347dd775efdccc675d0e1f4a10e7a26153f#4e32a347dd775efdccc675d0e1f4a10e7a26153f"
+source = "git+ssh://git@github.com/9aia/scarab.git?rev=20dabb1ad957b22bc8f3432feeadee09aa69371a#20dabb1ad957b22bc8f3432feeadee09aa69371a"
 dependencies = [
  "scarab-config",
  "serde",
@@ -974,7 +974,7 @@ dependencies = [
 [[package]]
 name = "scarab-config-yaml"
 version = "0.2.0"
-source = "git+ssh://git@github.com/9aia/scarab.git?rev=4e32a347dd775efdccc675d0e1f4a10e7a26153f#4e32a347dd775efdccc675d0e1f4a10e7a26153f"
+source = "git+ssh://git@github.com/9aia/scarab.git?rev=20dabb1ad957b22bc8f3432feeadee09aa69371a#20dabb1ad957b22bc8f3432feeadee09aa69371a"
 dependencies = [
  "scarab-config",
  "serde",
