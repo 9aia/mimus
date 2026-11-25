@@ -16,7 +16,7 @@
 //! concatenate** (child entries first), tables merge per-key.
 //!
 //! Spike scope: the file-set tier plus the phase-2 predicate tier —
-//! `[path."X"]` tables (`exists`, `contains`, `regex`), the
+//! `[path."X"]` tables (`exists`, `contains`, `regex`, `except`), the
 //! `[git]` namespace (`untracked`), and the `[providers.<ns>]`
 //! namespace are evaluated by [`Spec::check_repo`]. `tamias:` refs
 //! and unknown top-level keys still deserialize (or are ignored)
@@ -1315,21 +1315,48 @@ impl Spec {
     ///   silently.
     /// - Unknown keys inside a table → [`SpecError::Predicate`];
     ///   mistyped values / bad regexes → [`SpecError::PredicateValue`].
+    /// - `except` is a repo-name glob list — when the repo directory's
+    ///   name matches any entry the whole table is skipped (the
+    ///   per-repo exemption hatch for shared base specs).
     fn check_path_predicates(&self, repo: &Path) -> Result<Vec<SpecViolation>, SpecError> {
         let sev = self.severity.to_core();
         let mut out = Vec::new();
-        for (rel, table) in &self.path {
+        'tables: for (rel, table) in &self.path {
             let obj = table.as_object().ok_or_else(|| SpecError::PredicateValue {
                 path: rel.clone(),
                 key: "<table>".into(),
                 detail: "path table must be a TOML/YAML table".into(),
             })?;
             for key in obj.keys() {
-                if !matches!(key.as_str(), "exists" | "contains" | "regex" | "glob") {
+                if !matches!(
+                    key.as_str(),
+                    "exists" | "contains" | "regex" | "glob" | "except"
+                ) {
                     return Err(SpecError::Predicate {
                         path: rel.clone(),
                         key: key.clone(),
                     });
+                }
+            }
+            if let Some(v) = obj.get("except") {
+                let pats = v.as_array().ok_or_else(|| SpecError::PredicateValue {
+                    path: rel.clone(),
+                    key: "except".into(),
+                    detail: "expected an array of repo-name globs".into(),
+                })?;
+                let name = repo_name(repo);
+                for p in pats {
+                    let pat = p.as_str().ok_or_else(|| SpecError::PredicateValue {
+                        path: rel.clone(),
+                        key: "except".into(),
+                        detail: "expected a string glob".into(),
+                    })?;
+                    if Glob::new(pat)
+                        .map(|g| g.compile_matcher().is_match(&name))
+                        .unwrap_or(false)
+                    {
+                        continue 'tables;
+                    }
                 }
             }
             // `glob` is a recognized-but-ignored key: `files`/`cover`

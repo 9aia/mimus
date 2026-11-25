@@ -352,6 +352,55 @@ regex.require = ['y']
 }
 
 #[test]
+fn path_except_skips_matching_repo_name() {
+    // `except` is the per-repo exemption hatch: a shared base spec's
+    // path predicates skip repos whose directory name matches.
+    let dir = tempfile::tempdir().unwrap();
+    for name in ["docs", "app"] {
+        let repo = dir.path().join(name);
+        std::fs::create_dir(&repo).unwrap();
+        std::fs::write(repo.join("bupha.toml"), "cmd = \"bash ci.sh\"\n").unwrap();
+    }
+    let s = Spec::parse(
+        r#"
+family = "t"
+files  = ["bupha.toml"]
+
+[path."bupha.toml"]
+regex  = "peregrin campaign"
+except = ["docs"]
+"#,
+    )
+    .unwrap();
+    // "docs" is exempt — the stale-runner regex never evaluates
+    assert!(
+        s.check_repo(&dir.path().join("docs")).unwrap().is_empty(),
+        "exempt repo must report no violations"
+    );
+    // "app" is not — the require-regex fires
+    let vs = s.check_repo(&dir.path().join("app")).unwrap();
+    let pv = predicate_violations(&vs);
+    assert_eq!(pv.len(), 1, "{vs:?}");
+    assert_eq!(pv[0].path, "bupha.toml");
+}
+
+#[test]
+fn path_except_bad_shape_errors() {
+    let r = repo(&["a.txt"]);
+    for table in [
+        "except = \"docs\"",                // not an array
+        "except = [1]",                     // non-string entry
+        "except = [\"docs\"]\nunknown = 1", // unknown key still errors
+    ] {
+        let s = Spec::parse(&format!(
+            "family = \"t\"\nfiles = [\"a.txt\"]\n\n[path.\"a.txt\"]\n{table}\n"
+        ))
+        .unwrap();
+        assert!(s.check_repo(r.path()).is_err(), "{table}");
+    }
+}
+
+#[test]
 fn unknown_path_table_key_errors() {
     let r = repo(&["a.txt"]);
     let s = Spec::parse(
