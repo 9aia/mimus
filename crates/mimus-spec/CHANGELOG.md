@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.0] - 2026-11-25
+
+### Added
+
+- **mimus-spec:** path-table 'except' — per-repo predicate exemptions (`ed909e0`)
+
+### Changed
+
+- **spec:** git access via lasius-vcs (P-050) (`6d24235`)
+
 ## [1.0.0] - 2026-11-24
 
 ### Added

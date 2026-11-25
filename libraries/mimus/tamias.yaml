@@ -19,7 +19,7 @@
 # end-to-end. No `tools/bin/` payload bin: the verbs ride the same
 # shim.
 name: mimus
-version: "1.0.0"
+version: "1.1.0"
 type: files
 description: >-
   Verification engine — proofs over agent claims (mechanical

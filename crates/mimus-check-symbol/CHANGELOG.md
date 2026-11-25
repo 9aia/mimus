@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.0] - 2026-11-25
+
+### Changed
+
+- **check:** read kuda index via kuda-store, drop raw SQL (P-053) (`5b841ec`)
+
 ## [1.0.0] - 2026-11-24
 
 ### Added
