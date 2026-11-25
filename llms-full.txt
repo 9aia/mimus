@@ -406,6 +406,78 @@ semantic tier can never be this gate.
 ---
 
 ---
+url: /mimus/how-to/check-repo-conformance.md
+---
+# How to check repo conformance
+
+`mimus standard` diffs a repo against declarative conformance specs —
+the org's way of saying "every repo carries the same floor" without a
+script per repo. Specs are TOML/YAML/JSON documents naming a `family`,
+`match` globs, a `severity`, and the expected file set; anything
+tracked in the repo that no spec covers is an `unlisted` violation.
+
+## Run it
+
+```sh
+mimus standard --repo ../tamias --spec ../specs --spec ../tamias/specs
+mimus standard --repo . --spec ./specs --format json
+```
+
+* `--spec` takes a spec **file or directory** and is repeatable.
+  Specs whose `match` globs don't cover the repo name are skipped;
+  an empty `match` applies to every repo.
+* Repo enumeration prefers `git ls-files` — only tracked files are
+  checked, so `target/` and other generated dirs need no carve-outs.
+* Exit `1` when any `fail`-severity spec reports violations; `warn`
+  specs report but never gate.
+
+## What a spec checks
+
+Three tiers, all declarative:
+
+1. **File set** — exact `files` paths and `dirs` are required
+   (missing → violation); glob `files` entries, `cover`, and
+   `cover_dirs` whitelist tracked paths for the `unlisted` check
+   without ever being required themselves. Coverage is unioned
+   across every matched spec: a file covered by *any* spec is
+   listed.
+2. **Predicates** — `[path."<glob>"]` tables (`exists`, `contains`,
+   `regex`) and `[git]` claims (`untracked` globs flag
+   untracked-but-not-ignored files).
+3. **Providers** — `[providers.<ns>]` tables dispatch to a registered
+   `StandardProvider`. Built in: `cargo` (org-local `[patch]`
+   enforcement), `repo` (bupha.toml name/dir drift), `lasius`, `kuda`,
+   `sturn`, `myco`, `cypera`. An unregistered namespace degrades to a
+   `provider-unavailable` **warn** — never a hard fail.
+
+## Reading the output
+
+Each row is `(family, severity, violations)` — `missing` (required
+files absent), `unlisted` (tracked files no spec covers), `predicate`
+(path/git claim failures), and `provider` findings. `--format json`
+emits the same rows machine-readably for CI.
+
+## Verify
+
+```sh
+mimus standard --repo . --spec specs/base.toml
+```
+
+against a repo that meets the floor prints its matched families and
+no `fail` violations; point `--spec` at a spec with a deliberately
+absent `files` entry to see a `missing` violation fire.
+
+## Deeper
+
+* [CLI reference](../reference/cli.md#mimus-standard) — full flag list
+* [Architecture](../explanation/architecture.md) — where the spec
+  tier sits among the checkers
+* Org usage: `specs/base.toml` is the fleet floor; per-repo specs live
+  in `<repo>/specs/` and compose via union matching
+
+---
+
+---
 url: /mimus/reference/cli.md
 ---
 # Command-Line Help for `mimus`
@@ -425,6 +497,7 @@ Spots the cuckoo eggs in your repo — claim verification: docs-as-tests, memory
 * [`mimus doctor`↴](#mimus-doctor)
 * [`mimus coverage`↴](#mimus-coverage)
 * [`mimus claims`↴](#mimus-claims)
+* [`mimus standard`↴](#mimus-standard)
 
 ## `mimus`
 
@@ -442,6 +515,7 @@ Spots the cuckoo eggs in your repo — claim verification: docs-as-tests, memory
 * `doctor` — Checker/config/kuda-index health
 * `coverage` — Doc coverage — which indexed symbols no doc ever names. The reverse direction of `check`: code has it, docs silent
 * `claims` — Dump extracted claims (kind/source/line) — tuning aid for the extractor's precision on real docs
+* `standard` — Standard-tier repo conformance — declarative spec file-set diff plus predicate/provider tiers (P-001/P-002)
 
 ###### **Options:**
 
@@ -550,6 +624,20 @@ Dump extracted claims (kind/source/line) — tuning aid for the extractor's prec
 * `--all` — Include card-prose Behavior claims too
 * `--config <CONFIG>` — Config path (else $MIMUS_CONFIG, ./mimus.toml, ~/.config/mimus/mimus.toml)
 * `--format <FORMAT>` — Output format: human | json \[default: human]
+* `-h, --help` — Print help
+
+## `mimus standard`
+
+Standard-tier repo conformance — declarative spec file-set diff plus predicate/provider tiers (P-001/P-002)
+
+**Usage:** `mimus standard [OPTIONS] --repo <REPO> --spec <SPECS>`
+
+###### **Options:**
+
+* `--config <CONFIG>` — Config path (else $MIMUS_CONFIG, ./mimus.toml, ~/.config/mimus/mimus.toml)
+* `--repo <REPO>` — Repo path to check
+* `--format <FORMAT>` — Output format: human | json \[default: human]
+* `--spec <SPECS>` — Spec file or directory of specs — repeatable. Specs whose `match` globs don't cover the repo name are skipped; empty `match` applies to every repo
 * `-h, --help` — Print help
 
 ---
@@ -722,7 +810,6 @@ documented at source (doc comments).
 
 * [mimus-core](/mimus/api/mimus_core/index.html) — domain
 * [mimus-config](/mimus/api/mimus_config/index.html) — port
-* [mimus-secret](/mimus/api/mimus_secret/index.html) — port
 * [mimus-check](/mimus/api/mimus_check/index.html) — impl
 * [mimus-check-acp](/mimus/api/mimus_check_acp/index.html) — impl
 * [mimus-check-cmd](/mimus/api/mimus_check_cmd/index.html) — impl
@@ -730,11 +817,9 @@ documented at source (doc comments).
 * [mimus-check-graph](/mimus/api/mimus_check_graph/index.html) — impl
 * [mimus-check-symbol](/mimus/api/mimus_check_symbol/index.html) — impl
 * [mimus-claims](/mimus/api/mimus_claims/index.html) — impl
-* [mimus-cuora](/mimus/api/mimus_cuora/index.html) — impl
-* [mimus-dotenv](/mimus/api/mimus_dotenv/index.html) — impl
 * [mimus-driver](/mimus/api/mimus_driver/index.html) — impl
-* [mimus-keyring](/mimus/api/mimus_keyring/index.html) — impl
 * [mimus-rules](/mimus/api/mimus_rules/index.html) — impl
+* [mimus-spec](/mimus/api/mimus_spec/index.html) — impl
 * [mimus](/mimus/api/mimus/index.html) — binary
 
 ---
@@ -797,14 +882,17 @@ crates:
 * claim extraction → `mimus-claims`; conventions → `mimus-rules`
   (`rules/*.toml` data, verified by the rules checker)
 * `mimus-config` (port + scarab-config discovery,
-  `mimus.{yaml,yml,toml}`); `mimus-secret` → `mimus-cuora`,
-  `mimus-keyring`, `mimus-dotenv` — the env → cuora → keyring →
-  dotenv chain
-* git is shelled out directly inside `mimus-cli` (`git diff`
-  scope, `hash-object` provenance) — there is no vcs port
+  `mimus.{yaml,yml,toml}`); secrets resolve through cuora's
+  `cuora-secret*` family (git deps — env → cuora vaults →
+  keyring → dotenv)
+* `mimus-spec` — the `mimus standard` tier: declarative
+  repo-conformance specs (file-set diff + path/git predicates +
+  `[providers.<ns>]` dispatch) as data, evaluated in-crate
+* git access goes through the shared `lasius-vcs` port
+  (`lasius-vcs-git` impl), not ad-hoc shell-outs
 
 A new checker = new adapter crate; a new convention = a new
-rule file.
+rule file; a new conformance rule = a spec file.
 
 ## The evidence bar
 
@@ -887,6 +975,21 @@ finding must carry **evidence** or not exist.
 * **Semantic** — the `acp` checker asks an external agent to
   adjudicate fuzzy residue. Advisory only (`warn`), can never
   gate CI — that is load-bearing, not a limitation.
+
+## Conformance
+
+* **Standard** — a declarative repo-conformance spec (`mimus
+  standard`): `family` + `match` globs + `severity` + an expected
+  file set. Specs compose by union — every matched spec
+  contributes coverage; `unlisted` runs against the union.
+* **Spec tiers** — file set (`files`/`dirs` required, `cover`/
+  `cover_dirs` whitelist-only), predicates (`[path."X"]`
+  exists/contains/regex, `[git]` claims), and providers.
+* **Provider** — a `[providers.<ns>]` table dispatched to a
+  registered `StandardProvider` (`cargo`, `repo`, `lasius`,
+  `kuda`, `sturn`, `myco`, `cypera` built in). Unregistered
+  namespaces degrade to a `provider-unavailable` warn — optional
+  by design.
 
 ## Sources
 

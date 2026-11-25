@@ -37,6 +37,21 @@ finding must carry **evidence** or not exist.
   adjudicate fuzzy residue. Advisory only (`warn`), can never
   gate CI — that is load-bearing, not a limitation.
 
+## Conformance
+
+* **Standard** — a declarative repo-conformance spec (`mimus
+  standard`): `family` + `match` globs + `severity` + an expected
+  file set. Specs compose by union — every matched spec
+  contributes coverage; `unlisted` runs against the union.
+* **Spec tiers** — file set (`files`/`dirs` required, `cover`/
+  `cover_dirs` whitelist-only), predicates (`[path."X"]`
+  exists/contains/regex, `[git]` claims), and providers.
+* **Provider** — a `[providers.<ns>]` table dispatched to a
+  registered `StandardProvider` (`cargo`, `repo`, `lasius`,
+  `kuda`, `sturn`, `myco`, `cypera` built in). Unregistered
+  namespaces degrade to a `provider-unavailable` warn — optional
+  by design.
+
 ## Sources
 
 `[sources]` in `mimus.toml`: `docs` (markdown globs), `comments`

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["config_path_hint","load","load_config","now","overrides","resolve","topic_rows"],"struct":["Snapshot","WsRow"]};

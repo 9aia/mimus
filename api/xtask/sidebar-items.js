@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["llvm_cov_available","main","nextest_available","run"]};

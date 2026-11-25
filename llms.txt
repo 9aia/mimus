@@ -16,6 +16,7 @@ Verification engine — proofs over what agents claim
 - [How-to: audit kuda memory](/mimus/how-to/kuda-audit.md)
 - [How-to: author rules](/mimus/how-to/rules-authoring.md)
 - [How-to: gate CI on docs](/mimus/how-to/ci-gate.md)
+- [How to check repo conformance](/mimus/how-to/check-repo-conformance.md)
 
 ### Reference
 
