@@ -314,26 +314,28 @@ fn coverage(cli: &Cli) -> i32 {
     let mut total = 0usize;
     let mut covered = 0usize;
     let mut seen = std::collections::HashSet::new();
-    for (name, kind, file, module) in &syms {
+    for sym in &syms {
+        let name = sym.name.as_str();
+        let file = sym.file.to_string_lossy();
         // tests are docs for the suite, not the API — skip
         if file.contains("/tests/") || file.ends_with("_test.rs") {
             continue;
         }
-        if name.len() < 4 || GENERIC.contains(&name.as_str()) {
+        if name.len() < 4 || GENERIC.contains(&name) {
             continue;
         }
-        if !seen.insert(name.clone()) {
+        if !seen.insert(name.to_string()) {
             continue; // same name in N files counts once
         }
         total += 1;
-        let named = tokens.contains(name.as_str()) || corpus.contains(name.as_str());
+        let named = tokens.contains(name) || corpus.contains(name);
         if named {
             covered += 1;
         } else {
             by_mod
-                .entry(format!("{module} ({kind})"))
+                .entry(format!("{} ({})", sym.module, sym.kind.as_str()))
                 .or_default()
-                .push(name.clone());
+                .push(name.to_string());
         }
     }
     let pct = (covered * 100).checked_div(total).unwrap_or(0);

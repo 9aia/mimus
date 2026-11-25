@@ -1,8 +1,9 @@
 //! Graph adapter — set-level checking (ADR-0002): index-edge
 //! classes against the kuda index (phase 1) plus index-free prose
-//! contradiction buckets (phase 2). Consumes the index *file
-//! format*, not the kuda crates — the schema is the contract,
-//! same as `mimus-check-symbol`.
+//! contradiction buckets (phase 2). The kuda index is read through
+//! `kuda-store-sqlite`'s blessed file-format contract
+//! ([`SqliteStore::open_readonly`]) — never raw SQL; the only
+//! remaining sqlite surface is the `.mimus/triples.db` cache.
 //!
 //! Classes:
 //! - `stale-reference` (error): an `imports`/`package-dep`/
@@ -44,13 +45,15 @@
 //!   buckets — under `--diff` only modules whose own sources changed
 //!   report.
 
+use kuda_core::{module_key, EdgeKind as KudaEdgeKind};
+use kuda_store::IndexStore;
+use kuda_store_sqlite::SqliteStore;
 use mimus_check::GraphChecker;
 use mimus_claims::triples::{
     canon_subject, contradictions_with_aliases, extract_triples, Contradiction, ContradictionKind,
     Triple,
 };
 use mimus_core::{Claim, ClaimKind, Edge, EdgeKind, Graph, Severity, Violation};
-use rusqlite::{params, Connection, OpenFlags};
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -62,22 +65,43 @@ pub use cache::{extract_triples_cached, triples_cache_rows, TriplesCache, TRIPLE
 /// creates the file. Missing tables yield empty sets: a
 /// symbols-only index still produces a usable graph.
 pub fn load_graph(index: &Path) -> Result<Graph, String> {
-    let conn = Connection::open_with_flags(index, OpenFlags::SQLITE_OPEN_READ_ONLY)
-        .map_err(|e| e.to_string())?;
+    let store = SqliteStore::open_readonly(index)?;
     let mut g = Graph {
         index: index.to_path_buf(),
         ..Graph::default()
     };
-    if table_exists(&conn, "edges")? {
-        g.edges = edges(&conn)?;
+    if store.has_table("edges")? {
+        g.edges = store.all_edges()?.into_iter().map(edge_from).collect();
     }
-    if table_exists(&conn, "symbols")? {
-        let (modules, symbols) = symbols(&conn)?;
-        g.modules = modules;
-        g.symbols = symbols;
-        g.module_files = module_files(&conn)?;
+    if store.has_table("symbols")? {
+        let syms = store.all_symbols()?;
+        g.modules = syms.iter().map(|s| s.module.clone()).collect();
+        g.symbols = syms.iter().map(|s| s.name.clone()).collect();
+        for s in &syms {
+            g.module_files
+                .entry(s.module.clone())
+                .or_default()
+                .insert(s.file.clone());
+        }
     }
     Ok(g)
+}
+
+/// kuda `DepEdge` → mimus `Edge` — `references` edges (record
+/// corpora) aren't a module-dep relation mimus checks, so they
+/// land on `Other`.
+fn edge_from(e: kuda_core::DepEdge) -> Edge {
+    Edge {
+        from: e.from,
+        to: e.to,
+        kind: match e.kind {
+            KudaEdgeKind::Imports => EdgeKind::Imports,
+            KudaEdgeKind::Calls => EdgeKind::Calls,
+            KudaEdgeKind::PackageDep => EdgeKind::PackageDep,
+            KudaEdgeKind::WorkspaceMember => EdgeKind::WorkspaceMember,
+            KudaEdgeKind::References => EdgeKind::Other,
+        },
+    }
 }
 
 /// Age of the index — `meta.generated_at` (unix secs, written by
@@ -94,12 +118,12 @@ pub fn index_age(index: &Path) -> Option<Duration> {
 }
 
 fn meta_generated_at(index: &Path) -> Option<u64> {
-    let conn = Connection::open_with_flags(index, OpenFlags::SQLITE_OPEN_READ_ONLY).ok()?;
-    conn.query_row("SELECT v FROM meta WHERE k = 'generated_at'", [], |r| {
-        r.get::<_, String>(0)
-    })
-    .ok()
-    .and_then(|v| v.parse().ok())
+    let store = SqliteStore::open_readonly(index).ok()?;
+    store
+        .meta("generated_at")
+        .ok()
+        .flatten()
+        .and_then(|v| v.parse().ok())
 }
 
 fn mtime(index: &Path) -> Option<u64> {
@@ -112,26 +136,6 @@ fn mtime(index: &Path) -> Option<u64> {
         .map(|d| d.as_secs())
 }
 
-fn table_exists(conn: &Connection, name: &str) -> Result<bool, String> {
-    conn.query_row(
-        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?1",
-        params![name],
-        |r| r.get::<_, i64>(0),
-    )
-    .map(|n| n > 0)
-    .map_err(|e| e.to_string())
-}
-
-fn ek_from(s: &str) -> EdgeKind {
-    match s {
-        "imports" => EdgeKind::Imports,
-        "package-dep" => EdgeKind::PackageDep,
-        "workspace-member" => EdgeKind::WorkspaceMember,
-        "calls" => EdgeKind::Calls,
-        _ => EdgeKind::Other,
-    }
-}
-
 fn kind_str(k: EdgeKind) -> &'static str {
     match k {
         EdgeKind::Imports => "imports",
@@ -140,92 +144,6 @@ fn kind_str(k: EdgeKind) -> &'static str {
         EdgeKind::Calls => "calls",
         EdgeKind::Other => "other",
     }
-}
-
-#[allow(unexpected_cfgs)] // `cfg(coverage)` like mimus-check-symbol
-fn edges(conn: &Connection) -> Result<Vec<Edge>, String> {
-    let mut st = conn
-        .prepare("SELECT from_mod,to_mod,kind FROM edges")
-        .map_err(|e| e.to_string())?;
-    let rows = st.query_map([], |r| {
-        Ok(Edge {
-            from: r.get(0)?,
-            to: r.get(1)?,
-            kind: ek_from(&r.get::<_, String>(2)?),
-        })
-    });
-    // `?` on query_map is unreachable — [] can't fail to bind
-    // after a successful prepare; under coverage the Err arm
-    // would be a permanently red line
-    #[cfg(coverage)]
-    let rows = rows.unwrap();
-    #[cfg(not(coverage))]
-    let rows = rows.map_err(|e| e.to_string())?;
-    // row-level decode errors (NULL cols on hand-built indexes)
-    // are skipped, not fatal — same as SymbolChecker's flatten()
-    Ok(rows.flatten().collect())
-}
-
-/// `(modules, symbols)` — one pass over the symbols table; the
-/// module set matches kuda's `DISTINCT module FROM symbols`.
-#[allow(unexpected_cfgs)] // `cfg(coverage)` like mimus-check-symbol
-fn symbols(conn: &Connection) -> Result<(HashSet<String>, HashSet<String>), String> {
-    let mut st = conn
-        .prepare("SELECT name,module FROM symbols")
-        .map_err(|e| e.to_string())?;
-    let rows = st.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)));
-    // same unreachable `?` as edges() — see above
-    #[cfg(coverage)]
-    let rows = rows.unwrap();
-    #[cfg(not(coverage))]
-    let rows = rows.map_err(|e| e.to_string())?;
-    let (mut modules, mut syms) = (HashSet::new(), HashSet::new());
-    for (name, module) in rows.flatten() {
-        syms.insert(name);
-        modules.insert(module);
-    }
-    Ok((modules, syms))
-}
-
-/// `module → files` — the phase-4 provenance. Optional by design:
-/// a minimal symbols table (`name`,`module` only) leaves it empty,
-/// and the graph pass then treats every module as in scope.
-#[allow(unexpected_cfgs)] // `cfg(coverage)` like mimus-check-symbol
-fn module_files(conn: &Connection) -> Result<HashMap<String, HashSet<PathBuf>>, String> {
-    if !column_exists(conn, "symbols", "file")? {
-        return Ok(HashMap::new());
-    }
-    let mut st = conn
-        .prepare("SELECT module,file FROM symbols")
-        .map_err(|e| e.to_string())?;
-    let rows = st.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)));
-    // same unreachable `?` as edges() — see above
-    #[cfg(coverage)]
-    let rows = rows.unwrap();
-    #[cfg(not(coverage))]
-    let rows = rows.map_err(|e| e.to_string())?;
-    let mut files: HashMap<String, HashSet<PathBuf>> = HashMap::new();
-    for (module, file) in rows.flatten() {
-        files.entry(module).or_default().insert(PathBuf::from(file));
-    }
-    Ok(files)
-}
-
-/// Does `table` carry `col`? PRAGMA-driven so a minimal index
-/// schema degrades instead of erroring.
-fn column_exists(conn: &Connection, table: &str, col: &str) -> Result<bool, String> {
-    let mut st = conn
-        .prepare(&format!("PRAGMA table_info({table})"))
-        .map_err(|e| e.to_string())?;
-    let rows = st
-        .query_map([], |r| r.get::<_, String>(1))
-        .map_err(|e| e.to_string())?;
-    for name in rows.flatten() {
-        if name == col {
-            return Ok(true);
-        }
-    }
-    Ok(false)
 }
 
 /// Set-level graph pass — phase-1 classes only. Stateless; all
@@ -767,12 +685,6 @@ fn resolve<'a>(name: &str, modules: &'a HashSet<String>) -> Option<&'a str> {
         .map(String::as_str)
 }
 
-/// kuda's `module_key` — dash/underscore/case fold, the same
-/// normalization the indexer applies to edge targets.
-fn module_key(name: &str) -> String {
-    name.replace('-', "_").to_lowercase()
-}
-
 /// First '-'/'_'/'.'-separated segment — the naming-family prefix.
 fn seg0(name: &str) -> &str {
     // split yields ≥1 item on any input — unwrap_or avoids unwrap
@@ -897,12 +809,22 @@ mod tests {
         // longest match wins over a shorter prefix
         let both: HashSet<String> = ["x", "x/y"].iter().map(|s| s.to_string()).collect();
         assert_eq!(resolve("x/y/z", &both), Some("x/y"));
-        // kind_str / ek_from cover every variant
-        assert_eq!(kind_str(ek_from("imports")), "imports");
-        assert_eq!(kind_str(ek_from("package-dep")), "package-dep");
-        assert_eq!(kind_str(ek_from("workspace-member")), "workspace-member");
-        assert_eq!(kind_str(ek_from("calls")), "calls");
-        assert_eq!(kind_str(ek_from("bogus")), "other");
+        // edge_from maps every kuda edge kind (references → Other)
+        // and kind_str round-trips the mimus spellings
+        for (k, want) in [
+            (KudaEdgeKind::Imports, "imports"),
+            (KudaEdgeKind::PackageDep, "package-dep"),
+            (KudaEdgeKind::WorkspaceMember, "workspace-member"),
+            (KudaEdgeKind::Calls, "calls"),
+            (KudaEdgeKind::References, "other"),
+        ] {
+            let e = edge_from(kuda_core::DepEdge {
+                from: "a".into(),
+                to: "b".into(),
+                kind: k,
+            });
+            assert_eq!(kind_str(e.kind), want, "{k:?}");
+        }
     }
 
     #[test]

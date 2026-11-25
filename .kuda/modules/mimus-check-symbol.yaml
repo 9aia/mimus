@@ -2,20 +2,15 @@ name: mimus-check-symbol
 path: crates/mimus-check-symbol/Cargo.toml
 purpose: 'Check adapter: symbol claims -> kuda index (stub)'
 api:
-- name: Hit
-  kind: type
-  file: crates/mimus-check-symbol/src/lib.rs
-  line: 55
-  module: mimus-check-symbol
 - name: SymbolChecker
   kind: type
   file: crates/mimus-check-symbol/src/lib.rs
-  line: 19
+  line: 21
   module: mimus-check-symbol
 - name: all_symbols
   kind: function
   file: crates/mimus-check-symbol/src/lib.rs
-  line: 38
+  line: 41
   module: mimus-check-symbol
 - name: all_symbols_and_index_present
   kind: function
@@ -25,12 +20,22 @@ api:
 - name: bare_ident_found_and_absent
   kind: function
   file: crates/mimus-check-symbol/tests/symbol.rs
-  line: 84
+  line: 85
+  module: mimus-check-symbol
+- name: broken_index_errors_per_claim
+  kind: function
+  file: crates/mimus-check-symbol/src/lib.rs
+  line: 140
   module: mimus-check-symbol
 - name: check
   kind: function
   file: crates/mimus-check-symbol/src/lib.rs
-  line: 67
+  line: 50
+  module: mimus-check-symbol
+- name: claim
+  kind: function
+  file: crates/mimus-check-symbol/src/lib.rs
+  line: 112
   module: mimus-check-symbol
 - name: claim
   kind: function
@@ -40,7 +45,7 @@ api:
 - name: handles
   kind: function
   file: crates/mimus-check-symbol/src/lib.rs
-  line: 62
+  line: 46
   module: mimus-check-symbol
 - name: index
   kind: function
@@ -50,22 +55,27 @@ api:
 - name: index_present
   kind: function
   file: crates/mimus-check-symbol/src/lib.rs
-  line: 30
+  line: 34
   module: mimus-check-symbol
 - name: mimus-check-symbol
   kind: module
   file: crates/mimus-check-symbol/Cargo.toml
   line: 1
   module: mimus-check-symbol
+- name: missing_index_is_silence_and_creates_nothing
+  kind: function
+  file: crates/mimus-check-symbol/src/lib.rs
+  line: 124
+  module: mimus-check-symbol
 - name: namespaced_paths
   kind: function
   file: crates/mimus-check-symbol/tests/symbol.rs
-  line: 100
+  line: 101
   module: mimus-check-symbol
 - name: new
   kind: function
   file: crates/mimus-check-symbol/src/lib.rs
-  line: 24
+  line: 26
   module: mimus-check-symbol
 - name: no_index_is_silence
   kind: function
@@ -75,17 +85,12 @@ api:
 - name: null_columns_error_row_decoding
   kind: function
   file: crates/mimus-check-symbol/tests/symbol.rs
-  line: 126
-  module: mimus-check-symbol
-- name: poisoned_conn_lock_errors
-  kind: function
-  file: crates/mimus-check-symbol/src/lib.rs
-  line: 142
+  line: 127
   module: mimus-check-symbol
 - name: tests
   kind: module
   file: crates/mimus-check-symbol/src/lib.rs
-  line: 136
+  line: 107
   module: mimus-check-symbol
 - name: tmp
   kind: function
@@ -95,15 +100,19 @@ api:
 - name: unusable_index_errors_per_claim
   kind: function
   file: crates/mimus-check-symbol/tests/symbol.rs
-  line: 160
+  line: 162
   module: mimus-check-symbol
 deps:
+- kuda-core
+- kuda-store
+- kuda-store-sqlite
 - mimus-check
 - mimus-core
-- rusqlite
 - mimus-check
 - mimus-core
-- rusqlite
+- kuda_core
+- kuda_store
+- kuda_store_sqlite
 notes: ''
 verify:
 - crates/mimus-check-symbol/Cargo.toml
@@ -115,9 +124,9 @@ provenance:
   - crates/mimus-check-symbol/src/lib.rs
   - crates/mimus-check-symbol/tests/symbol.rs
   hashes:
-  - 9fbf6254aae6add24670adaa8808b5c101844e2c
-  - c6d26ec25860b7c81816b5baf8fe0d804650d932
-  - ec0d279882c280e35f7978e3ff87452f170f61b4
-  commit_sha: a9c9dd8500e573e7bc44acb336da724f7150cdc7
-  generated_at: '1794490051'
+  - a740d5aa2e7fca836b9b52ccc09e57be6e87dd43
+  - fc63ea1de0b54af06d5934098228d22018558b4e
+  - ecaf4e3ec58897848d285edaeb6d2f482c26ab1b
+  commit_sha: 6d24235731c91fb600c023de7f50e30821d54da9
+  generated_at: '1795569502'
   generator: kuda-template/0.1.4

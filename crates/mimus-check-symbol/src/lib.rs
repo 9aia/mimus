@@ -1,61 +1,45 @@
 //! Symbol adapter — `symbol` claims resolve against a `kuda`
-//! index. Consumes the index *file format* (`.kuda/index.sqlite`),
-//! not the kuda crates — the schema is the contract.
+//! index, read through `kuda-store-sqlite`'s blessed file-format
+//! contract ([`SqliteStore::open_readonly`]) — never raw SQL, so
+//! index-schema drift can't silently break the checker.
 //!
 //! Evidence rules: a claim found in the index is verified;
 //! a *namespaced* claim (`mod::Sym`) absent from it is refuted;
 //! a bare identifier absent from it is silence — it may simply
 //! be external (std/dep) and unproveable.
 
+use kuda_core::Symbol;
+use kuda_store::IndexStore;
+use kuda_store_sqlite::SqliteStore;
 use mimus_check::Checker;
 use mimus_core::{Claim, ClaimKind, Severity, Violation};
-use rusqlite::{params, Connection};
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
 
 /// Checks `ClaimKind::Symbol` — `new(kuda_index_path)`.
-/// `conn` is `None` when the index is missing/unreadable: every
+/// `store` is `None` when the index is missing/unreadable: every
 /// claim then emits silence, not failures.
 pub struct SymbolChecker {
-    conn: Option<Mutex<Connection>>,
+    store: Option<SqliteStore>,
 }
 
 impl SymbolChecker {
     pub fn new(index: impl Into<PathBuf>) -> Self {
-        let conn = Connection::open(index.into()).ok().map(Mutex::new);
-        Self { conn }
+        // read-only open: a missing index stays missing — the old
+        // `Connection::open` would have *created* an empty file
+        let store = SqliteStore::open_readonly(&index.into()).ok();
+        Self { store }
     }
 
     /// Whether a usable index exists at the configured path.
     pub fn index_present(&self) -> bool {
-        self.conn.is_some()
+        self.store.is_some()
     }
 }
 
-/// Every indexed symbol — `(name, kind, file, module)` — for
-/// coverage analysis: which symbols no doc ever names.
-#[allow(unexpected_cfgs)]
-pub fn all_symbols(index: &Path) -> Result<Vec<(String, String, String, String)>, String> {
-    let conn = Connection::open(index).map_err(|e| e.to_string())?;
-    let mut st = conn
-        .prepare("SELECT name,kind,file,module FROM symbols")
-        .map_err(|e| e.to_string())?;
-    let rows = st.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)));
-    // `?` on query_map is unreachable — params![] can't fail to
-    // bind after a successful prepare; under coverage the Err arm
-    // would be a permanently red line
-    #[cfg(coverage)]
-    let rows = rows.unwrap();
-    #[cfg(not(coverage))]
-    let rows = rows.map_err(|e| e.to_string())?;
-    rows.collect::<Result<Vec<_>, _>>()
-        .map_err(|e| e.to_string())
-}
-
-struct Hit {
-    file: String,
-    line: i64,
-    module: String,
+/// Every indexed symbol — for coverage analysis: which symbols no
+/// doc ever names.
+pub fn all_symbols(index: &Path) -> Result<Vec<Symbol>, String> {
+    SqliteStore::open_readonly(index)?.all_symbols()
 }
 
 impl Checker for SymbolChecker {
@@ -63,9 +47,8 @@ impl Checker for SymbolChecker {
         &[ClaimKind::Symbol]
     }
 
-    #[allow(unexpected_cfgs)]
     fn check(&self, claim: &Claim) -> Result<Option<Violation>, String> {
-        let Some(conn) = &self.conn else {
+        let Some(store) = &self.store else {
             return Ok(None); // no index — nothing to verify against
         };
         let text = claim.text.trim();
@@ -73,24 +56,7 @@ impl Checker for SymbolChecker {
             Some((ns, leaf)) => (leaf, Some(ns)),
             None => (text, None),
         };
-        let conn = conn.lock().map_err(|e| e.to_string())?;
-        let mut st = conn
-            .prepare("SELECT file,line,module FROM symbols WHERE name = ?1")
-            .map_err(|e| e.to_string())?;
-        let rows = st.query_map(params![leaf], |r| {
-            Ok(Hit {
-                file: r.get(0)?,
-                line: r.get(1)?,
-                module: r.get(2)?,
-            })
-        });
-        // same unreachable `?` as all_symbols — params![leaf] binds
-        // a String after a successful prepare; see above
-        #[cfg(coverage)]
-        let rows = rows.unwrap();
-        #[cfg(not(coverage))]
-        let rows = rows.map_err(|e| e.to_string())?;
-        let hits: Vec<Hit> = rows.flatten().collect();
+        let hits = store.find(leaf)?;
 
         match (ns, hits.is_empty()) {
             // bare ident found — verified
@@ -98,7 +64,7 @@ impl Checker for SymbolChecker {
             // namespaced and found — the claimed path must agree
             (Some(ns), false) => {
                 let ok = hits.iter().any(|h| {
-                    h.file.replace('/', "::").contains(ns)
+                    h.file.to_string_lossy().replace('/', "::").contains(ns)
                         || h.module.replace('-', "_").contains(ns)
                 });
                 if ok {
@@ -109,11 +75,16 @@ impl Checker for SymbolChecker {
                     claim: claim.clone(),
                     evidence: format!(
                         "`{leaf}` lives at {}:{} (module {}), not `{ns}`",
-                        h.file, h.line, h.module
+                        h.file.display(),
+                        h.line,
+                        h.module
                     ),
                     fix: Some(format!(
                         "`{}::{leaf}`",
-                        h.file.trim_end_matches(".rs").replace('/', "::")
+                        h.file
+                            .to_string_lossy()
+                            .trim_end_matches(".rs")
+                            .replace('/', "::")
                     )),
                     severity: Severity::Error,
                 }))
@@ -134,31 +105,49 @@ impl Checker for SymbolChecker {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
+
     use super::*;
 
-    /// A poisoned `conn` mutex — lock() errors surface as Err, not
-    /// a panic or a hang (a checker must stay advisory).
+    fn claim(text: &str) -> Claim {
+        Claim {
+            kind: ClaimKind::Symbol,
+            text: text.into(),
+            source: "d.md".into(),
+            line: 1,
+        }
+    }
+
+    /// A missing index is silence, not an error — and the open must
+    /// not create the file (auditor-safe read).
     #[test]
-    fn poisoned_conn_lock_errors() {
-        let dir = std::env::temp_dir().join(format!("mimus-sym-poison-{}", std::process::id()));
+    fn missing_index_is_silence_and_creates_nothing() {
+        let dir = std::env::temp_dir().join(format!("mimus-sym-miss-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let idx = dir.join("absent.sqlite");
+        let c = SymbolChecker::new(&idx);
+        assert!(!c.index_present());
+        assert!(c.check(&claim("SomeSym")).unwrap().is_none());
+        assert!(!idx.exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// A schema-broken index (no `symbols` table) surfaces as a
+    /// checker error, not a panic or a hang (a checker must stay
+    /// advisory).
+    #[test]
+    fn broken_index_errors_per_claim() {
+        let dir = std::env::temp_dir().join(format!("mimus-sym-brk-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let idx = dir.join("i.sqlite");
-        // empty file opens as an empty db — conn is Some
-        std::fs::write(&idx, "").unwrap();
+        // zero-byte file opens as an empty db — reads hit "no such
+        // table", the same failure a schema-broken index produces
+        std::fs::write(&idx, b"").unwrap();
         let c = SymbolChecker::new(&idx);
         assert!(c.index_present());
-        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let _g = c.conn.as_ref().unwrap().lock().unwrap();
-            panic!("poison the lock");
-        }));
-        let cl = Claim {
-            kind: ClaimKind::Symbol,
-            text: "SomeSym".into(),
-            source: "d.md".into(),
-            line: 1,
-        };
-        assert!(c.check(&cl).is_err());
+        assert!(c.check(&claim("SomeSym")).is_err());
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

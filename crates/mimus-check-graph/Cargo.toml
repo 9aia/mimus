@@ -12,4 +12,9 @@ categories = ["development-tools"]
 mimus-core.workspace = true
 mimus-claims.workspace = true
 mimus-check.workspace = true
+kuda-core.workspace = true
+kuda-store.workspace = true
+kuda-store-sqlite.workspace = true
+# triples.db cache — the only remaining raw-sqlite surface; the
+# kuda index itself is read through kuda-store-sqlite.
 rusqlite.workspace = true

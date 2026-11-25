@@ -5,12 +5,12 @@ api:
 - name: IndexEdgeChecker
   kind: type
   file: crates/mimus-check-graph/src/lib.rs
-  line: 233
+  line: 151
   module: mimus-check-graph
 - name: ProseContradictionChecker
   kind: type
   file: crates/mimus-check-graph/src/lib.rs
-  line: 251
+  line: 169
   module: mimus-check-graph
 - name: SCHEMA
   kind: const
@@ -25,7 +25,7 @@ api:
 - name: SemanticCandidate
   kind: type
   file: crates/mimus-check-graph/src/lib.rs
-  line: 298
+  line: 216
   module: mimus-check-graph
 - name: TRIPLES_VERSION
   kind: const
@@ -40,12 +40,12 @@ api:
 - name: UndocumentedFactChecker
   kind: type
   file: crates/mimus-check-graph/src/lib.rs
-  line: 447
+  line: 365
   module: mimus-check-graph
 - name: cache
   kind: module
   file: crates/mimus-check-graph/src/lib.rs
-  line: 58
+  line: 61
   module: mimus-check-graph
 - name: cached_extract_groups_by_source
   kind: function
@@ -57,55 +57,45 @@ api:
   file: crates/mimus-check-graph/src/cache.rs
   line: 196
   module: mimus-check-graph
-- name: column_exists
-  kind: function
-  file: crates/mimus-check-graph/src/lib.rs
-  line: 216
-  module: mimus-check-graph
 - name: contradiction_violation
   kind: function
   file: crates/mimus-check-graph/src/lib.rs
-  line: 561
+  line: 479
   module: mimus-check-graph
 - name: documented
   kind: function
   file: crates/mimus-check-graph/src/lib.rs
-  line: 503
+  line: 421
   module: mimus-check-graph
 - name: edge_assertion_phrasings
   kind: function
   file: crates/mimus-check-graph/src/lib.rs
-  line: 864
+  line: 776
   module: mimus-check-graph
 - name: edge_assertions
   kind: function
   file: crates/mimus-check-graph/src/lib.rs
-  line: 711
+  line: 629
   module: mimus-check-graph
 - name: edge_exists
   kind: function
   file: crates/mimus-check-graph/src/lib.rs
-  line: 743
+  line: 661
   module: mimus-check-graph
-- name: edges
+- name: edge_from
   kind: function
   file: crates/mimus-check-graph/src/lib.rs
-  line: 146
+  line: 93
   module: mimus-check-graph
 - name: edit_invalidates_only_that_file
   kind: function
   file: crates/mimus-check-graph/src/cache.rs
   line: 239
   module: mimus-check-graph
-- name: ek_from
-  kind: function
-  file: crates/mimus-check-graph/src/lib.rs
-  line: 125
-  module: mimus-check-graph
 - name: emit_stale
   kind: function
   file: crates/mimus-check-graph/src/lib.rs
-  line: 649
+  line: 567
   module: mimus-check-graph
 - name: extract_triples_cached
   kind: function
@@ -115,32 +105,32 @@ api:
 - name: fact_violation
   kind: function
   file: crates/mimus-check-graph/src/lib.rs
-  line: 534
+  line: 452
   module: mimus-check-graph
 - name: index_age
   kind: function
   file: crates/mimus-check-graph/src/lib.rs
-  line: 86
+  line: 110
   module: mimus-check-graph
 - name: index_age_variants
   kind: function
   file: crates/mimus-check-graph/tests/graph.rs
-  line: 170
+  line: 172
   module: mimus-check-graph
 - name: internal_shaped
   kind: function
   file: crates/mimus-check-graph/src/lib.rs
-  line: 787
+  line: 699
   module: mimus-check-graph
 - name: internal_shaped_rules
   kind: function
   file: crates/mimus-check-graph/src/lib.rs
-  line: 830
+  line: 742
   module: mimus-check-graph
 - name: kind_str
   kind: function
   file: crates/mimus-check-graph/src/lib.rs
-  line: 135
+  line: 139
   module: mimus-check-graph
 - name: load_full_index
   kind: function
@@ -150,12 +140,12 @@ api:
 - name: load_graph
   kind: function
   file: crates/mimus-check-graph/src/lib.rs
-  line: 64
+  line: 67
   module: mimus-check-graph
 - name: load_partial_and_broken_indexes
   kind: function
   file: crates/mimus-check-graph/tests/graph.rs
-  line: 88
+  line: 90
   module: mimus-check-graph
 - name: lookup
   kind: function
@@ -165,7 +155,7 @@ api:
 - name: meta_generated_at
   kind: function
   file: crates/mimus-check-graph/src/lib.rs
-  line: 96
+  line: 120
   module: mimus-check-graph
 - name: mimus-check-graph
   kind: module
@@ -177,33 +167,46 @@ api:
   file: crates/mimus-check-graph/src/cache.rs
   line: 208
   module: mimus-check-graph
-- name: module_files
-  kind: function
-  file: crates/mimus-check-graph/src/lib.rs
-  line: 194
-  module: mimus-check-graph
 - name: module_in_scope
   kind: function
   file: crates/mimus-check-graph/src/lib.rs
-  line: 524
-  module: mimus-check-graph
-- name: module_key
-  kind: function
-  file: crates/mimus-check-graph/src/lib.rs
-  line: 772
+  line: 442
   module: mimus-check-graph
 - name: mtime
   kind: function
   file: crates/mimus-check-graph/src/lib.rs
-  line: 105
+  line: 129
   module: mimus-check-graph
 - name: open
   kind: function
   file: crates/mimus-check-graph/src/cache.rs
   line: 50
   module: mimus-check-graph
-api_omitted: 36
+- name: open_and_doctor_probe_edges
+  kind: function
+  file: crates/mimus-check-graph/src/cache.rs
+  line: 366
+  module: mimus-check-graph
+- name: prose_contradiction_classes
+  kind: function
+  file: crates/mimus-check-graph/src/lib.rs
+  line: 989
+  module: mimus-check-graph
+- name: prose_scope_gate_and_cache
+  kind: function
+  file: crates/mimus-check-graph/src/lib.rs
+  line: 1187
+  module: mimus-check-graph
+- name: public_module_surface
+  kind: function
+  file: crates/mimus-check-graph/src/lib.rs
+  line: 1253
+  module: mimus-check-graph
+api_omitted: 30
 deps:
+- kuda-core
+- kuda-store
+- kuda-store-sqlite
 - mimus-check
 - mimus-claims
 - mimus-core
@@ -211,6 +214,9 @@ deps:
 - mimus-check
 - mimus-core
 - rusqlite
+- kuda_core
+- kuda_store
+- kuda_store_sqlite
 - cache
 notes: ''
 verify:
@@ -225,10 +231,10 @@ provenance:
   - crates/mimus-check-graph/src/lib.rs
   - crates/mimus-check-graph/tests/graph.rs
   hashes:
-  - 957284426c7b88c9e03b893454e121d04c21539e
+  - 564e90a102ab86671b8839ea06ef13c84697d95a
   - 261d67ee1089a95be999c092f89fab2bf706af9e
-  - b877400b8109618df8f78ed6ef5b736f1c5590b7
-  - cdbf6426c823d8e46316fd454a3e306b2ca3ceb1
-  commit_sha: a9c9dd8500e573e7bc44acb336da724f7150cdc7
-  generated_at: '1794490051'
+  - 0ba689de2dc7a69aed3555bdc4807ff966755aeb
+  - d26b186b483c122241ff50584a1c11533cdadfb6
+  commit_sha: 6d24235731c91fb600c023de7f50e30821d54da9
+  generated_at: '1795569502'
   generator: kuda-template/0.1.4

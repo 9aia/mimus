@@ -431,6 +431,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "kuda-core"
+version = "0.3.0"
+source = "git+ssh://git@github.com/9aia/kuda.git?rev=aa60c5803cdd356edbf7e14177f465eb43959a63#aa60c5803cdd356edbf7e14177f465eb43959a63"
+dependencies = [
+ "serde",
+ "serde_json",
+ "toml",
+]
+
+[[package]]
+name = "kuda-store"
+version = "0.3.0"
+source = "git+ssh://git@github.com/9aia/kuda.git?rev=aa60c5803cdd356edbf7e14177f465eb43959a63#aa60c5803cdd356edbf7e14177f465eb43959a63"
+dependencies = [
+ "kuda-core",
+]
+
+[[package]]
+name = "kuda-store-sqlite"
+version = "0.3.0"
+source = "git+ssh://git@github.com/9aia/kuda.git?rev=aa60c5803cdd356edbf7e14177f465eb43959a63#aa60c5803cdd356edbf7e14177f465eb43959a63"
+dependencies = [
+ "kuda-core",
+ "kuda-store",
+ "rusqlite",
+]
+
+[[package]]
 name = "lasius-vcs"
 version = "0.4.0"
 source = "git+ssh://git@github.com/9aia/lasius.git?rev=351857536395951d5f6f8502cdaf86a737520b02#351857536395951d5f6f8502cdaf86a737520b02"
@@ -547,6 +575,9 @@ dependencies = [
 name = "mimus-check-graph"
 version = "1.0.0"
 dependencies = [
+ "kuda-core",
+ "kuda-store",
+ "kuda-store-sqlite",
  "mimus-check",
  "mimus-claims",
  "mimus-core",
@@ -557,9 +588,11 @@ dependencies = [
 name = "mimus-check-symbol"
 version = "1.0.0"
 dependencies = [
+ "kuda-core",
+ "kuda-store",
+ "kuda-store-sqlite",
  "mimus-check",
  "mimus-core",
- "rusqlite",
 ]
 
 [[package]]

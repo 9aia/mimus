@@ -51,8 +51,8 @@ fn all_symbols_and_index_present() {
     index(
         &idx,
         &[
-            "'MyFunc','fn','src/lib.rs',5,'mimus'",
-            "'other_sym','fn','src/util.rs',9,'mimus-core'",
+            "'MyFunc','function','src/lib.rs',5,'mimus'",
+            "'other_sym','function','src/util.rs',9,'mimus-core'",
         ],
     );
     let c = SymbolChecker::new(&idx);
@@ -60,12 +60,13 @@ fn all_symbols_and_index_present() {
     assert_eq!(c.handles(), &[ClaimKind::Symbol]);
     let syms = all_symbols(&idx).unwrap();
     assert_eq!(syms.len(), 2);
-    assert!(syms.contains(&(
-        "MyFunc".into(),
-        "fn".into(),
-        "src/lib.rs".into(),
-        "mimus".into()
-    )));
+    assert!(syms.iter().any(|s| {
+        s.name == "MyFunc"
+            && s.kind == kuda_core::SymbolKind::Function
+            && s.file.as_path() == Path::new("src/lib.rs")
+            && s.line == 5
+            && s.module == "mimus"
+    }));
     // all_symbols on an unreadable path errors
     assert!(all_symbols(&dir.join("nope/x.sqlite")).is_err());
     // a db without the symbols table errors on prepare
@@ -85,7 +86,7 @@ fn bare_ident_found_and_absent() {
     let dir = tmp("bare");
     std::fs::create_dir_all(&dir).unwrap();
     let idx = dir.join("i.sqlite");
-    index(&idx, &["'MyFunc','fn','src/lib.rs',5,'mimus'"]);
+    index(&idx, &["'MyFunc','function','src/lib.rs',5,'mimus'"]);
     let c = SymbolChecker::new(&idx);
     // bare ident found → verified
     assert!(c.check(&claim("MyFunc")).unwrap().is_none());
@@ -101,7 +102,7 @@ fn namespaced_paths() {
     let dir = tmp("ns");
     std::fs::create_dir_all(&dir).unwrap();
     let idx = dir.join("i.sqlite");
-    index(&idx, &["'MyFunc','fn','src/lib.rs',5,'mimus-core'"]);
+    index(&idx, &["'MyFunc','function','src/lib.rs',5,'mimus-core'"]);
     let c = SymbolChecker::new(&idx);
     // ns matches the file path → verified
     assert!(c.check(&claim("src::MyFunc")).unwrap().is_none());
@@ -125,10 +126,10 @@ fn namespaced_paths() {
 #[test]
 fn null_columns_error_row_decoding() {
     for (tag, row) in [
-        ("n0", "NULL,'fn','f',1,'m'"),
+        ("n0", "NULL,'function','f',1,'m'"),
         ("n1", "'a',NULL,'f',1,'m'"),
-        ("n2", "'a','fn',NULL,1,'m'"),
-        ("n3", "'a','fn','f',1,NULL"),
+        ("n2", "'a','function',NULL,1,'m'"),
+        ("n3", "'a','function','f',1,NULL"),
     ] {
         let dir = tmp(tag);
         std::fs::create_dir_all(&dir).unwrap();
@@ -137,22 +138,23 @@ fn null_columns_error_row_decoding() {
         assert!(all_symbols(&idx).is_err(), "{tag}");
         let _ = std::fs::remove_dir_all(&dir);
     }
-    // check()'s decode path: flatten() skips bad rows rather than
-    // erroring — three NULL-column rows for one name cover every
-    // r.get? arm and still leave `x::S` "not found" → refuted
+    // check()'s decode path goes through kuda's `find`, which is
+    // strict: a NULL column fails the row decode and surfaces as a
+    // checker error (advisory — stderr, claim skipped), not a
+    // silent refutation
     let dir = tmp("nullhit");
     std::fs::create_dir_all(&dir).unwrap();
     let idx = dir.join("i.sqlite");
     index(
         &idx,
         &[
-            "'S','fn',NULL,1,'m'",
-            "'S','fn','f',NULL,'m'",
-            "'S','fn','f',1,NULL",
+            "'S','function',NULL,1,'m'",
+            "'S','function','f',NULL,'m'",
+            "'S','function','f',1,NULL",
         ],
     );
     let c = SymbolChecker::new(&idx);
-    assert!(c.check(&claim("x::S")).unwrap().is_some());
+    assert!(c.check(&claim("x::S")).is_err());
     let _ = std::fs::remove_dir_all(&dir);
 }
 

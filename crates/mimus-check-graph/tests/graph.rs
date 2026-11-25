@@ -40,7 +40,7 @@ fn load_full_index() {
              INSERT INTO edges VALUES('alpha','serde','package-dep');\
              INSERT INTO edges VALUES('alpha','w','workspace-member');\
              INSERT INTO edges VALUES('alpha','z','calls');\
-             INSERT INTO edges VALUES('alpha','x','bogus-kind');\
+             INSERT INTO edges VALUES('alpha','rec','references');\
              INSERT INTO meta VALUES('generated_at','1');"
         ),
     );
@@ -51,7 +51,8 @@ fn load_full_index() {
     assert_eq!(g.edges[1].kind, EdgeKind::PackageDep);
     assert_eq!(g.edges[2].kind, EdgeKind::WorkspaceMember);
     assert_eq!(g.edges[3].kind, EdgeKind::Calls);
-    assert_eq!(g.edges[4].kind, EdgeKind::Other); // unknown kind
+    // kuda's decode: 'references' isn't a mimus relation → Other
+    assert_eq!(g.edges[4].kind, EdgeKind::Other);
     assert!(g.modules.contains("alpha") && g.modules.contains("beta"));
     assert!(g.symbols.contains("F") && g.symbols.contains("G"));
     // phase-4 provenance: every indexed file per module, deduped
@@ -59,28 +60,29 @@ fn load_full_index() {
     let beta: HashSet<PathBuf> = [PathBuf::from("b.rs")].into_iter().collect();
     assert_eq!(&g.module_files["alpha"], &alpha);
     assert_eq!(&g.module_files["beta"], &beta);
-    // NULL columns → row skipped by flatten(), not fatal
+    // blessed-schema tables carrying NULL columns → kuda's readers
+    // collect Results strictly: the first bad row fails the load
+    // (a corrupt index warns on stderr, never gates)
     let dir = tmp("nulls");
     std::fs::create_dir_all(&dir).unwrap();
     let idx = dir.join("i.sqlite");
     sqlite(
         &idx,
         "CREATE TABLE edges(from_mod TEXT, to_mod TEXT, kind TEXT);\
-         CREATE TABLE symbols(name TEXT, module TEXT);\
+         CREATE TABLE symbols(name TEXT, kind TEXT, file TEXT, line INTEGER, module TEXT);\
          INSERT INTO edges VALUES('a','b',NULL);\
          INSERT INTO edges VALUES('a',NULL,'imports');\
          INSERT INTO edges VALUES(NULL,'b','imports');\
          INSERT INTO edges VALUES('a','b','imports');\
-         INSERT INTO symbols VALUES(NULL,'m');\
-         INSERT INTO symbols VALUES('s',NULL);\
-         INSERT INTO symbols VALUES('s','m');",
+         INSERT INTO symbols VALUES(NULL,'function','f',1,'m');\
+         INSERT INTO symbols VALUES('s','function',NULL,1,'m');\
+         INSERT INTO symbols VALUES('s','function','f',1,NULL);",
     );
-    let g = load_graph(&idx).unwrap();
-    assert_eq!(g.edges.len(), 1);
-    assert_eq!(g.symbols.len(), 1);
-    assert_eq!(g.modules.len(), 1);
-    // no `file` column → no provenance, not an error
-    assert!(g.module_files.is_empty());
+    assert!(load_graph(&idx).is_err());
+    // a symbols table missing blessed columns → prepare errors
+    let idx = dir.join("short.sqlite");
+    sqlite(&idx, "CREATE TABLE symbols(name TEXT, module TEXT);");
+    assert!(load_graph(&idx).is_err());
     let _ = std::fs::remove_dir_all(&dir);
 }
 

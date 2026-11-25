@@ -46,6 +46,10 @@ cuora-secret-dotenv = { git = "ssh://git@github.com/9aia/cuora.git", rev = "f811
 mimus-config = { path = "crates/mimus-config", version = "1.0.0" }
 mimus-spec = { path = "crates/mimus-spec", version = "1.0.0" }
 mimus-driver = { path = "crates/mimus-driver", version = "1.0.0" }
+# P-053 item 1 — kuda index read surface (read-only SqliteStore).
+kuda-core = { git = "ssh://git@github.com/9aia/kuda.git", rev = "aa60c5803cdd356edbf7e14177f465eb43959a63", version = "0.3" }
+kuda-store = { git = "ssh://git@github.com/9aia/kuda.git", rev = "aa60c5803cdd356edbf7e14177f465eb43959a63", version = "0.3" }
+kuda-store-sqlite = { git = "ssh://git@github.com/9aia/kuda.git", rev = "aa60c5803cdd356edbf7e14177f465eb43959a63", version = "0.3" }
 scarab-config = { git = "ssh://git@github.com/9aia/scarab.git", rev = "9364df88fad0ca46bd838467717a823893f47438", version = "0.1" }
 scarab-config-file = { git = "ssh://git@github.com/9aia/scarab.git", rev = "9364df88fad0ca46bd838467717a823893f47438", version = "0.1" }
 # standard tier (P-001): spec documents resolve extends:/include:

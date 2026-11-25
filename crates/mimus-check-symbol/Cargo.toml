@@ -11,4 +11,6 @@ categories = ["development-tools"]
 [dependencies]
 mimus-core.workspace = true
 mimus-check.workspace = true
-rusqlite.workspace = true
+kuda-core.workspace = true
+kuda-store.workspace = true
+kuda-store-sqlite.workspace = true

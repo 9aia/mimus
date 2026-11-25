@@ -279,7 +279,7 @@ fn check_symbol_checker() {
     sqlite(
         &d.join("idx.sqlite"),
         "CREATE TABLE symbols(name TEXT, kind TEXT, file TEXT, line INTEGER, module TEXT);\
-         INSERT INTO symbols VALUES('MyFunc','fn','src/lib.rs',5,'mimus');",
+         INSERT INTO symbols VALUES('MyFunc','function','src/lib.rs',5,'mimus');",
     );
     write(
         &d,
@@ -417,18 +417,18 @@ fn coverage_report() {
     cfg(&d, "kuda_index = \"idx.sqlite\"\n");
     let mut rows = String::from(
         "CREATE TABLE symbols(name TEXT, kind TEXT, file TEXT, line INTEGER, module TEXT);\
-         INSERT INTO symbols VALUES('DocumentedFunc','fn','src/lib.rs',1,'mymod');\
-         INSERT INTO symbols VALUES('SubStr','fn','src/a.rs',2,'mymod');\
-         INSERT INTO symbols VALUES('abc','fn','src/a.rs',3,'mymod');\
-         INSERT INTO symbols VALUES('new','fn','src/a.rs',4,'mymod');\
-         INSERT INTO symbols VALUES('helper_test','fn','src/tests/t.rs',5,'mymod');\
-         INSERT INTO symbols VALUES('thing_x','fn','src/a_test.rs',6,'mymod');\
-         INSERT INTO symbols VALUES('dup_name','fn','src/a.rs',7,'m1');\
-         INSERT INTO symbols VALUES('dup_name','fn','src/b.rs',8,'m2');",
+         INSERT INTO symbols VALUES('DocumentedFunc','function','src/lib.rs',1,'mymod');\
+         INSERT INTO symbols VALUES('SubStr','function','src/a.rs',2,'mymod');\
+         INSERT INTO symbols VALUES('abc','function','src/a.rs',3,'mymod');\
+         INSERT INTO symbols VALUES('new','function','src/a.rs',4,'mymod');\
+         INSERT INTO symbols VALUES('helper_test','function','src/tests/t.rs',5,'mymod');\
+         INSERT INTO symbols VALUES('thing_x','function','src/a_test.rs',6,'mymod');\
+         INSERT INTO symbols VALUES('dup_name','function','src/a.rs',7,'m1');\
+         INSERT INTO symbols VALUES('dup_name','function','src/b.rs',8,'m2');",
     );
     for i in 0..13 {
         rows.push_str(&format!(
-            "INSERT INTO symbols VALUES('uncov_sym{i}','fn','src/u.rs',{i},'mymod');"
+            "INSERT INTO symbols VALUES('uncov_sym{i}','function','src/u.rs',{i},'mymod');"
         ));
     }
     sqlite(&d.join("idx.sqlite"), &rows);
@@ -441,7 +441,7 @@ fn coverage_report() {
     let (so, _) = out(&o);
     assert_eq!(o.status.code(), Some(0));
     assert!(so.contains("2/16 symbols named in docs (12%)"), "{so}");
-    assert!(so.contains("mymod (fn)"), "{so}");
+    assert!(so.contains("mymod (function)"), "{so}");
     assert!(so.contains("+1 more"), "{so}");
     assert!(so.contains("dup_name"), "{so}");
     assert!(!so.contains("helper_test"), "{so}");
@@ -453,9 +453,9 @@ fn coverage_report() {
     sqlite(
         &d.join("idx.sqlite"),
         "CREATE TABLE symbols(name TEXT, kind TEXT, file TEXT, line INTEGER, module TEXT);\
-         INSERT INTO symbols VALUES('new','fn','src/lib.rs',1,'m');\
-         INSERT INTO symbols VALUES('abc','fn','src/lib.rs',2,'m');\
-         INSERT INTO symbols VALUES('helper_fn','fn','src/tests/t.rs',3,'m');",
+         INSERT INTO symbols VALUES('new','function','src/lib.rs',1,'m');\
+         INSERT INTO symbols VALUES('abc','function','src/lib.rs',2,'m');\
+         INSERT INTO symbols VALUES('helper_fn','function','src/tests/t.rs',3,'m');",
     );
     write(&d, "docs/a.md", "nothing indexed here");
     // an unreadable doc is skipped by the corpus loop, not fatal
@@ -1235,8 +1235,8 @@ fn check_graph_violations() {
         &d.join("idx.sqlite"),
         "CREATE TABLE symbols(name TEXT, kind TEXT, file TEXT, line INTEGER, module TEXT);\
          CREATE TABLE edges(from_mod TEXT, to_mod TEXT, kind TEXT);\
-         INSERT INTO symbols VALUES('F','fn','a.rs',1,'app-cli');\
-         INSERT INTO symbols VALUES('G','fn','b.rs',1,'app-core');\
+         INSERT INTO symbols VALUES('F','function','a.rs',1,'app-cli');\
+         INSERT INTO symbols VALUES('G','function','b.rs',1,'app-core');\
          INSERT INTO edges VALUES('app-cli','app-gone','imports');",
     );
     // a Behavior claim asserting a missing edge — needs a
@@ -1275,8 +1275,8 @@ fn check_graph_undocumented_fact() {
         &d.join("idx.sqlite"),
         "CREATE TABLE symbols(name TEXT, kind TEXT, file TEXT, line INTEGER, module TEXT);\
          CREATE TABLE edges(from_mod TEXT, to_mod TEXT, kind TEXT);\
-         INSERT INTO symbols VALUES('F','fn','src/cli.rs',1,'app-cli');\
-         INSERT INTO symbols VALUES('G','fn','src/core.rs',1,'app-core');\
+         INSERT INTO symbols VALUES('F','function','src/cli.rs',1,'app-cli');\
+         INSERT INTO symbols VALUES('G','function','src/core.rs',1,'app-core');\
          INSERT INTO edges VALUES('app-cli','app-core','imports');",
     );
     write(&d, "src/cli.rs", "fn main() {}\n");
